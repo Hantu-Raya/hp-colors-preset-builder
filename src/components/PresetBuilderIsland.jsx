@@ -67,7 +67,8 @@ export default function PresetBuilderIsland() {
   async function performBuild() {
     setStatus('Building pak96_dir.vpk...');
     try {
-      const response = await fetch('/templates/hp_colors/panorama/layout/base_hud.xml');
+      const templateUrl = `${import.meta.env.BASE_URL}templates/hp_colors/panorama/layout/base_hud.xml`;
+      const response = await fetch(templateUrl);
       if (!response.ok) throw new Error(`Failed to load base_hud.xml (${response.status})`);
       const baseHudXml = await response.text();
       const preset = { name: String(presetName || DEFAULT_PRESET_NAME).trim() || DEFAULT_PRESET_NAME, version: 1, values: state };
