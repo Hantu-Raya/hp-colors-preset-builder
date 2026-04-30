@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
+  base: '/hp-colors-preset-builder/',
   integrations: [react()],
   vite: {
     resolve: {
