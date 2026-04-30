@@ -140,7 +140,32 @@
 .status-text { color: var(--muted-foreground); font-size: 14px; }
 .tree-node { display: grid; gap: 8px; }
 .tree-children { padding-left: 10px; display: grid; gap: 8px; }
-.build-warning-panel { max-width: 560px; margin: 10vh auto; }
+.build-warning-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.build-warning-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(7, 10, 9, 0.78);
+  backdrop-filter: blur(6px);
+}
+.build-warning-panel {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+  width: min(560px, 100%);
+  margin: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
+  padding: 20px;
+}
 @media (max-width: 900px) {
   .builder-grid { grid-template-columns: 1fr; }
   .center-scroll, .tree-scroll { max-height: none; }
