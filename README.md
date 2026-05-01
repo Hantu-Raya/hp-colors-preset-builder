@@ -2,6 +2,16 @@
 
 Browser-only build path for a deterministic `base_hud`-only `pak96_dir.vpk`.
 
+## License
+
+MIT, see [LICENSE](LICENSE).
+
+## Notices
+
+Third-party components and bundled runtime files are listed in [NOTICE.md](NOTICE.md).
+
+This project is an unofficial fan tool and is not affiliated with Valve.
+
 ## What works now
 
 - Starts from the HP Colors default preset and lets you edit values before build.
@@ -26,6 +36,8 @@ Build:
 ```powershell
 npm run build
 ```
+
+Build output is generated into `dist/` and should not be committed.
 
 ## Verify core writers
 

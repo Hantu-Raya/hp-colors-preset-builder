@@ -166,6 +166,17 @@
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
   padding: 20px;
 }
+.page-footer {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.page-footer p {
+  margin: 0;
+}
 @media (max-width: 900px) {
   .builder-grid { grid-template-columns: 1fr; }
   .center-scroll, .tree-scroll { max-height: none; }

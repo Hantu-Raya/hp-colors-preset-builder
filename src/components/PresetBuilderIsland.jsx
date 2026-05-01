@@ -155,6 +155,14 @@ export default function PresetBuilderIsland() {
           </div>
         </div>
       )}
+
+      <footer className="page-footer" aria-label="Project notices">
+        <p>
+          Unofficial fan-made tool. Not affiliated with Valve.
+          {' '}
+          Third-party components and bundled runtime files are listed in NOTICE.md.
+        </p>
+      </footer>
     </div>
   );
 }

@@ -2,6 +2,8 @@
   "name": "hp-colors-web-builder",
   "private": true,
   "type": "module",
+  "author": "Hantu-Raya",
+  "license": "MIT",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
