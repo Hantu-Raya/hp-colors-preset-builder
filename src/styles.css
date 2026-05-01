@@ -608,23 +608,7 @@ textarea {
   resize: vertical;
 }
 
-.import-panel {
-  display: grid;
-  gap: 8px;
-}
 
-.import-textarea {
-  min-height: 68px;
-  max-height: 118px;
-  line-height: 1.4;
-  padding: 8px 9px;
-}
-
-.import-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
 
 input[type="checkbox"] {
   width: 16px;
@@ -704,14 +688,7 @@ pre {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .import-actions {
-    justify-content: stretch;
-  }
-
-  .import-actions > * {
-    flex: 1 1 0;
-    min-width: 0;
-  }
+  
 }
 
 @media (max-width: 640px) {
@@ -734,10 +711,7 @@ pre {
     gap: 6px;
   }
 
-  .import-textarea {
-    min-height: 60px;
-    max-height: 96px;
-  }
+  
 
   .schema-header-row {
     align-items: stretch;

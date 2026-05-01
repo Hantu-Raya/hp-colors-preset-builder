@@ -7,11 +7,9 @@ import { writeVpk } from '../vpkWriter.js';
 import { downloadBytes } from '../download.js';
 import { parseHpColorsImportCode } from '../hpImportCode.js';
 import { Button } from './ui/button.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card.jsx';
 import { Input } from './ui/input.jsx';
 import { Label } from './ui/label.jsx';
 import { ScrollArea } from './ui/scroll-area.jsx';
-import { Separator } from './ui/separator.jsx';
 import { Textarea } from './ui/textarea.jsx';
 import { SchemaField } from './schema-field.jsx';
 import { SchemaTree } from './schema-tree.jsx';
@@ -26,8 +24,11 @@ const WARNING_LINES = [
 export default function PresetBuilderIsland() {
   const [presetName, setPresetName] = useState(DEFAULT_PRESET_NAME);
   const [importText, setImportText] = useState('');
-  const [status, setStatus] = useState('Ready.');
-  const [state, setState] = useState(() => createDefaultFormState(HP_SCHEMA));
+  const [status, setStatus] = useState('Status: Ready');
+  const defaultState = useMemo(() => createDefaultFormState(HP_SCHEMA), []);
+  const [state, setState] = useState(() => defaultState);
+  const [importOpen, setImportOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [warningOpen, setWarningOpen] = useState(false);
   const groups = useMemo(() => splitCategoryGroups(HP_SCHEMA), []);
 
@@ -64,6 +65,20 @@ export default function PresetBuilderIsland() {
     }
   }
 
+  function handleResetPage() {
+    setState((prev) => {
+      const next = { ...prev };
+      for (const field of currentGroup?.fields || []) {
+        next[field.id] = defaultState[field.id];
+      }
+      return sanitizeFormState(HP_SCHEMA, next);
+    });
+  }
+
+  function handleResetAll() {
+    setState(defaultState);
+  }
+
   async function performBuild() {
     setStatus('Building pak96_dir.vpk...');
     try {
@@ -83,68 +98,63 @@ export default function PresetBuilderIsland() {
   }
 
   return (
-    <div className="builder-shell">
-      <header className="builder-header">
-        <div>
-          <h1>HP Colors Web Builder</h1>
-          <p>Compact preset editing with a three-zone layout.</p>
-        </div>
-        <div className="header-actions">
-          <div className="field-stack compact">
-            <Label htmlFor="presetName">Preset name</Label>
-            <Input id="presetName" value={presetName} onChange={(e) => setPresetName(e.target.value)} />
+    <div className="panorama-page">
+      <div className="panorama-shell" role="region" aria-label="HP Colors preset builder">
+        <header className="panorama-topbar">
+          <span className="panorama-brand">HP Colors</span>
+          <div className="panorama-header-actions">
+            <div className="preset-name-control">
+              <Label htmlFor="presetName">Preset name</Label>
+              <Input id="presetName" value={presetName} onChange={(e) => setPresetName(e.target.value)} />
+            </div>
+            <button type="button" className="build-action" onClick={() => setWarningOpen(true)}>Build pak96_dir.vpk</button>
           </div>
-          <Button type="button" onClick={() => setWarningOpen(true)}>Build pak96_dir.vpk</Button>
-        </div>
-      </header>
+        </header>
 
-      <div className="builder-grid">
-        <Card className="rail-card left-rail">
-          <CardHeader>
-            <CardTitle>Schema tree</CardTitle>
-            <CardDescription>Jump by hp_colors grouping.</CardDescription>
-          </CardHeader>
-            <CardContent><SchemaTree groups={groups} activeKey={activeKey} state={state} onSelect={handleSelectGroup} /></CardContent>
-        </Card>
+        <div className="panorama-workspace">
+          <SchemaTree groups={groups} activeKey={activeKey} state={state} defaultState={defaultState} onSelect={handleSelectGroup} />
 
-        <Card className="rail-card center-rail">
-          <CardHeader>
-            <CardTitle>{getCategoryPathLabel(currentGroup)}</CardTitle>
-            <CardDescription>{visibleCount} visible controls</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="center-scroll">
-              <div className="field-stack">
+          <section className="anita-detail-panel">
+            <div className="anita-detail-header-row">
+              <div>
+                <h2>{getCategoryPathLabel(currentGroup)}</h2>
+                <p className="anita-detail-hint">{visibleCount} visible controls</p>
+              </div>
+              <div className="reset-actions">
+                <Button type="button" variant="outline" size="sm" onClick={handleResetPage}>Reset page</Button>
+                <Button type="button" variant="outline" size="sm" onClick={handleResetAll}>Reset all</Button>
+              </div>
+            </div>
+            <ScrollArea className="detail-scroll">
+              <div className="schema-field-list">
                 {(currentGroup?.fields || []).map((field) => isFieldVisible(field, state) ? <SchemaField key={field.id} field={field} value={state[field.id]} onChange={updateField} /> : null)}
               </div>
             </ScrollArea>
-          </CardContent>
-        </Card>
+          </section>
 
-        <Card className="rail-card right-rail">
-          <CardHeader>
-            <CardTitle>Preview & status</CardTitle>
-            <CardDescription>Import stays close to build.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="field-stack">
-              <div className="field-stack compact">
-                <Label htmlFor="importText">Import preset</Label>
+          <aside className="anita-right-rail">
+            <DisclosurePanel title="Import preset" open={importOpen} onOpenChange={setImportOpen}>
+              <div className="import-panel-body">
                 <Textarea id="importText" rows={5} value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Paste HP Colors import code here" />
-                <Button type="button" variant="secondary" onClick={handleImport}>Import preset state</Button>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                  <Button type="button" variant="secondary" onClick={handleImport}>Import preset state</Button>
+                </div>
               </div>
-              <Separator />
+            </DisclosurePanel>
+
+            <DisclosurePanel title="JSON preview" open={previewOpen} onOpenChange={setPreviewOpen}>
               <div className="preview-box"><pre>{preview}</pre></div>
-              <p role="status" className="status-text">{status}</p>
-            </div>
-          </CardContent>
-        </Card>
+            </DisclosurePanel>
+
+            <p role="status" className="status-text">{status}</p>
+          </aside>
+        </div>
       </div>
 
       {warningOpen && (
         <div className="build-warning-modal" role="dialog" aria-modal="true" aria-labelledby="buildWarningTitle">
-          <div className="build-warning-backdrop" />
-          <div className="build-warning-panel panel">
+          <button type="button" className="build-warning-backdrop" onClick={() => setWarningOpen(false)} aria-label="Cancel" />
+          <div className="build-warning-panel">
             <div className="build-warning-badge">Warning</div>
             <h3 id="buildWarningTitle">Check load order before build</h3>
             {WARNING_LINES.map((line) => <p key={line}>{line}</p>)}
@@ -164,5 +174,17 @@ export default function PresetBuilderIsland() {
         </p>
       </footer>
     </div>
+  );
+}
+
+function DisclosurePanel({ title, open, onOpenChange, children }) {
+  return (
+    <section className={open ? 'disclosure-panel is-open' : 'disclosure-panel'}>
+      <button type="button" className="disclosure-trigger" onClick={() => onOpenChange(!open)} aria-expanded={open}>
+        <span>{title}</span>
+        <span aria-hidden="true">{open ? '-' : '+'}</span>
+      </button>
+      {open ? <div className="disclosure-body">{children}</div> : null}
+    </section>
   );
 }
