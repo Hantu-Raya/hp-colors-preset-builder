@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
+  site: 'https://hantu-raya.github.io',
   base: '/hp-colors-preset-builder/',
   integrations: [react()],
   vite: {
