@@ -2,7 +2,5 @@
 dist/
 node_modules/
 .playwright-cli/
-_astro/
-index.html
 *.vpk
 *.png
