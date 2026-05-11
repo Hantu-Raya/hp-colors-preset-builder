@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Braces, Download, Heart, RotateCcw, Upload } from 'lucide-react';
 import { HP_SCHEMA } from '../hpSchema.js';
 import { createDefaultFormState, splitCategoryGroups, countVisibleGroupFields, getCategoryKey, getCategoryPathLabel, isFieldVisible, sanitizeFormState } from '../hpFormModel.js';
 import { buildHpColorsPackage } from '../packageBuilder.js';
@@ -6,9 +7,7 @@ import { writeVpkWithDeadMod } from '../deadModPacker.js';
 import { writeVpk } from '../vpkWriter.js';
 import { downloadBytes } from '../download.js';
 import { parseHpColorsImportCode } from '../hpImportCode.js';
-import { Button } from './ui/button.jsx';
 import { Input } from './ui/input.jsx';
-import { Label } from './ui/label.jsx';
 import { ScrollArea } from './ui/scroll-area.jsx';
 import { Textarea } from './ui/textarea.jsx';
 import { SchemaField } from './schema-field.jsx';
@@ -46,6 +45,17 @@ export default function PresetBuilderIsland() {
   const visibleCount = countVisibleGroupFields(currentGroup, state);
   const preview = useMemo(() => JSON.stringify({ name: presetName, version: 1, values: state }, null, 2), [presetName, state]);
 
+  useEffect(() => {
+    const handleShortcut = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        setWarningOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, []);
+
   function updateField(id, value) {
     setState((prev) => sanitizeFormState(HP_SCHEMA, { ...prev, [id]: value }));
   }
@@ -76,7 +86,7 @@ export default function PresetBuilderIsland() {
   }
 
   function handleResetAll() {
-    setState(defaultState);
+    setState({ ...defaultState });
   }
 
   async function performBuild() {
@@ -101,13 +111,23 @@ export default function PresetBuilderIsland() {
     <div className="panorama-page">
       <div className="panorama-shell" role="region" aria-label="HP Colors preset builder">
         <header className="panorama-topbar">
-          <span className="panorama-brand">HP Colors</span>
+          <div className="panorama-brand-block">
+            <span className="panorama-kicker">Deadlock preset builder</span>
+            <span className="panorama-brand">HP Colors</span>
+          </div>
           <div className="panorama-header-actions">
-            <div className="preset-name-control">
-              <Label htmlFor="presetName">Preset name</Label>
+            <a className="support-button top-support-button" href="https://ko-fi.com/hantuaraya" target="_blank" rel="noreferrer" aria-label="Donate on Ko-fi">
+              <Heart aria-hidden="true" />
+              <span>Donate</span>
+            </a>
+            <label className="preset-name-control" htmlFor="presetName">
+              <span>Preset</span>
               <Input id="presetName" value={presetName} onChange={(e) => setPresetName(e.target.value)} />
-            </div>
-            <button type="button" className="build-action" onClick={() => setWarningOpen(true)}>Build pak96_dir.vpk</button>
+            </label>
+            <button type="button" className="build-action" onClick={() => setWarningOpen(true)}>
+              <Download aria-hidden="true" />
+              <span>Build VPK</span>
+            </button>
           </div>
         </header>
 
@@ -121,23 +141,46 @@ export default function PresetBuilderIsland() {
                 <p className="anita-detail-hint">{visibleCount} visible controls</p>
               </div>
               <div className="reset-actions">
-                <Button type="button" variant="outline" size="sm" onClick={handleResetPage}>Reset page</Button>
-                <Button type="button" variant="outline" size="sm" onClick={handleResetAll}>Reset all</Button>
+                <button type="button" className="quiet-action" onClick={handleResetPage}>
+                  <RotateCcw aria-hidden="true" />
+                  <span>Page</span>
+                </button>
+                <button type="button" className="quiet-action" onClick={handleResetAll}>
+                  <RotateCcw aria-hidden="true" />
+                  <span>All</span>
+                </button>
               </div>
             </div>
             <ScrollArea className="detail-scroll">
               <div className="schema-field-list">
-                {(currentGroup?.fields || []).map((field) => isFieldVisible(field, state) ? <SchemaField key={field.id} field={field} value={state[field.id]} onChange={updateField} /> : null)}
+                {(currentGroup?.fields || []).map((field) => (
+                  isFieldVisible(field, state)
+                    ? <SchemaField key={field.id} field={field} value={state[field.id]} onChange={updateField} />
+                    : null
+                ))}
+                {(currentGroup?.fields || []).every((field) => !isFieldVisible(field, state)) ? (
+                  <div className="empty-panel">
+                    <strong>No visible controls</strong>
+                    <span>Enable the related setting in this preset to reveal the dependent options.</span>
+                  </div>
+                ) : null}
               </div>
             </ScrollArea>
           </section>
 
           <aside className="anita-right-rail">
+            <div className="rail-heading">
+              <span className="panorama-kicker">Tools</span>
+              <strong>Preset utility</strong>
+            </div>
             <DisclosurePanel title="Import preset" open={importOpen} onOpenChange={setImportOpen}>
               <div className="import-panel-body">
                 <Textarea id="importText" rows={5} value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Paste HP Colors import code here" />
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                  <Button type="button" variant="secondary" onClick={handleImport}>Import preset state</Button>
+                <div className="rail-actions">
+                  <button type="button" className="secondary-action" onClick={handleImport}>
+                    <Upload aria-hidden="true" />
+                    <span>Import</span>
+                  </button>
                 </div>
               </div>
             </DisclosurePanel>
@@ -146,7 +189,10 @@ export default function PresetBuilderIsland() {
               <div className="preview-box"><pre>{preview}</pre></div>
             </DisclosurePanel>
 
-            <p role="status" className="status-text">{status}</p>
+            <div className="status-card" role="status">
+              <Braces aria-hidden="true" />
+              <span>{status}</span>
+            </div>
           </aside>
         </div>
       </div>
@@ -159,8 +205,11 @@ export default function PresetBuilderIsland() {
             <h3 id="buildWarningTitle">Check load order before build</h3>
             {WARNING_LINES.map((line) => <p key={line}>{line}</p>)}
             <div className="build-warning-actions">
-              <Button type="button" variant="outline" onClick={() => setWarningOpen(false)}>Cancel</Button>
-              <Button type="button" onClick={async () => { setWarningOpen(false); await performBuild(); }}>Acknowledge</Button>
+              <button type="button" className="secondary-action" onClick={() => setWarningOpen(false)}>Cancel</button>
+              <button type="button" className="primary-action" onClick={async () => { setWarningOpen(false); await performBuild(); }}>
+                <Download aria-hidden="true" />
+                <span>Build now</span>
+              </button>
             </div>
           </div>
         </div>
@@ -168,9 +217,15 @@ export default function PresetBuilderIsland() {
 
       <footer className="page-footer" aria-label="Project notices">
         <p>
-          Unofficial fan-made tool. Not affiliated with Valve.
+          Unofficial fan-made tool. Not affiliated with Valve. Runs locally; preset files are not uploaded. Built by
           {' '}
-          Third-party components and bundled runtime files are listed in NOTICE.md.
+          <a href="https://github.com/Hantu-Raya" target="_blank" rel="noreferrer">Hantu-Raya</a>.
+          {' '}
+          Source on
+          {' '}
+          <a href="https://github.com/Hantu-Raya/hp-colors-preset-builder" target="_blank" rel="noreferrer">GitHub</a>.
+          {' '}
+          MIT licensed; see LICENSE and NOTICE.md.
         </p>
       </footer>
     </div>

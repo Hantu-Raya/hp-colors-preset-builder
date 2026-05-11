@@ -7,11 +7,21 @@ import '../styles/global.css';
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>HP Colors Web Builder</title>
+    <title>HP Colors Preset Builder</title>
+    <meta
+      name="description"
+      content="Build a local Deadlock HP Colors preset VPK from browser controls."
+    />
+    <meta property="og:title" content="HP Colors Preset Builder" />
+    <meta
+      property="og:description"
+      content="Build a local Deadlock HP Colors preset VPK from browser controls."
+    />
     <link rel="icon" href="data:," />
   </head>
   <body>
-    <main class="shell">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <main id="main-content" class="shell">
       <PresetBuilderIsland client:load />
     </main>
   </body>
