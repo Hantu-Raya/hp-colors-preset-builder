@@ -4,11 +4,17 @@ Browser-only build path for a deterministic `base_hud`-only `pak96_dir.vpk`.
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+This project is licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
+
+Attribution notices for this project are included in [NOTICE](NOTICE). If you distribute this software or derivative works, preserve the applicable copyright, license, and notice files as required by Apache-2.0.
+
+### Attribution
+
+When distributing this project or derivative works, please preserve the included `LICENSE` and `NOTICE` files. This project was created by Hantu-Raya.
 
 ## Notices
 
-Third-party components and bundled runtime files are listed in [NOTICE.md](NOTICE.md).
+Third-party components and bundled runtime files are listed in [NOTICE](NOTICE).
 
 This project is an unofficial fan tool and is not affiliated with Valve.
 

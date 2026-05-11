@@ -225,7 +225,7 @@ export default function PresetBuilderIsland() {
           {' '}
           <a href="https://github.com/Hantu-Raya/hp-colors-preset-builder" target="_blank" rel="noreferrer">GitHub</a>.
           {' '}
-          MIT licensed; see LICENSE and NOTICE.md.
+          Apache-2.0 licensed; see LICENSE and NOTICE.
         </p>
       </footer>
     </div>
