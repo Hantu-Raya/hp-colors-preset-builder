@@ -114,6 +114,15 @@ export default function PresetBuilderIsland() {
           <div className="panorama-brand-block">
             <span className="panorama-kicker">Deadlock preset builder</span>
             <span className="panorama-brand">HP Colors</span>
+            <nav className="similar-tools" aria-label="Similar tools">
+              <span className="similar-tools-label">Similar tools</span>
+              <a className="similar-tool-link" href="https://hantu-raya.github.io/color-blind-web-builder/" target="_blank" rel="noreferrer">
+                Color Blind Builder
+              </a>
+              <a className="similar-tool-link" href="https://hantu-raya.github.io/3d-hud-web-merger/" target="_blank" rel="noreferrer">
+                3D HUD VPK Merger
+              </a>
+            </nav>
           </div>
           <div className="panorama-header-actions">
             <a className="support-button top-support-button" href="https://ko-fi.com/hantuaraya" target="_blank" rel="noreferrer" aria-label="Donate on Ko-fi">

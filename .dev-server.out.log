@@ -1,0 +1,90 @@
+
+> dev
+> astro dev --host 127.0.0.1 --port 4327
+
+[2m08:32:19[22m [34m[types][39m Generated [2m1ms[22m
+[2m08:32:19[22m [34m[content][39m Syncing content
+[2m08:32:19[22m [34m[content][39m Astro config changed
+[2m08:32:19[22m [34m[content][39m Clearing content store
+[2m08:32:19[22m [34m[content][39m Synced content
+[2m08:32:19[22m [34m[vite][39m Re-optimizing dependencies because vite config has changed
+
+[42m[1m astro [22m[49m [32mv5.18.1[39m [2mready in[22m 332 [2mms[22m
+
+[2m┃[22m Local    [36mhttp://127.0.0.1:4327/hp-colors-preset-builder/[39m
+
+[2m08:32:19[22m [32mwatching for file changes...[39m
+[2m08:32:59[22m [34m[200][39m / [2m209ms[22m
+[2m08:33:30[22m [34m[200][39m / [2m43ms[22m
+[2m08:33:41[22m [34m[200][39m / [2m40ms[22m
+[2m08:34:19[22m [34m[watch][39m /@fs/D:\web\hp-colors-preset-builder\src\components\PresetBuilderIsland.jsx, /src/styles/global.css
+[2m08:34:19[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[2m08:36:58[22m [34m[200][39m / [2m139ms[22m
+[2m08:38:40[22m [34m[watch][39m /src/styles/global.css
+[2m08:38:41[22m [34m[200][39m / [2m178ms[22m
+[2m08:39:09[22m [34m[200][39m / [2m51ms[22m
+[2m08:43:05[22m [34m[watch][39m /@fs/D:\web\hp-colors-preset-builder\src\components\PresetBuilderIsland.jsx, /src/styles/global.css
+[2m08:43:05[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[2m08:43:45[22m [34m[watch][39m /src/styles/global.css
+[2m08:43:47[22m [34m[200][39m / [2m176ms[22m
+[2m08:43:55[22m [34m[watch][39m /src/styles/global.css
+[2m08:43:56[22m [34m[200][39m / [2m256ms[22m
+[2m08:44:31[22m [34m[200][39m / [2m49ms[22m
+[2m08:47:41[22m [34m[watch][39m /@fs/D:\web\hp-colors-preset-builder\src\components\PresetBuilderIsland.jsx, /src/styles/global.css
+[2m08:47:41[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[2m08:47:53[22m [34m[watch][39m /src/styles/global.css
+[2m08:47:54[22m [34m[200][39m / [2m182ms[22m
+[2m08:48:09[22m [34m[watch][39m /src/styles/global.css
+[2m08:48:10[22m [34m[200][39m / [2m172ms[22m
+[2m08:48:40[22m [34m[200][39m / [2m38ms[22m
+[2m08:48:41[22m [34m[200][39m / [2m36ms[22m
+[2m08:48:42[22m [34m[200][39m / [2m37ms[22m
+[2m08:49:10[22m [34m[watch][39m /src/styles/global.css
+[2m08:49:11[22m [34m[200][39m / [2m172ms[22m
+[2m08:49:23[22m [34m[200][39m / [2m39ms[22m
+[2m08:49:44[22m [34m[watch][39m /src/styles/global.css
+[2m08:49:45[22m [34m[200][39m / [2m178ms[22m
+[2m08:50:00[22m [34m[200][39m / [2m43ms[22m
+[2m08:50:01[22m [34m[200][39m / [2m42ms[22m
+[2m08:50:02[22m [34m[200][39m / [2m37ms[22m
+[2m20:33:38[22m [34m[watch][39m LICENSE
+[2m20:33:38[22m [34m[watch][39m LICENSE
+[2m20:33:38[22m [34m[watch][39m LICENSE
+[2m20:33:38[22m [34m[watch][39m LICENSE
+[2m20:33:39[22m [34m[200][39m / [2m161ms[22m
+[2m20:33:54[22m Configuration file updated. Restarting...
+[2m20:33:54[22m [34m[watch][39m package.json
+[2m20:33:54[22m [34m[watch][39m package.json
+[2m20:33:54[22m [34m[watch][39m package.json
+[2m20:33:54[22m [34m[watch][39m package.json
+[2m20:33:54[22m [34m[watch][39m /@fs/D:\web\hp-colors-preset-builder\src\components\PresetBuilderIsland.jsx, /src/styles/global.css
+[2m20:33:54[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[2m20:33:54[22m [34m[watch][39m README.md
+[2m20:33:54[22m [34m[watch][39m README.md
+[2m20:33:54[22m [34m[vite][39m Re-optimizing dependencies because vite config has changed
+[2m20:33:54[22m [34m[content][39m Syncing content
+[2m20:33:54[22m [34m[content][39m Synced content
+[2m20:33:54[22m [34m[types][39m Generated [2m227ms[22m
+[2m20:33:54[22m [34m[vite][39m Re-optimizing dependencies because vite config has changed
+[2m20:33:55[22m [34m[200][39m / [2m229ms[22m
+[2m20:33:55[22m [34m[200][39m / [2m230ms[22m
+[2m20:34:01[22m [34m[watch][39m NOTICE.md
+[2m20:34:01[22m [34m[watch][39m NOTICE.md
+[2m20:34:02[22m [34m[200][39m / [2m125ms[22m
+[2m20:34:11[22m [34m[watch][39m NOTICE
+[2m20:34:11[22m [34m[watch][39m NOTICE
+[2m20:34:12[22m [34m[200][39m / [2m140ms[22m
+[2m20:38:00[22m [34m[watch][39m LICENSE
+[2m20:38:00[22m [34m[watch][39m LICENSE
+[2m20:38:00[22m [34m[200][39m / [2m125ms[22m
+[2m20:40:28[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[2m20:40:28[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[2m20:40:28[22m [34m[200][39m / [2m115ms[22m
+[2m20:40:43[22m [34m[watch][39m /src/styles/global.css
+[2m20:40:43[22m [34m[200][39m / [2m263ms[22m
+[2m20:40:49[22m [34m[watch][39m /src/styles/global.css
+[2m20:40:50[22m [34m[200][39m / [2m238ms[22m
+[2m20:41:51[22m [34m[200][39m / [2m49ms[22m
+[2m20:42:35[22m [34m[200][39m / [2m39ms[22m
+[2m20:42:36[22m [34m[200][39m / [2m36ms[22m
+[2m20:42:36[22m [34m[200][39m / [2m36ms[22m

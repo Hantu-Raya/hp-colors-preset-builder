@@ -198,7 +198,7 @@
 
 .panorama-brand-block {
   display: grid;
-  gap: 2px;
+  gap: 7px;
   min-width: 0;
 }
 
@@ -215,6 +215,54 @@
   font-size: 0.74rem;
   font-weight: 760;
   text-transform: uppercase;
+}
+
+.similar-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.similar-tools-label {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-weight: 780;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.similar-tool-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 11px;
+  border: 1px solid color-mix(in srgb, var(--support-bg) 42%, var(--border));
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--support-bg) 18%, var(--card));
+  color: var(--foreground);
+  font-size: 0.76rem;
+  font-weight: 780;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.similar-tool-link:hover {
+  border-color: color-mix(in srgb, var(--support-bg) 82%, var(--border));
+  background: color-mix(in srgb, var(--support-bg) 30%, var(--card));
+}
+
+.similar-tool-link:active {
+  transform: scale(0.98);
 }
 
 .panorama-header-actions,
@@ -1150,6 +1198,19 @@
 
   .panorama-header-actions {
     flex-wrap: wrap;
+  }
+
+  .similar-tools {
+    gap: 6px;
+  }
+
+  .similar-tools-label {
+    flex-basis: 100%;
+  }
+
+  .similar-tool-link {
+    flex: 1 1 160px;
+    min-height: 34px;
   }
 
   .panorama-header-actions,
