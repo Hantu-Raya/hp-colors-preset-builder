@@ -240,10 +240,10 @@
   justify-content: center;
   min-height: 28px;
   padding: 0 11px;
-  border: 1px solid color-mix(in srgb, var(--support-bg) 42%, var(--border));
+  border: 1px solid color-mix(in srgb, var(--primary) 44%, var(--border));
   border-radius: 5px;
-  background: color-mix(in srgb, var(--support-bg) 18%, var(--card));
-  color: var(--foreground);
+  background: color-mix(in srgb, var(--accent) 62%, var(--card));
+  color: var(--accent-foreground);
   font-size: 0.76rem;
   font-weight: 780;
   line-height: 1;
@@ -257,12 +257,18 @@
 }
 
 .similar-tool-link:hover {
-  border-color: color-mix(in srgb, var(--support-bg) 82%, var(--border));
-  background: color-mix(in srgb, var(--support-bg) 30%, var(--card));
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 18%, var(--accent));
+  color: var(--foreground);
 }
 
 .similar-tool-link:active {
   transform: scale(0.98);
+}
+
+.similar-tool-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 .panorama-header-actions,
