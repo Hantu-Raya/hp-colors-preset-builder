@@ -35,8 +35,24 @@ test("parses legacy version 25 import tokens", () => {
   const state = parseHpColorsImportCode(buildToken({ v: 25, c: 1, values: { e: false, cm: "#abcdef", tm: 1 } }), HP_SCHEMA);
 
   assert.equal(state.hp_enabled, false);
-  assert.equal(state.hp_color_mid, "#abcdef");
+  assert.equal(state.hp_color_mid, "#ABCDEF");
   assert.equal(state.hp_text_color_mode, 1);
+});
+
+test("parses import colors as canonical hex only", () => {
+  const state = parseHpColorsImportCode(buildToken({
+    v: 97,
+    c: 1,
+    values: {
+      cl: "#abc",
+      cm: "not-a-color;visibility:collapse",
+      ch: 'url("s2r://panorama/images/hud/icon.png")'
+    }
+  }), HP_SCHEMA);
+
+  assert.equal(state.hp_color_low, "#AABBCC");
+  assert.equal(state.hp_color_mid, HP_SCHEMA.hp_color_mid.defaultValue);
+  assert.equal(state.hp_color_high, HP_SCHEMA.hp_color_high.defaultValue);
 });
 
 test("rejects malformed, wrong-namespace, or invalid payloads", () => {
@@ -52,4 +68,18 @@ test("rejects malformed, wrong-namespace, or invalid payloads", () => {
   assert.throws(() => parseHpColorsImportCode(buildToken({ v: 97, c: 2, values: { e: true } }), HP_SCHEMA), /version/i);
   assert.throws(() => parseHpColorsImportCode(buildToken({ v: 97, c: 1, values: { zz: 1 } }), HP_SCHEMA), /unknown/i);
   assert.throws(() => parseHpColorsImportCode(buildToken({ v: 97, c: 1, values: { badField: 1 } }), HP_SCHEMA), /unknown/i);
+});
+
+test("rejects oversized import payloads before JSON parsing", () => {
+  const hugeToken = `[ANITA-v1-hp_colors]:${"A".repeat(70000)}`;
+
+  assert.throws(() => extractHpColorsImportToken(hugeToken), /too large/i);
+  assert.throws(() => parseHpColorsImportCode(hugeToken, HP_SCHEMA), /too large/i);
+});
+
+test("rejects decoded payloads over the size cap before JSON parsing", () => {
+  const token = buildToken({ v: 97, c: 1, notes: "A".repeat(9000), values: { e: true } });
+
+  assert.ok(token.length < 16384);
+  assert.throws(() => parseHpColorsImportCode(token, HP_SCHEMA), /too large/i);
 });

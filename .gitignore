@@ -1,6 +1,8 @@
 .astro/
+_astro/
 dist/
 node_modules/
 .playwright-cli/
+/index.html
 *.vpk
 *.png

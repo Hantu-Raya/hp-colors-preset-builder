@@ -2,14 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Braces, Download, Heart, RotateCcw, Upload } from 'lucide-react';
 import { HP_SCHEMA } from '../hpSchema.js';
 import { createDefaultFormState, splitCategoryGroups, countVisibleGroupFields, getCategoryKey, getCategoryPathLabel, isFieldVisible, sanitizeFormState } from '../hpFormModel.js';
-import { buildHpColorsPackage } from '../packageBuilder.js';
-import { writeVpkWithDeadMod } from '../deadModPacker.js';
+import { BASE_HUD_SOURCE_PATH, buildHpColorsPackage } from '../packageBuilder.js';
 import { writeVpk } from '../vpkWriter.js';
 import { downloadBytes } from '../download.js';
 import { parseHpColorsImportCode } from '../hpImportCode.js';
-import { Input } from './ui/input.jsx';
-import { ScrollArea } from './ui/scroll-area.jsx';
-import { Textarea } from './ui/textarea.jsx';
 import { SchemaField } from './schema-field.jsx';
 import { SchemaTree } from './schema-tree.jsx';
 
@@ -97,9 +93,8 @@ export default function PresetBuilderIsland() {
       if (!response.ok) throw new Error(`Failed to load base_hud.xml (${response.status})`);
       const baseHudXml = await response.text();
       const preset = { name: String(presetName || DEFAULT_PRESET_NAME).trim() || DEFAULT_PRESET_NAME, version: 1, values: state };
-      const { files } = buildHpColorsPackage({ sourceTexts: { 'templates/hp_colors/panorama/layout/base_hud.xml': baseHudXml }, preset });
-      let pak;
-      try { pak = await writeVpkWithDeadMod(files); } catch { pak = writeVpk(files); }
+      const { files } = buildHpColorsPackage({ sourceTexts: { [BASE_HUD_SOURCE_PATH]: baseHudXml }, preset });
+      const pak = writeVpk(files);
       downloadBytes('pak96_dir.vpk', pak);
       setStatus(`Built pak96_dir.vpk (${pak.byteLength.toLocaleString()} bytes).`);
     } catch (error) {
@@ -131,7 +126,7 @@ export default function PresetBuilderIsland() {
             </a>
             <label className="preset-name-control" htmlFor="presetName">
               <span>Preset</span>
-              <Input id="presetName" value={presetName} onChange={(e) => setPresetName(e.target.value)} />
+              <input id="presetName" className="builder-input" value={presetName} onChange={(e) => setPresetName(e.target.value)} />
             </label>
             <button type="button" className="build-action" onClick={() => setWarningOpen(true)}>
               <Download aria-hidden="true" />
@@ -160,7 +155,7 @@ export default function PresetBuilderIsland() {
                 </button>
               </div>
             </div>
-            <ScrollArea className="detail-scroll">
+            <div className="detail-scroll">
               <div className="schema-field-list">
                 {(currentGroup?.fields || []).map((field) => (
                   isFieldVisible(field, state)
@@ -174,7 +169,7 @@ export default function PresetBuilderIsland() {
                   </div>
                 ) : null}
               </div>
-            </ScrollArea>
+            </div>
           </section>
 
           <aside className="anita-right-rail">
@@ -184,7 +179,14 @@ export default function PresetBuilderIsland() {
             </div>
             <DisclosurePanel title="Import preset" open={importOpen} onOpenChange={setImportOpen}>
               <div className="import-panel-body">
-                <Textarea id="importText" rows={5} value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Paste HP Colors import code here" />
+                <textarea
+                  id="importText"
+                  className="builder-textarea"
+                  rows={5}
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  placeholder="Paste HP Colors import code here"
+                />
                 <div className="rail-actions">
                   <button type="button" className="secondary-action" onClick={handleImport}>
                     <Upload aria-hidden="true" />

@@ -1,17 +1,55 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { HP_SCHEMA, coerceHpValue } from "../src/hpSchema.js";
 
-async function readRegistrarIds() {
-  const source = await readFile(new URL("../templates/hp_colors/panorama/scripts/hp_registrar.js", import.meta.url), "utf8");
-  return [...source.matchAll(/^\s*\{\s*type:\s*"[^"]+",\s*id:\s*"([a-z0-9_]+)"/gm)]
-    .map((match) => match[1])
-    .filter((id) => id !== "hp_preset_apply_baked");
-}
-
-test("HP schema keys match registrar persisted ids", async () => {
-  assert.deepEqual(Object.keys(HP_SCHEMA).sort(), (await readRegistrarIds()).sort());
+test("HP schema exposes the supported preset fields", () => {
+  assert.deepEqual(Object.keys(HP_SCHEMA).sort(), [
+    "hp_bg_visible",
+    "hp_color_high",
+    "hp_color_low",
+    "hp_color_mid",
+    "hp_counter_format",
+    "hp_counter_position",
+    "hp_counter_size",
+    "hp_enabled",
+    "hp_friend_color_high",
+    "hp_friend_color_low",
+    "hp_friend_color_mid",
+    "hp_friend_enabled",
+    "hp_friend_pulse_bpm",
+    "hp_friend_pulse_color",
+    "hp_friend_pulse_color_enabled",
+    "hp_friend_pulse_enabled",
+    "hp_friend_pulse_intensity",
+    "hp_friend_pulse_threshold",
+    "hp_healthbar_height",
+    "hp_high_threshold",
+    "hp_info_health_margin_top",
+    "hp_kill_zone_color",
+    "hp_kill_zone_enabled",
+    "hp_kill_zone_threshold",
+    "hp_kill_zone_width",
+    "hp_level_number_visible",
+    "hp_low_threshold",
+    "hp_mode",
+    "hp_pip_visible",
+    "hp_pulse_bpm",
+    "hp_pulse_enabled",
+    "hp_pulse_hide_bar",
+    "hp_pulse_intensity",
+    "hp_pulse_text_enabled",
+    "hp_pulse_text_position",
+    "hp_pulse_text_scale",
+    "hp_pulse_threshold",
+    "hp_skip_buildings",
+    "hp_team_colors",
+    "hp_text_color_high",
+    "hp_text_color_low",
+    "hp_text_color_mid",
+    "hp_text_color_mode",
+    "hp_ult_color_custom",
+    "hp_ult_color_enabled"
+  ]);
 });
 
 test("HP schema preserves representative metadata", () => {
@@ -52,5 +90,11 @@ test("HP schema coerces toggles, cyclers, and sliders like the parser", () => {
   assert.equal(coerceHpValue("hp_mode", 99), 1);
   assert.equal(coerceHpValue("hp_mode", -1), 0);
   assert.equal(coerceHpValue("hp_low_threshold", 12.6), 13);
-  assert.equal(coerceHpValue("hp_color_low", "not-a-color"), "not-a-color");
+});
+
+test("HP schema canonicalizes colors and rejects style strings", () => {
+  assert.equal(coerceHpValue("hp_color_low", "#abc"), "#AABBCC");
+  assert.equal(coerceHpValue("hp_color_low", "#abcdef"), "#ABCDEF");
+  assert.equal(coerceHpValue("hp_color_low", "not-a-color;visibility:collapse"), HP_SCHEMA.hp_color_low.defaultValue);
+  assert.equal(coerceHpValue("hp_color_low", 'url("s2r://panorama/images/hud/icon.png")'), HP_SCHEMA.hp_color_low.defaultValue);
 });

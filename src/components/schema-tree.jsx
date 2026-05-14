@@ -1,5 +1,4 @@
 import React from 'react';
-import { ScrollArea } from './ui/scroll-area.jsx';
 import { countVisibleGroupFields, getCategoryKey } from '../hpFormModel.js';
 
 function groupHasModifiedFields(group, state, defaultState) {
@@ -16,7 +15,7 @@ export function SchemaTree({ groups, activeKey, state, defaultState = {}, onSele
   return (
     <aside className="anita-tree" aria-label="Schema categories">
       <div className="anita-tree-header">Categories</div>
-      <ScrollArea className="tree-scroll">
+      <div className="tree-scroll">
         <div className="anita-tree-list">
           {groups.map((group) => (
             <TreeItem
@@ -30,7 +29,7 @@ export function SchemaTree({ groups, activeKey, state, defaultState = {}, onSele
             />
           ))}
         </div>
-      </ScrollArea>
+      </div>
     </aside>
   );
 }
