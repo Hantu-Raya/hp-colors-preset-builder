@@ -30,6 +30,23 @@ test("createGitCommitInfo exposes the short hash and commit URL", () => {
   assert.equal(info.title, "Latest commit b1fd667e7fe4: Add minimal build target");
 });
 
+test("createGitCommitInfo shows the PR title and branch for GitHub merge commits", () => {
+  const info = createGitCommitInfo({
+    hash: "cac441a188dbb55f0fdf2c8bd742892e07b29cc7",
+    remoteUrl: "https://github.com/Hantu-Raya/hp-colors-preset-builder.git",
+    subject: "Merge pull request #2 from Hantu-Raya/codex/hp-colors-cleanup",
+    body: [
+      "Merge pull request #2 from Hantu-Raya/codex/hp-colors-cleanup",
+      "",
+      "Add target-aware VPK tools"
+    ].join("\n")
+  });
+
+  assert.equal(info.subject, "Add target-aware VPK tools");
+  assert.equal(info.branch, "codex/hp-colors-cleanup");
+  assert.equal(info.title, "Latest update: Add target-aware VPK tools | Branch: codex/hp-colors-cleanup");
+});
+
 test("createGitCommitInfo returns null when required git data is missing", () => {
   assert.equal(createGitCommitInfo({ hash: "", remoteUrl: "https://github.com/Hantu-Raya/hp-colors-preset-builder.git" }), null);
   assert.equal(createGitCommitInfo({ hash: "abc", remoteUrl: "" }), null);
