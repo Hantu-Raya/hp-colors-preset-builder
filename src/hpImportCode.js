@@ -5,6 +5,9 @@ export const HP_IMPORT_CODE_NAMESPACE = "hp_colors";
 export const HP_IMPORT_CODE_VERSION = 97;
 export const HP_IMPORT_CODE_COMPACT_VERSION = 1;
 export const HP_IMPORT_CODE_LEGACY_VERSIONS = new Set([25]);
+const MAX_IMPORT_TEXT_CHARS = 32768;
+const MAX_IMPORT_TOKEN_CHARS = 16384;
+const MAX_IMPORT_PAYLOAD_CHARS = 8192;
 
 export const HP_PERSIST_ALIASES = Object.freeze({
   hp_enabled: "e",
@@ -61,6 +64,7 @@ const HP_ALIAS_TO_ID = Object.freeze(
 function decodeBase64UrlStrict(input) {
   const token = String(input || "");
   if (!token || !/^[A-Za-z0-9_-]+$/.test(token)) throw new Error("Invalid base64url token");
+  if (token.length > MAX_IMPORT_TOKEN_CHARS) throw new Error("Import code is too large");
   if (token.length % 4 === 1) throw new Error("Invalid base64url token");
   const normalized = token.replace(/-/g, "+").replace(/_/g, "/");
   const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
@@ -76,7 +80,9 @@ function decodeBase64UrlStrict(input) {
   if (roundtrip !== token) {
     throw new Error("Invalid base64url token");
   }
-  return utf8FromBinary(binary);
+  const payloadText = utf8FromBinary(binary);
+  if (payloadText.length > MAX_IMPORT_PAYLOAD_CHARS) throw new Error("Import code is too large");
+  return payloadText;
 }
 
 function binaryFromBase64(base64) {
@@ -146,12 +152,19 @@ function expandValues(values, schema) {
 export function extractHpColorsImportToken(text) {
   const body = String(text || "").trim();
   if (!body) throw new Error("Malformed HP Colors import code");
+  if (body.length > MAX_IMPORT_TEXT_CHARS) throw new Error("Import code is too large");
   const hpMatches = body.match(/\[ANITA-v1-hp_colors\]:[^\s]+/g) || [];
-  if (hpMatches.length === 1) return hpMatches[0];
+  if (hpMatches.length === 1) {
+    if (hpMatches[0].length > MAX_IMPORT_TOKEN_CHARS) throw new Error("Import code is too large");
+    return hpMatches[0];
+  }
   if (hpMatches.length > 1) throw new Error("Multiple HP Colors import tokens found");
 
   const anyMatches = body.match(/\[ANITA-v1-[a-z0-9_]+\]:[^\s]+/g) || [];
-  if (anyMatches.length === 1) return anyMatches[0];
+  if (anyMatches.length === 1) {
+    if (anyMatches[0].length > MAX_IMPORT_TOKEN_CHARS) throw new Error("Import code is too large");
+    return anyMatches[0];
+  }
   if (anyMatches.length > 1) throw new Error("Multiple Anita import tokens found");
 
   throw new Error("Malformed HP Colors import code");

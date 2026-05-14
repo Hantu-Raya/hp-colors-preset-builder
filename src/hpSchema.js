@@ -51,6 +51,22 @@ export const HP_SCHEMA = {
   hp_kill_zone_width: { type: "slider", label: "Marker width", category: "VISUAL EFFECTS|Kill Marker", defaultValue: 3, bounds: { min: 1, max: 100, step: 1 }, visibleWhen: { id: "hp_kill_zone_enabled", equals: true } }
 };
 
+function canonicalHexColor(value) {
+  if (typeof value !== "string") return "";
+  const match = value.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (!match) return "";
+
+  const hex = match[1];
+  if (hex.length === 3) {
+    return `#${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`.toUpperCase();
+  }
+  return `#${hex}`.toUpperCase();
+}
+
+function normalizeHexColorValue(value, fallback = "#FFFFFF") {
+  return canonicalHexColor(value) || canonicalHexColor(fallback) || "#FFFFFF";
+}
+
 export function coerceHpValue(key, value) {
   const spec = HP_SCHEMA[key];
   if (!spec) return undefined;
@@ -66,8 +82,7 @@ export function coerceHpValue(key, value) {
     return !!spec.defaultValue;
   }
   if (spec.type === "colorpicker") {
-    if (typeof value === "string" && value.length > 0) return value;
-    return (typeof spec.defaultValue === "string" && spec.defaultValue.length > 0) ? spec.defaultValue : "#FFFFFF";
+    return normalizeHexColorValue(value, spec.defaultValue);
   }
   if (spec.type === "slider" || spec.type === "cycler") {
     const num = Number(value);

@@ -1,8 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
-import { Slider } from './ui/slider.jsx';
-import { Input } from './ui/input.jsx';
-import { Label } from './ui/label.jsx';
 import { normalizeHexColor, parsePositionValue, formatPositionValue, clampNumber } from './schema-control-utils.js';
 
 function StepButton({ direction, label, onClick }) {
@@ -34,9 +31,10 @@ function SliderControl({ field, value, onChange }) {
   const step = field.bounds?.step ?? 1;
   const numericValue = clampNumber(Number(value), min, max, field.defaultValue ?? min);
 
-  const handleSliderChange = useCallback(([next]) => {
+  const handleSliderChange = useCallback((e) => {
+    const next = clampNumber(e.target.value, min, max, field.defaultValue ?? min);
     onChange(field.id, next);
-  }, [field.id, onChange]);
+  }, [field.id, field.defaultValue, max, min, onChange]);
 
   const handleInputChange = useCallback((e) => {
     const clamped = clampNumber(e.target.value, min, max, field.defaultValue ?? min);
@@ -52,7 +50,7 @@ function SliderControl({ field, value, onChange }) {
     <div className="anita-slider-group">
       <div className="anita-stepper">
         <StepButton direction="down" label={`Decrease ${field.label}`} onClick={() => handleStep(-1)} />
-        <Input
+        <input
           type="number"
           min={min}
           max={max}
@@ -64,14 +62,16 @@ function SliderControl({ field, value, onChange }) {
         />
         <StepButton direction="up" label={`Increase ${field.label}`} onClick={() => handleStep(1)} />
       </div>
-      <Slider
+      <input
+        type="range"
+        className="anita-range"
         id={field.id}
         aria-labelledby={`${field.id}-label`}
         min={min}
         max={max}
         step={step}
-        value={[numericValue]}
-        onValueChange={handleSliderChange}
+        value={numericValue}
+        onChange={handleSliderChange}
       />
     </div>
   );
@@ -141,7 +141,7 @@ function ColorControl({ field, value, onChange }) {
           aria-label={field.label}
         />
       </label>
-      <Input
+      <input
         type="text"
         value={displayValue}
         onChange={handleHexChange}
@@ -166,7 +166,8 @@ function PositionControl({ field, value, onChange }) {
     onChange(field.id, formatPositionValue(next));
   }
 
-  function handleSliderChange(axis, [next]) {
+  function handleSliderChange(axis, raw) {
+    const next = clampNumber(raw, axis === 'x' ? minX : minY, axis === 'x' ? maxX : maxY, pos[axis]);
     const nextPos = { ...pos, [axis]: next };
     onChange(field.id, formatPositionValue(nextPos));
   }
@@ -182,8 +183,11 @@ function PositionControl({ field, value, onChange }) {
           <span className="anita-axis-label">{axis.toUpperCase()}</span>
           <div className="anita-stepper">
             <StepButton direction="down" label={`Decrease ${field.label} ${axis}`} onClick={() => handleAxisStep(axis, -1)} />
-            <Input
+            <input
               type="number"
+              min={axis === 'x' ? minX : minY}
+              max={axis === 'x' ? maxX : maxY}
+              step={1}
               value={pos[axis]}
               onChange={(e) => handleAxisChange(axis, e.target.value)}
               className="anita-position-value"
@@ -191,12 +195,15 @@ function PositionControl({ field, value, onChange }) {
             />
             <StepButton direction="up" label={`Increase ${field.label} ${axis}`} onClick={() => handleAxisStep(axis, 1)} />
           </div>
-          <Slider
+          <input
+            type="range"
+            className="anita-range"
             min={axis === 'x' ? minX : minY}
             max={axis === 'x' ? maxX : maxY}
             step={1}
-            value={[pos[axis]]}
-            onValueChange={(v) => handleSliderChange(axis, v)}
+            value={pos[axis]}
+            onChange={(e) => handleSliderChange(axis, e.target.value)}
+            aria-label={`${field.label} ${axis} slider`}
           />
         </div>
       ))}
@@ -222,7 +229,7 @@ export function SchemaField({ field, value, onChange }) {
   return (
     <div className="schema-field-row" data-field-type={field.type}>
       <div className="schema-field-meta">
-        <Label id={labelId} className="schema-field-label">{field.label}</Label>
+        <label id={labelId} className="schema-field-label">{field.label}</label>
       </div>
       <div className="schema-field-control">
         {control}
