@@ -2,7 +2,21 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { HP_SCHEMA } from "../src/hpSchema.js";
-import { BASE_HUD_SOURCE_PATH, buildHpColorsPackage } from "../src/packageBuilder.js";
+import { BASE_HUD_SOURCE_PATH, HP_COLORS_MOD_VARIANTS, buildHpColorsPackage } from "../src/packageBuilder.js";
+
+const BASE_HUD_WITH_ANITA_STYLE = [
+  "<root>",
+  "\t<styles>",
+  '\t\t<include src="s2r://panorama/styles/base.vcss_c" />',
+  '\t\t<include src="s2r://panorama/styles/anita_ui.vcss_c" />',
+  "\t</styles>",
+  "\t<scripts>",
+  '\t\t<include src="s2r://panorama/scripts/anita_persist_loader.vjs_c" />',
+  '\t\t<include src="s2r://panorama/scripts/hp_registrar.vjs_c" />',
+  "\t</scripts>",
+  '\t<Panel id="AnitaUI_Anchor" hittest="false" />',
+  "</root>"
+].join("\n");
 
 test("buildHpColorsPackage compiles only the base_hud override", () => {
   const sourceTexts = {
@@ -29,4 +43,30 @@ test("buildHpColorsPackage uses schema defaults when no preset is provided", () 
   assert.equal(result.preset.values.hp_enabled, HP_SCHEMA.hp_enabled.defaultValue);
   assert.equal(result.preset.values.hp_color_low, HP_SCHEMA.hp_color_low.defaultValue);
   assert.equal(result.preset.values.hp_counter_position, HP_SCHEMA.hp_counter_position.defaultValue);
+});
+
+test("buildHpColorsPackage keeps anita_ui style include for the full mod", () => {
+  const sourceTexts = {
+    [BASE_HUD_SOURCE_PATH]: BASE_HUD_WITH_ANITA_STYLE
+  };
+
+  const result = buildHpColorsPackage({ sourceTexts, modVariant: HP_COLORS_MOD_VARIANTS.FULL });
+
+  assert.match(result.baseHudXml, /s2r:\/\/panorama\/styles\/anita_ui\.vcss_c/);
+  assert.match(result.baseHudXml, /s2r:\/\/panorama\/scripts\/anita_persist_loader\.vjs_c/);
+  assert.match(result.baseHudXml, /s2r:\/\/panorama\/scripts\/hp_registrar\.vjs_c/);
+});
+
+test("buildHpColorsPackage removes Anita UI includes for the minimal mod", () => {
+  const sourceTexts = {
+    [BASE_HUD_SOURCE_PATH]: BASE_HUD_WITH_ANITA_STYLE
+  };
+
+  const result = buildHpColorsPackage({ sourceTexts, modVariant: HP_COLORS_MOD_VARIANTS.MINIMAL });
+
+  assert.doesNotMatch(result.baseHudXml, /s2r:\/\/panorama\/styles\/anita_ui\.vcss_c/);
+  assert.doesNotMatch(result.baseHudXml, /s2r:\/\/panorama\/scripts\/anita_persist_loader\.vjs_c/);
+  assert.doesNotMatch(result.baseHudXml, /s2r:\/\/panorama\/scripts\/hp_registrar\.vjs_c/);
+  assert.match(result.baseHudXml, /s2r:\/\/panorama\/styles\/base\.vcss_c/);
+  assert.match(result.baseHudXml, /HPColorsPresetStore/);
 });

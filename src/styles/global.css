@@ -153,6 +153,14 @@
   min-width: 0;
 }
 
+.panorama-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .panorama-brand {
   color: var(--foreground);
   font-size: 1.58rem;
@@ -185,7 +193,8 @@
   text-transform: uppercase;
 }
 
-.similar-tool-link {
+.similar-tool-link,
+.commit-version-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -207,19 +216,85 @@
     transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.similar-tool-link:hover {
+.similar-tool-link:hover,
+.commit-version-link:hover {
   border-color: var(--primary);
   background: color-mix(in srgb, var(--primary) 18%, var(--accent));
   color: var(--foreground);
 }
 
-.similar-tool-link:active {
+.similar-tool-link:active,
+.commit-version-link:active {
   transform: scale(0.98);
 }
 
-.similar-tool-link:focus-visible {
+.similar-tool-link:focus-visible,
+.commit-version-link:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+.commit-version-link {
+  position: relative;
+  gap: 6px;
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--muted) 72%, var(--card));
+  color: var(--muted-foreground);
+  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
+}
+
+.commit-version-link svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  stroke-width: 2;
+}
+
+.commit-version-link code {
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.74rem;
+}
+
+.commit-version-link::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 0;
+  top: calc(100% + 7px);
+  z-index: 30;
+  box-sizing: border-box;
+  width: min(420px, calc(100vw - 36px));
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--primary) 42%, var(--border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--primary) 13%, var(--popover));
+  color: var(--popover-foreground);
+  box-shadow: 0 18px 44px -26px var(--page-shadow);
+  font-family: "Geist Sans", "Satoshi", "Aptos", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 680;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  white-space: normal;
+  transform: translateY(-3px);
+  transition:
+    opacity 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.commit-version-link:hover::after,
+.commit-version-link:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 620px) {
+  .commit-version-link::after {
+    left: auto;
+    right: 0;
+    width: min(280px, calc(100vw - 36px));
+  }
 }
 
 .panorama-header-actions,
@@ -332,6 +407,24 @@
   color: var(--heart-pink);
   fill: var(--heart-pink);
   animation: heart-wiggle 560ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.star-repo-button {
+  border-color: #57606a;
+  background: #24292f;
+  color: #f0f6fc;
+}
+
+.star-repo-button:hover {
+  border-color: #8b949e;
+  background: #30363d;
+  color: #ffffff;
+}
+
+.star-repo-button:hover svg {
+  color: #f2cc60;
+  fill: #f2cc60;
+  animation: none;
 }
 
 .build-action,
@@ -927,6 +1020,63 @@
   gap: 10px;
 }
 
+.convert-panel-body {
+  display: grid;
+  gap: 10px;
+}
+
+.builder-file-control {
+  display: grid;
+  gap: 7px;
+  color: var(--foreground);
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.builder-file-control input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+}
+
+.builder-file-control input::file-selector-button {
+  min-height: 34px;
+  margin-right: 10px;
+  border: 0;
+  border-right: 1px solid var(--border);
+  background: color-mix(in srgb, var(--primary) 14%, var(--secondary));
+  color: var(--foreground);
+  font: inherit;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.panel-helper,
+.convert-status {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+  font-weight: 620;
+  line-height: 1.4;
+}
+
+.convert-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.convert-status {
+  padding: 8px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--primary) 8%, var(--muted));
+}
+
 .builder-textarea {
   min-height: 112px;
   width: 100%;
@@ -1047,6 +1197,249 @@
   color: var(--muted-foreground);
   font-size: 0.9rem;
   line-height: 1.5;
+}
+
+.build-warning-summary {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary) 8%, var(--muted));
+}
+
+.build-warning-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--card) 72%, transparent);
+}
+
+.build-warning-item.is-output {
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+}
+
+.build-warning-item-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--primary) 16%, var(--secondary));
+  color: var(--primary);
+}
+
+.build-warning-item-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
+}
+
+.build-warning-item-icon .pak-file-icon {
+  width: 31px;
+  height: 31px;
+  stroke-width: initial;
+}
+
+.build-warning-item-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.build-warning-item-copy span {
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 780;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.build-warning-item-copy strong {
+  color: var(--foreground);
+  font-size: 0.86rem;
+  font-weight: 760;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
+.build-validation-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--secondary) 72%, var(--card));
+}
+
+.build-validation-card.is-valid {
+  padding: 8px 10px;
+  border-color: color-mix(in srgb, var(--primary) 52%, var(--border));
+  background: color-mix(in srgb, var(--primary) 12%, var(--muted));
+}
+
+.build-validation-card div {
+  display: grid;
+  gap: 3px;
+}
+
+.build-validation-card strong {
+  color: var(--foreground);
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+
+.build-validation-label {
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 780;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.build-validation-action {
+  flex: 0 0 auto;
+}
+
+.build-mod-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.build-mod-choice {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-height: 126px;
+  padding: 13px 40px 13px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--muted);
+  color: var(--foreground);
+  text-align: left;
+  transition:
+    background 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.build-mod-choice:hover {
+  border-color: var(--ring);
+  background: var(--accent);
+}
+
+.build-mod-choice:has(.build-mod-choice-select:active) {
+  transform: scale(0.98);
+}
+
+.build-mod-choice.is-selected {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 16%, var(--muted));
+}
+
+.build-mod-choice.is-locked {
+  min-height: 88px;
+  border-color: color-mix(in srgb, var(--border) 72%, transparent);
+  background: color-mix(in srgb, var(--muted) 72%, var(--card));
+}
+
+.build-mod-choice.is-locked .build-mod-choice-select {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.build-mod-choice-select {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.build-mod-choice-select:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  border-radius: 5px;
+}
+
+.build-mod-choice-title {
+  font-size: 0.9rem;
+  font-weight: 780;
+  line-height: 1.2;
+}
+
+.build-mod-choice-description {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  font-weight: 620;
+  line-height: 1.42;
+}
+
+.build-mod-choice-download {
+  justify-self: start;
+  min-height: 22px;
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 780;
+  line-height: 1.35;
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 62%, transparent);
+}
+
+.build-mod-choice-download:hover {
+  color: var(--foreground);
+  border-bottom-color: var(--foreground);
+}
+
+.build-mod-choice-download:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.build-mod-choice-check {
+  position: absolute;
+  top: 11px;
+  right: 11px;
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 6px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.build-mod-choice-check svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.4;
+}
+
+.build-confirm-action:disabled {
+  border-color: var(--border);
+  background: var(--secondary);
+  color: var(--muted-foreground);
+  opacity: 1;
 }
 
 .build-warning-actions {
@@ -1270,5 +1663,14 @@
 
   .anita-cycler-segment:last-child {
     border-bottom: 0;
+  }
+
+  .build-mod-choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .build-validation-card {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

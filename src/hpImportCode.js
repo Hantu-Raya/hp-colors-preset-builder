@@ -167,17 +167,23 @@ export function extractHpColorsImportToken(text) {
   }
   if (anyMatches.length > 1) throw new Error("Multiple Anita import tokens found");
 
+  if (/^[A-Za-z0-9_-]+$/.test(body) && body.length <= MAX_IMPORT_TOKEN_CHARS) {
+    return body;
+  }
+
   throw new Error("Malformed HP Colors import code");
 }
 
 export function parseHpColorsImportCode(text, schema = HP_SCHEMA) {
   const token = extractHpColorsImportToken(text);
   const match = token.match(/^\[ANITA-v1-([a-z0-9_]+)\]:([^\s]+)$/i);
-  if (!match) throw new Error("Malformed HP Colors import code");
-  const namespace = match[1];
-  if (namespace !== HP_IMPORT_CODE_NAMESPACE) throw new Error("Wrong import code namespace");
+  const payloadToken = match ? match[2] : token;
+  if (match) {
+    const namespace = match[1];
+    if (namespace !== HP_IMPORT_CODE_NAMESPACE) throw new Error("Wrong import code namespace");
+  }
 
-  const payloadText = decodeBase64UrlStrict(match[2]);
+  const payloadText = decodeBase64UrlStrict(payloadToken);
   let parsed;
   try {
     parsed = JSON.parse(payloadText);
@@ -187,6 +193,20 @@ export function parseHpColorsImportCode(text, schema = HP_SCHEMA) {
 
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new Error("Invalid JSON payload");
+  }
+  if (!match &&
+      Object.prototype.hasOwnProperty.call(parsed, "name") &&
+      Number(parsed.version) === HP_IMPORT_CODE_COMPACT_VERSION &&
+      parsed.values &&
+      typeof parsed.values === "object" &&
+      !Array.isArray(parsed.values)) {
+    const expanded = expandValues(parsed.values, schema);
+    const result = {};
+    for (const [id, spec] of Object.entries(schema || {})) {
+      const value = Object.prototype.hasOwnProperty.call(expanded, id) ? expanded[id] : spec?.defaultValue;
+      result[id] = coerceHpValue(id, value);
+    }
+    return sanitizeSchemaState(schema, result);
   }
   if (!Object.prototype.hasOwnProperty.call(parsed, "v") ||
       !Object.prototype.hasOwnProperty.call(parsed, "c") ||
