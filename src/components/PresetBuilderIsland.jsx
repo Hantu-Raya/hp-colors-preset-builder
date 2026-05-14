@@ -20,6 +20,7 @@ import { parseHpColorsImportCode } from '../hpImportCode.js';
 import { loadPresetDraft, savePresetDraft } from '../presetDraftStore.js';
 import { buildConvertedVpkFileName, buildPresetVpkFileName } from '../presetVpkFileName.js';
 import { convertHpColorsPresetVpk } from '../vpkConverter.js';
+import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitCommitInfoRefresh.js';
 import {
   canChooseBuildMod,
   canConfirmBuild,
@@ -47,6 +48,7 @@ const BUILD_MOD_CHOICES = [
 
 export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const defaultState = useMemo(() => createDefaultFormState(HP_SCHEMA), []);
+  const [freshGitCommitInfo, setFreshGitCommitInfo] = useState(gitCommitInfo);
   const [savedDraft] = useState(() => (
     typeof window === 'undefined' ? null : loadPresetDraft(window.localStorage, HP_SCHEMA)
   ));
@@ -81,6 +83,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const canConfirmBuildVariant = canConfirmBuild({ installValidated, buildVariant });
   const buildChoiceVisibility = getBuildChoiceVisibility({ installValidated });
   const presetVpkFileName = buildPresetVpkFileName(presetName || DEFAULT_PRESET_NAME);
+  const activeGitCommitInfo = freshGitCommitInfo || gitCommitInfo;
 
   function openBuildWarning() {
     setInstallValidated(false);
@@ -91,6 +94,24 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   useEffect(() => {
     savePresetDraft(window.localStorage, { presetName, state }, HP_SCHEMA);
   }, [presetName, state]);
+
+  useEffect(() => {
+    let ignore = false;
+    const refreshCommitInfo = async () => {
+      try {
+        const response = await fetch(buildGitCommitInfoRequestUrl(import.meta.env.BASE_URL), { cache: 'no-store' });
+        if (!response.ok) return;
+        const nextGitCommitInfo = await response.json();
+        if (!ignore && isGitCommitInfoPayload(nextGitCommitInfo)) {
+          setFreshGitCommitInfo(nextGitCommitInfo);
+        }
+      } catch {
+        // Keep the statically embedded commit info when the refresh endpoint is unavailable.
+      }
+    };
+    refreshCommitInfo();
+    return () => { ignore = true; };
+  }, []);
 
   useEffect(() => {
     const handleShortcut = (event) => {
@@ -194,18 +215,18 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             <span className="panorama-kicker">Deadlock preset builder</span>
             <div className="panorama-title-row">
               <span className="panorama-brand">HP Colors</span>
-              {gitCommitInfo?.url && gitCommitInfo?.shortHash ? (
+              {activeGitCommitInfo?.url && activeGitCommitInfo?.shortHash ? (
                 <a
                   className="commit-version-link"
-                  href={gitCommitInfo.url}
+                  href={activeGitCommitInfo.url}
                   target="_blank"
                   rel="noreferrer"
-                  aria-label={gitCommitInfo.title || `Latest commit ${gitCommitInfo.shortHash}`}
-                  data-tooltip={gitCommitInfo.title || `Latest commit ${gitCommitInfo.shortHash}`}
+                  aria-label={activeGitCommitInfo.title || `Latest commit ${activeGitCommitInfo.shortHash}`}
+                  data-tooltip={activeGitCommitInfo.title || `Latest commit ${activeGitCommitInfo.shortHash}`}
                 >
                   <GitCommitHorizontal aria-hidden="true" />
                   <span>Commit</span>
-                  <code>{gitCommitInfo.shortHash}</code>
+                  <code>{activeGitCommitInfo.shortHash}</code>
                 </a>
               ) : null}
             </div>

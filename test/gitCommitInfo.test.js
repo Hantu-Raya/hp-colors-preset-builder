@@ -47,6 +47,27 @@ test("createGitCommitInfo shows the PR title and branch for GitHub merge commits
   assert.equal(info.title, "Latest update: Add target-aware VPK tools | Branch: codex/hp-colors-cleanup");
 });
 
+test("createGitCommitInfo links GitHub merge commits to the source branch commit", () => {
+  const sourceHash = "a651848e3a3a9e0faec67dba4454e1ec63c62a24";
+  const mergeHash = "cac441a188dbb55f0fdf2c8bd742892e07b29cc7";
+  const info = createGitCommitInfo({
+    hash: mergeHash,
+    sourceHash,
+    remoteUrl: "https://github.com/Hantu-Raya/hp-colors-preset-builder.git",
+    subject: "Merge pull request #2 from Hantu-Raya/codex/hp-colors-cleanup",
+    body: [
+      "Merge pull request #2 from Hantu-Raya/codex/hp-colors-cleanup",
+      "",
+      "Add target-aware VPK tools"
+    ].join("\n")
+  });
+
+  assert.equal(info.hash, sourceHash);
+  assert.equal(info.mergeHash, mergeHash);
+  assert.equal(info.shortHash, "a651848e3a3a");
+  assert.equal(info.url, `https://github.com/Hantu-Raya/hp-colors-preset-builder/commit/${sourceHash}`);
+});
+
 test("createGitCommitInfo returns null when required git data is missing", () => {
   assert.equal(createGitCommitInfo({ hash: "", remoteUrl: "https://github.com/Hantu-Raya/hp-colors-preset-builder.git" }), null);
   assert.equal(createGitCommitInfo({ hash: "abc", remoteUrl: "" }), null);

@@ -8,6 +8,14 @@ function runGit(args, cwd = process.cwd()) {
   }).trim();
 }
 
+function tryRunGit(args, cwd = process.cwd()) {
+  try {
+    return runGit(args, cwd);
+  } catch {
+    return "";
+  }
+}
+
 export function buildCommitUrl(remoteUrl, hash) {
   const commitHash = String(hash || "").trim();
   if (!commitHash) return null;
@@ -50,14 +58,21 @@ function formatCommitTooltip({ shortHash, subject, body }) {
   };
 }
 
-export function createGitCommitInfo({ hash, remoteUrl, subject = "", body = "" }) {
+function isGitHubMergeSubject(subject) {
+  return /^Merge pull request #\d+ from [^\s]+$/i.test(String(subject || "").trim());
+}
+
+export function createGitCommitInfo({ hash, sourceHash = "", remoteUrl, subject = "", body = "" }) {
   const commitHash = String(hash || "").trim();
-  const url = buildCommitUrl(remoteUrl, commitHash);
+  const branchCommitHash = String(sourceHash || "").trim();
+  const displayHash = isGitHubMergeSubject(subject) && branchCommitHash ? branchCommitHash : commitHash;
+  const url = buildCommitUrl(remoteUrl, displayHash);
   if (!commitHash || !url) return null;
-  const shortHash = commitHash.slice(0, 12);
+  const shortHash = displayHash.slice(0, 12);
   const formatted = formatCommitTooltip({ shortHash, subject, body });
   return {
-    hash: commitHash,
+    hash: displayHash,
+    mergeHash: displayHash === commitHash ? "" : commitHash,
     shortHash,
     branch: formatted.branch,
     subject: formatted.subject,
@@ -70,6 +85,7 @@ export function getGitCommitInfo(cwd = process.cwd()) {
   try {
     return createGitCommitInfo({
       hash: runGit(["rev-parse", "HEAD"], cwd),
+      sourceHash: tryRunGit(["rev-parse", "HEAD^2"], cwd),
       remoteUrl: runGit(["remote", "get-url", "origin"], cwd),
       subject: runGit(["log", "-1", "--pretty=%s"], cwd),
       body: runGit(["log", "-1", "--pretty=%B"], cwd)
