@@ -22,13 +22,37 @@ test("extracts the HP Colors token from pasted game code", () => {
 });
 
 test("parses a valid HP Colors export token into full schema state", () => {
-  const state = parseHpColorsImportCode(buildToken({ v: 97, c: 1, values: { e: false, cl: "#112233", p: "12,34" } }), HP_SCHEMA);
+  const state = parseHpColorsImportCode(buildToken({ v: 97, c: 1, values: { e: false, cl: "#112233", p: "12,34", pce: true, pcm: 1, pc: "#123456" } }), HP_SCHEMA);
 
   assert.equal(state.hp_enabled, false);
   assert.equal(state.hp_color_low, "#112233");
   assert.equal(state.hp_counter_position, "12,34");
+  assert.equal(state.hp_pulse_color_enabled, true);
+  assert.equal(state.hp_pulse_color_mode, 1);
+  assert.equal(state.hp_pulse_color, "#123456");
   assert.equal(state.hp_high_threshold, HP_SCHEMA.hp_high_threshold.defaultValue);
   assert.deepEqual(Object.keys(state), Object.keys(HP_SCHEMA));
+});
+
+test("parses a bare HPColorsPresetStore encoded preset payload", () => {
+  const encoded = base64UrlEncode(JSON.stringify({
+    name: "Web Builder Preset",
+    version: 1,
+    values: {
+      hp_enabled: true,
+      hp_color_low: "#E16161",
+      hp_counter_position: "43,-9",
+      hp_counter_size: 187
+    }
+  }));
+
+  const state = parseHpColorsImportCode(encoded, HP_SCHEMA);
+
+  assert.equal(state.hp_enabled, true);
+  assert.equal(state.hp_color_low, "#E16161");
+  assert.equal(state.hp_counter_position, "43,-9");
+  assert.equal(state.hp_counter_size, 187);
+  assert.equal(state.hp_high_threshold, HP_SCHEMA.hp_high_threshold.defaultValue);
 });
 
 test("parses legacy version 25 import tokens", () => {
