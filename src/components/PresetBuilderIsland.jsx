@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  AlertTriangle,
   Braces,
   Check,
   ChevronDown,
@@ -27,6 +28,7 @@ import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitComm
 import {
   canChooseBuildMod,
   canConfirmBuild,
+  getBuildVariantWarning,
   getBuildChoiceVisibility,
   getNextInstallValidationState
 } from '../buildModalState.js';
@@ -93,6 +95,12 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const buildChoiceVisibility = getBuildChoiceVisibility({ installValidated });
   const presetVpkFileName = buildPresetVpkFileName(presetName || DEFAULT_PRESET_NAME);
   const activeGitCommitInfo = freshGitCommitInfo || gitCommitInfo;
+  const topPresetName = cleanProfileName(profiles[0]?.name, 0);
+  const buildVariantWarning = getBuildVariantWarning({
+    buildVariant,
+    profileCount: profiles.length,
+    firstPresetName: topPresetName
+  });
 
   function openBuildWarning() {
     setInstallValidated(false);
@@ -594,6 +602,17 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 );
               })}
             </div>
+            {buildVariantWarning ? (
+              <div className="build-mod-warning" role="alert" aria-live="polite">
+                <span className="build-mod-warning-icon">
+                  <AlertTriangle aria-hidden="true" />
+                </span>
+                <span className="build-mod-warning-copy">
+                  <strong>{buildVariantWarning.title}</strong>
+                  <span>{buildVariantWarning.message}</span>
+                </span>
+              </div>
+            ) : null}
             <div className="build-warning-actions">
               <button type="button" className="secondary-action" onClick={() => setWarningOpen(false)}>Cancel</button>
               <button
