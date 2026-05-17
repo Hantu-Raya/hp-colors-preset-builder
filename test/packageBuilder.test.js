@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { HP_SCHEMA } from "../src/hpSchema.js";
 import { BASE_HUD_SOURCE_PATH, HP_COLORS_MOD_VARIANTS, buildHpColorsPackage } from "../src/packageBuilder.js";
+import { base64UrlDecode } from "../src/presetStoreXml.js";
 
 const BASE_HUD_WITH_ANITA_STYLE = [
   "<root>",
@@ -69,4 +70,40 @@ test("buildHpColorsPackage removes Anita UI includes for the minimal mod", () =>
   assert.doesNotMatch(result.baseHudXml, /s2r:\/\/panorama\/scripts\/hp_registrar\.vjs_c/);
   assert.match(result.baseHudXml, /s2r:\/\/panorama\/styles\/base\.vcss_c/);
   assert.match(result.baseHudXml, /HPColorsPresetStore/);
+});
+
+test("buildHpColorsPackage writes multiple profile presets into one store", () => {
+  const sourceTexts = {
+    [BASE_HUD_SOURCE_PATH]: '<root><Panel id="AnitaUI_Anchor" hittest="false" /></root>'
+  };
+  const presets = [
+    { name: "Lane", version: 1, values: { hp_color_low: "#111111" } },
+    { name: "Teamfight", version: 1, values: { hp_color_low: "#222222" } }
+  ];
+
+  const result = buildHpColorsPackage({ sourceTexts, presets });
+  const encodedLabels = [...result.baseHudXml.matchAll(/text="([^"]+)"/g)].map((match) => match[1]);
+  const decoded = encodedLabels.map((encoded) => JSON.parse(base64UrlDecode(encoded)));
+
+  assert.equal(result.preset.name, "Lane");
+  assert.equal(result.presets.length, 2);
+  assert.match(result.baseHudXml, /HPColorsPreset_001/);
+  assert.match(result.baseHudXml, /HPColorsPreset_002/);
+  assert.deepEqual(decoded.map((item) => item.name), ["Lane", "Teamfight"]);
+});
+
+test("buildHpColorsPackage sanitizes raw profile preset values", () => {
+  const sourceTexts = {
+    [BASE_HUD_SOURCE_PATH]: '<root><Panel id="AnitaUI_Anchor" hittest="false" /></root>'
+  };
+
+  const result = buildHpColorsPackage({
+    sourceTexts,
+    presets: [{ name: "Raw", version: 1, values: { hp_low_threshold: 999, hp_mode: 99 } }]
+  });
+  const encoded = result.baseHudXml.match(/text="([^"]+)"/)[1];
+  const decoded = JSON.parse(base64UrlDecode(encoded));
+
+  assert.equal(decoded.values.hp_low_threshold, 100);
+  assert.equal(decoded.values.hp_mode, HP_SCHEMA.hp_mode.defaultValue);
 });

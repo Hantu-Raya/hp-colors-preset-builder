@@ -2,13 +2,17 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Braces,
   Check,
+  ChevronDown,
   Download,
   GitCommitHorizontal,
+  GripVertical,
   Heart,
   Layers3,
+  Plus,
   RotateCcw,
   ShieldCheck,
   Star,
+  Trash2,
   Upload
 } from 'lucide-react';
 import { HP_SCHEMA } from '../hpSchema.js';
@@ -17,7 +21,6 @@ import { BASE_HUD_SOURCE_PATH, HP_COLORS_MOD_VARIANTS, buildHpColorsPackage } fr
 import { writeVpk } from '../vpkWriter.js';
 import { downloadBytes } from '../download.js';
 import { parseHpColorsImportCode } from '../hpImportCode.js';
-import { loadPresetDraft, savePresetDraft } from '../presetDraftStore.js';
 import { buildConvertedVpkFileName, buildPresetVpkFileName } from '../presetVpkFileName.js';
 import { convertHpColorsPresetVpk } from '../vpkConverter.js';
 import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitCommitInfoRefresh.js';
@@ -27,6 +30,7 @@ import {
   getBuildChoiceVisibility,
   getNextInstallValidationState
 } from '../buildModalState.js';
+import { addProfile, cleanProfileName, countPresetOverrides, createInitialProfile, FIRST_PROFILE_ID, profileToPreset, removeProfile, reorderProfiles, loadProfileState, saveProfileState } from '../profileStore.js';
 import { SchemaField } from './schema-field.jsx';
 import { SchemaTree } from './schema-tree.jsx';
 
@@ -49,13 +53,13 @@ const BUILD_MOD_CHOICES = [
 export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const defaultState = useMemo(() => createDefaultFormState(HP_SCHEMA), []);
   const [freshGitCommitInfo, setFreshGitCommitInfo] = useState(gitCommitInfo);
-  const [savedDraft] = useState(() => (
-    typeof window === 'undefined' ? null : loadPresetDraft(window.localStorage, HP_SCHEMA)
-  ));
-  const [presetName, setPresetName] = useState(() => savedDraft?.presetName || DEFAULT_PRESET_NAME);
   const [importText, setImportText] = useState('');
   const [status, setStatus] = useState('Status: Ready');
-  const [state, setState] = useState(() => savedDraft?.state || defaultState);
+  const [profiles, setProfiles] = useState(() => [createInitialProfile(defaultState)]);
+  const [activeProfileId, setActiveProfileId] = useState(FIRST_PROFILE_ID);
+  const [profilesLoaded, setProfilesLoaded] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [dragIndex, setDragIndex] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
   const [convertFile, setConvertFile] = useState(null);
@@ -76,9 +80,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const firstLeafKey = useMemo(() => getCategoryKey(flatGroups.find((group) => !group.children?.length) || flatGroups[0]), [flatGroups]);
   const [activeKey, setActiveKey] = useState(() => firstLeafKey);
 
+  const activeProfile = profiles.find((profile) => profile.id === activeProfileId) || profiles[0] || createInitialProfile(defaultState);
+  const activeProfileIndex = Math.max(0, profiles.findIndex((profile) => profile.id === activeProfile.id));
+  const presetName = cleanProfileName(activeProfile.name, activeProfileIndex);
+  const state = activeProfile.values;
   const currentGroup = flatGroups.find((group) => getCategoryKey(group) === activeKey) || flatGroups[0];
   const visibleCount = countVisibleGroupFields(currentGroup, state);
-  const preview = useMemo(() => JSON.stringify({ name: presetName, version: 1, values: state }, null, 2), [presetName, state]);
+  const activeOverrideCount = countPresetOverrides(state, defaultState);
+  const preview = useMemo(() => JSON.stringify({ presets: profiles.map(profileToPreset) }, null, 2), [profiles]);
   const canPickBuildVariant = canChooseBuildMod({ installValidated });
   const canConfirmBuildVariant = canConfirmBuild({ installValidated, buildVariant });
   const buildChoiceVisibility = getBuildChoiceVisibility({ installValidated });
@@ -92,8 +101,18 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   }
 
   useEffect(() => {
-    savePresetDraft(window.localStorage, { presetName, state }, HP_SCHEMA);
-  }, [presetName, state]);
+    const storage = typeof window !== 'undefined' ? window.localStorage : null;
+    const loaded = loadProfileState(storage, defaultState);
+    setProfiles(loaded.profiles);
+    setActiveProfileId(loaded.activeProfileId);
+    setProfilesLoaded(true);
+  }, [defaultState]);
+
+  useEffect(() => {
+    if (!profilesLoaded) return;
+    const storage = typeof window !== 'undefined' ? window.localStorage : null;
+    saveProfileState(storage, { profiles, activeProfileId });
+  }, [activeProfileId, profiles, profilesLoaded]);
 
   useEffect(() => {
     let ignore = false;
@@ -124,8 +143,25 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     return () => window.removeEventListener('keydown', handleShortcut);
   }, []);
 
+  function updateActiveProfile(updater) {
+    setProfiles((prev) => {
+      const targetId = prev.some((profile) => profile.id === activeProfileId) ? activeProfileId : prev[0]?.id;
+      return prev.map((profile) => {
+        if (profile.id !== targetId) return profile;
+        const patch = typeof updater === 'function' ? updater(profile) : updater;
+        return { ...profile, ...patch };
+      });
+    });
+  }
+
   function updateField(id, value) {
-    setState((prev) => sanitizeFormState(HP_SCHEMA, { ...prev, [id]: value }));
+    updateActiveProfile((profile) => ({
+      values: sanitizeFormState(HP_SCHEMA, { ...profile.values, [id]: value })
+    }));
+  }
+
+  function renameActiveProfile(name) {
+    updateActiveProfile({ name });
   }
 
   function handleSelectGroup(group) {
@@ -136,25 +172,57 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
   function handleImport() {
     try {
-      setState(parseHpColorsImportCode(importText, HP_SCHEMA));
-      setStatus('Imported preset state.');
+      const importedState = parseHpColorsImportCode(importText, HP_SCHEMA);
+      updateActiveProfile({ values: importedState });
+      setStatus(`Imported into ${presetName}.`);
     } catch (error) {
       setStatus(error?.message || String(error));
     }
   }
 
   function handleResetPage() {
-    setState((prev) => {
-      const next = { ...prev };
+    updateActiveProfile((profile) => {
+      const next = { ...profile.values };
       for (const field of currentGroup?.fields || []) {
         next[field.id] = defaultState[field.id];
       }
-      return sanitizeFormState(HP_SCHEMA, next);
+      return { values: sanitizeFormState(HP_SCHEMA, next) };
     });
   }
 
   function handleResetAll() {
-    setState({ ...defaultState });
+    updateActiveProfile({ values: { ...defaultState } });
+  }
+
+  function handleAddProfile() {
+    const next = addProfile(profiles, defaultState);
+    const added = next.profiles[next.profiles.length - 1];
+    setProfiles(next.profiles);
+    setActiveProfileId(next.activeProfileId);
+    setProfileMenuOpen(true);
+    setStatus(`Added ${cleanProfileName(added.name, next.profiles.length - 1)}.`);
+  }
+
+  function handleDeleteProfile() {
+    if (profiles.length <= 1) return;
+    const next = removeProfile(profiles, activeProfileId);
+    setProfiles(next.profiles);
+    setActiveProfileId(next.activeProfileId);
+    setStatus(`Removed ${presetName}.`);
+  }
+
+  function handleSelectProfile(profileId) {
+    setActiveProfileId(profileId);
+    setProfileMenuOpen(false);
+  }
+
+  function handleDropProfile(event, toIndex) {
+    event.preventDefault();
+    const rawIndex = event.dataTransfer.getData('text/plain');
+    const fromIndex = rawIndex === '' ? dragIndex : Number(rawIndex);
+    setProfiles((prev) => reorderProfiles(prev, fromIndex, toIndex));
+    setDragIndex(null);
+    setStatus('Reordered profiles. First profile has highest load priority.');
   }
 
   async function performBuild(modVariant) {
@@ -167,12 +235,16 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
       const response = await fetch(templateUrl);
       if (!response.ok) throw new Error(`Failed to load base_hud.xml (${response.status})`);
       const baseHudXml = await response.text();
-      const preset = { name: activePresetName, version: 1, values: state };
-      const { files } = buildHpColorsPackage({ sourceTexts: { [BASE_HUD_SOURCE_PATH]: baseHudXml }, preset, modVariant: activeModVariant });
+      const buildPresets = profiles.map(profileToPreset);
+      const { files } = buildHpColorsPackage({
+        sourceTexts: { [BASE_HUD_SOURCE_PATH]: baseHudXml },
+        presets: buildPresets,
+        modVariant: activeModVariant
+      });
       const pak = writeVpk(files);
       downloadBytes(activePresetVpkFileName, pak);
       const modLabel = activeModVariant === HP_COLORS_MOD_VARIANTS.MINIMAL ? 'minimal mod' : 'full mod';
-      setStatus(`Built ${activePresetVpkFileName} for ${modLabel} (${pak.byteLength.toLocaleString()} bytes).`);
+      setStatus(`Built ${activePresetVpkFileName} for ${modLabel} (${pak.byteLength.toLocaleString()} bytes, ${buildPresets.length} profile${buildPresets.length === 1 ? '' : 's'}).`);
     } catch (error) {
       setStatus(error?.message || String(error));
     }
@@ -249,9 +321,66 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <Star aria-hidden="true" />
               <span>Star</span>
             </a>
+            <div className="topbar-profile-controls" aria-label="Preset profiles">
+              <button type="button" className="profile-icon-action" onClick={handleAddProfile} aria-label="Add preset">
+                <Plus aria-hidden="true" />
+              </button>
+              <button type="button" className="profile-icon-action" onClick={handleDeleteProfile} disabled={profiles.length <= 1} aria-label="Remove preset">
+                <Trash2 aria-hidden="true" />
+              </button>
+              <div className="profile-selector">
+                <button
+                  type="button"
+                  className="profile-selector-trigger"
+                  onClick={() => setProfileMenuOpen((open) => !open)}
+                  aria-expanded={profileMenuOpen}
+                  aria-haspopup="listbox"
+                >
+                  <span className="profile-selector-title">{presetName}</span>
+                  <span className="profile-selector-meta">{activeOverrideCount} override{activeOverrideCount === 1 ? '' : 's'} / {profiles.length}</span>
+                  <ChevronDown aria-hidden="true" />
+                </button>
+                {profileMenuOpen && (
+                  <div className="profile-selector-menu" role="listbox" aria-label="Preset profiles">
+                    {profiles.map((profile, index) => {
+                      const label = cleanProfileName(profile.name, index);
+                      const overrides = countPresetOverrides(profile.values, defaultState);
+                      return (
+                        <button
+                          key={profile.id}
+                          type="button"
+                          draggable
+                          className={profile.id === activeProfile.id ? 'profile-menu-row is-active' : 'profile-menu-row'}
+                          role="option"
+                          aria-selected={profile.id === activeProfile.id}
+                          onClick={() => handleSelectProfile(profile.id)}
+                          onDragStart={(event) => {
+                            setDragIndex(index);
+                            event.dataTransfer.effectAllowed = 'move';
+                            event.dataTransfer.setData('text/plain', String(index));
+                          }}
+                          onDragOver={(event) => {
+                            event.preventDefault();
+                            event.dataTransfer.dropEffect = 'move';
+                          }}
+                          onDrop={(event) => handleDropProfile(event, index)}
+                          onDragEnd={() => setDragIndex(null)}
+                        >
+                          <GripVertical className="profile-drag-handle" aria-hidden="true" />
+                          <span className="profile-menu-text">
+                            <span className="profile-row-name">{label}</span>
+                            <span className="profile-row-meta">{overrides} override{overrides === 1 ? '' : 's'} / priority {index + 1}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
             <label className="preset-name-control" htmlFor="presetName">
-              <span>Preset</span>
-              <input id="presetName" className="builder-input" value={presetName} onChange={(e) => setPresetName(e.target.value)} />
+              <span>Profile</span>
+              <input id="presetName" className="builder-input" value={activeProfile.name} onChange={(e) => renameActiveProfile(e.target.value)} />
             </label>
             <button type="button" className="build-action" onClick={openBuildWarning}>
               <Download aria-hidden="true" />
@@ -267,7 +396,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             <div className="anita-detail-header-row">
               <div>
                 <h2>{getCategoryPathLabel(currentGroup)}</h2>
-                <p className="anita-detail-hint">{visibleCount} visible controls</p>
+                <p className="anita-detail-hint">{visibleCount} visible controls / {profiles.length} profile{profiles.length === 1 ? '' : 's'}</p>
               </div>
               <div className="reset-actions">
                 <button type="button" className="quiet-action" onClick={handleResetPage}>

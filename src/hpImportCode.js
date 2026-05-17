@@ -38,6 +38,9 @@ export const HP_PERSIST_ALIASES = Object.freeze({
   hp_pulse_text_scale: "pts",
   hp_pulse_text_position: "ptp",
   hp_pulse_hide_bar: "phb",
+  hp_pulse_color_enabled: "pce",
+  hp_pulse_color: "pc",
+  hp_pulse_color_mode: "pcm",
   hp_skip_buildings: "sb",
   hp_pulse_threshold: "pt",
   hp_friend_enabled: "fe",
@@ -167,23 +170,35 @@ export function extractHpColorsImportToken(text) {
   }
   if (anyMatches.length > 1) throw new Error("Multiple Anita import tokens found");
 
-  if (/^[A-Za-z0-9_-]+$/.test(body) && body.length <= MAX_IMPORT_TOKEN_CHARS) {
-    return body;
-  }
-
   throw new Error("Malformed HP Colors import code");
 }
 
-export function parseHpColorsImportCode(text, schema = HP_SCHEMA) {
-  const token = extractHpColorsImportToken(text);
-  const match = token.match(/^\[ANITA-v1-([a-z0-9_]+)\]:([^\s]+)$/i);
-  const payloadToken = match ? match[2] : token;
-  if (match) {
-    const namespace = match[1];
-    if (namespace !== HP_IMPORT_CODE_NAMESPACE) throw new Error("Wrong import code namespace");
+function decodeImportPayloadText(text) {
+  const body = String(text || "").trim();
+  let token;
+  try {
+    token = extractHpColorsImportToken(body);
+  } catch (error) {
+    if (!/Malformed HP Colors import code/i.test(error?.message || "")) throw error;
+    if (!/^[A-Za-z0-9_-]+$/.test(body)) throw error;
+    try {
+      const payloadText = decodeBase64UrlStrict(body);
+      if (/^\s*\{/.test(payloadText)) return payloadText;
+    } catch {
+      // Keep bare non-preset strings on the original malformed-code path.
+    }
+    throw error;
   }
 
-  const payloadText = decodeBase64UrlStrict(payloadToken);
+  const match = token.match(/^\[ANITA-v1-([a-z0-9_]+)\]:([^\s]+)$/i);
+  if (!match) throw new Error("Malformed HP Colors import code");
+  const namespace = match[1];
+  if (namespace !== HP_IMPORT_CODE_NAMESPACE) throw new Error("Wrong import code namespace");
+  return decodeBase64UrlStrict(match[2]);
+}
+
+export function parseHpColorsImportCode(text, schema = HP_SCHEMA) {
+  const payloadText = decodeImportPayloadText(text);
   let parsed;
   try {
     parsed = JSON.parse(payloadText);
@@ -194,33 +209,24 @@ export function parseHpColorsImportCode(text, schema = HP_SCHEMA) {
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new Error("Invalid JSON payload");
   }
-  if (!match &&
-      Object.prototype.hasOwnProperty.call(parsed, "name") &&
-      Number(parsed.version) === HP_IMPORT_CODE_COMPACT_VERSION &&
-      parsed.values &&
-      typeof parsed.values === "object" &&
-      !Array.isArray(parsed.values)) {
-    const expanded = expandValues(parsed.values, schema);
-    const result = {};
-    for (const [id, spec] of Object.entries(schema || {})) {
-      const value = Object.prototype.hasOwnProperty.call(expanded, id) ? expanded[id] : spec?.defaultValue;
-      result[id] = coerceHpValue(id, value);
-    }
-    return sanitizeSchemaState(schema, result);
-  }
-  if (!Object.prototype.hasOwnProperty.call(parsed, "v") ||
-      !Object.prototype.hasOwnProperty.call(parsed, "c") ||
-      !Object.prototype.hasOwnProperty.call(parsed, "values")) {
-    throw new Error("Invalid JSON payload");
-  }
   if (!parsed.values || typeof parsed.values !== "object" || Array.isArray(parsed.values)) {
     throw new Error("Invalid JSON payload");
   }
 
-  const version = Number(parsed.v);
-  if (version !== HP_IMPORT_CODE_VERSION && !HP_IMPORT_CODE_LEGACY_VERSIONS.has(version)) throw new Error("Unsupported version");
-  const compactVersion = Number(parsed.c);
-  if (compactVersion !== HP_IMPORT_CODE_COMPACT_VERSION) throw new Error("Unsupported version");
+  if (Object.prototype.hasOwnProperty.call(parsed, "v") || Object.prototype.hasOwnProperty.call(parsed, "c")) {
+    if (!Object.prototype.hasOwnProperty.call(parsed, "v") || !Object.prototype.hasOwnProperty.call(parsed, "c")) {
+      throw new Error("Invalid JSON payload");
+    }
+    const version = Number(parsed.v);
+    if (version !== HP_IMPORT_CODE_VERSION && !HP_IMPORT_CODE_LEGACY_VERSIONS.has(version)) throw new Error("Unsupported version");
+    const compactVersion = Number(parsed.c);
+    if (compactVersion !== HP_IMPORT_CODE_COMPACT_VERSION) throw new Error("Unsupported version");
+  } else if (Object.prototype.hasOwnProperty.call(parsed, "version")) {
+    const presetVersion = Number(parsed.version);
+    if (presetVersion !== 1) throw new Error("Unsupported version");
+  } else {
+    throw new Error("Invalid JSON payload");
+  }
 
   const expanded = expandValues(parsed.values, schema);
   const result = {};
