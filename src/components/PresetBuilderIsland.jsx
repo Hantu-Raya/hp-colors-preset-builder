@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   AlertTriangle,
   Braces,
@@ -15,15 +15,12 @@ import {
   Star,
   Trash2,
   Upload
-} from 'lucide-react';
-import { HP_SCHEMA } from '../hpSchema.js';
-import { createDefaultFormState, splitCategoryGroups, countVisibleGroupFields, getCategoryKey, getCategoryPathLabel, isFieldVisible, sanitizeFormState } from '../hpFormModel.js';
-import { BASE_HUD_SOURCE_PATH, HP_COLORS_MOD_VARIANTS, buildHpColorsPackage } from '../packageBuilder.js';
-import { writeVpk } from '../vpkWriter.js';
+} from 'lucide-preact';
+import { HP_SCHEMA, coerceHpValue } from '../hpSchema.js';
+import { createDefaultFormState, splitCategoryGroups, getCategoryKey, getCategoryPathLabel, isFieldVisible } from '../hpFormModel.js';
+import { HP_COLORS_MOD_VARIANTS } from '../hpModVariants.js';
 import { downloadBytes } from '../download.js';
-import { parseHpColorsImportCode } from '../hpImportCode.js';
 import { buildConvertedVpkFileName, buildPresetVpkFileName } from '../presetVpkFileName.js';
-import { convertHpColorsPresetVpk } from '../vpkConverter.js';
 import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitCommitInfoRefresh.js';
 import {
   canChooseBuildMod,
@@ -32,7 +29,7 @@ import {
   getBuildChoiceVisibility,
   getNextInstallValidationState
 } from '../buildModalState.js';
-import { addProfile, cleanProfileName, countPresetOverrides, createInitialProfile, FIRST_PROFILE_ID, profileToPreset, removeProfile, reorderProfiles, loadProfileState, saveProfileState } from '../profileStore.js';
+import { addProfile, cleanProfileName, countPresetOverrides, createInitialProfile, createProfile, FIRST_PROFILE_ID, profileToPreset, removeProfile, reorderProfiles, loadProfileState, saveProfileState } from '../profileStore.js';
 import { SchemaField } from './schema-field.jsx';
 import { SchemaTree } from './schema-tree.jsx';
 
@@ -52,6 +49,44 @@ const BUILD_MOD_CHOICES = [
   }
 ];
 
+let baseHudXmlPromise = null;
+
+function loadBaseHudXml() {
+  if (!baseHudXmlPromise) {
+    const templateUrl = `${import.meta.env.BASE_URL}templates/hp_colors/panorama/layout/base_hud.xml`;
+    baseHudXmlPromise = fetch(templateUrl).then((response) => {
+      if (!response.ok) throw new Error(`Failed to load base_hud.xml (${response.status})`);
+      return response.text();
+    }).catch((error) => {
+      baseHudXmlPromise = null;
+      throw error;
+    });
+  }
+  return baseHudXmlPromise;
+}
+
+function getVisibleFields(group, state) {
+  return (group?.fields || []).filter((field) => isFieldVisible(field, state));
+}
+
+function nextImportedProfileId(usedIds) {
+  let index = 1;
+  while (usedIds.has(`profile-${index}`)) index += 1;
+  const id = `profile-${index}`;
+  usedIds.add(id);
+  return id;
+}
+
+function scheduleIdleWork(callback) {
+  if (typeof window === 'undefined') return () => {};
+  if (typeof window.requestIdleCallback === 'function') {
+    const id = window.requestIdleCallback(callback, { timeout: 800 });
+    return () => window.cancelIdleCallback?.(id);
+  }
+  const id = window.setTimeout(callback, 160);
+  return () => window.clearTimeout(id);
+}
+
 export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const defaultState = useMemo(() => createDefaultFormState(HP_SCHEMA), []);
   const [freshGitCommitInfo, setFreshGitCommitInfo] = useState(gitCommitInfo);
@@ -70,6 +105,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const [warningOpen, setWarningOpen] = useState(false);
   const [installValidated, setInstallValidated] = useState(false);
   const [buildVariant, setBuildVariant] = useState(null);
+  const latestProfileSnapshot = useRef({ profiles, activeProfileId });
   const groups = useMemo(() => splitCategoryGroups(HP_SCHEMA), []);
 
   const flatGroups = useMemo(() => {
@@ -87,9 +123,13 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const presetName = cleanProfileName(activeProfile.name, activeProfileIndex);
   const state = activeProfile.values;
   const currentGroup = flatGroups.find((group) => getCategoryKey(group) === activeKey) || flatGroups[0];
-  const visibleCount = countVisibleGroupFields(currentGroup, state);
+  const visibleFields = useMemo(() => getVisibleFields(currentGroup, state), [currentGroup, state]);
+  const visibleCount = visibleFields.length;
   const activeOverrideCount = countPresetOverrides(state, defaultState);
-  const preview = useMemo(() => JSON.stringify({ presets: profiles.map(profileToPreset) }, null, 2), [profiles]);
+  const preview = useMemo(
+    () => (previewOpen ? JSON.stringify({ presets: profiles.map(profileToPreset) }, null, 2) : ''),
+    [previewOpen, profiles]
+  );
   const canPickBuildVariant = canChooseBuildMod({ installValidated });
   const canConfirmBuildVariant = canConfirmBuild({ installValidated, buildVariant });
   const buildChoiceVisibility = getBuildChoiceVisibility({ installValidated });
@@ -102,11 +142,15 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     firstPresetName: topPresetName
   });
 
-  function openBuildWarning() {
+  const openBuildWarning = useCallback(() => {
     setInstallValidated(false);
     setBuildVariant(null);
     setWarningOpen(true);
-  }
+  }, []);
+
+  useEffect(() => {
+    latestProfileSnapshot.current = { profiles, activeProfileId };
+  }, [activeProfileId, profiles]);
 
   useEffect(() => {
     const storage = typeof window !== 'undefined' ? window.localStorage : null;
@@ -118,9 +162,23 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
   useEffect(() => {
     if (!profilesLoaded) return;
-    const storage = typeof window !== 'undefined' ? window.localStorage : null;
-    saveProfileState(storage, { profiles, activeProfileId });
+    return scheduleIdleWork(() => {
+      const storage = typeof window !== 'undefined' ? window.localStorage : null;
+      saveProfileState(storage, latestProfileSnapshot.current);
+    });
   }, [activeProfileId, profiles, profilesLoaded]);
+
+  useEffect(() => {
+    if (!profilesLoaded || typeof window === 'undefined') return;
+    const flushProfileState = () => {
+      saveProfileState(window.localStorage, latestProfileSnapshot.current);
+    };
+    window.addEventListener('pagehide', flushProfileState);
+    return () => {
+      window.removeEventListener('pagehide', flushProfileState);
+      flushProfileState();
+    };
+  }, [profilesLoaded]);
 
   useEffect(() => {
     let ignore = false;
@@ -164,7 +222,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
   function updateField(id, value) {
     updateActiveProfile((profile) => ({
-      values: sanitizeFormState(HP_SCHEMA, { ...profile.values, [id]: value })
+      values: { ...profile.values, [id]: coerceHpValue(id, value) }
     }));
   }
 
@@ -178,11 +236,27 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     setActiveKey(getCategoryKey(cursor || group));
   }
 
-  function handleImport() {
+  async function handleImport() {
     try {
-      const importedState = parseHpColorsImportCode(importText, HP_SCHEMA);
-      updateActiveProfile({ values: importedState });
-      setStatus(`Imported into ${presetName}.`);
+      const { parseHpColorsImportProfiles } = await import('../hpImportCode.js');
+      const importedProfiles = parseHpColorsImportProfiles(importText, HP_SCHEMA);
+      if (importedProfiles.length <= 1) {
+        const imported = importedProfiles[0];
+        updateActiveProfile({ name: imported.name, values: imported.values });
+        setStatus(`Imported ${cleanProfileName(imported.name, activeProfileIndex)}.`);
+        return;
+      }
+
+      const usedIds = new Set(profiles.map((profile) => String(profile.id || '')));
+      const appendedProfiles = importedProfiles.map((profile, index) => createProfile({
+        id: nextImportedProfileId(usedIds),
+        name: cleanProfileName(profile.name, profiles.length + index),
+        values: profile.values
+      }));
+      setProfiles([...profiles, ...appendedProfiles]);
+      setActiveProfileId(appendedProfiles[0].id);
+      setProfileMenuOpen(true);
+      setStatus(`Imported ${appendedProfiles.length} profiles from preset codes.`);
     } catch (error) {
       setStatus(error?.message || String(error));
     }
@@ -194,7 +268,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
       for (const field of currentGroup?.fields || []) {
         next[field.id] = defaultState[field.id];
       }
-      return { values: sanitizeFormState(HP_SCHEMA, next) };
+      return { values: next };
     });
   }
 
@@ -239,10 +313,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     const activePresetVpkFileName = buildPresetVpkFileName(activePresetName);
     setStatus(`Building ${activePresetVpkFileName}...`);
     try {
-      const templateUrl = `${import.meta.env.BASE_URL}templates/hp_colors/panorama/layout/base_hud.xml`;
-      const response = await fetch(templateUrl);
-      if (!response.ok) throw new Error(`Failed to load base_hud.xml (${response.status})`);
-      const baseHudXml = await response.text();
+      const [{ BASE_HUD_SOURCE_PATH, buildHpColorsPackage }, { writeVpk }] = await Promise.all([
+        import('../packageBuilder.js'),
+        import('../vpkWriter.js')
+      ]);
+      const baseHudXml = await loadBaseHudXml();
       const buildPresets = profiles.map(profileToPreset);
       const { files } = buildHpColorsPackage({
         sourceTexts: { [BASE_HUD_SOURCE_PATH]: baseHudXml },
@@ -266,10 +341,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     const targetLabel = targetModVariant === HP_COLORS_MOD_VARIANTS.MINIMAL ? 'minimal mod' : 'full mod';
     setConvertStatus(`Converting ${convertFile.name} to ${targetLabel}...`);
     try {
-      const templateUrl = `${import.meta.env.BASE_URL}templates/hp_colors/panorama/layout/base_hud.xml`;
-      const response = await fetch(templateUrl);
-      if (!response.ok) throw new Error(`Failed to load base_hud.xml (${response.status})`);
-      const baseHudXml = await response.text();
+      const [{ convertHpColorsPresetVpk }, { writeVpk }] = await Promise.all([
+        import('../vpkConverter.js'),
+        import('../vpkWriter.js')
+      ]);
+      const baseHudXml = await loadBaseHudXml();
       const converted = convertHpColorsPresetVpk({
         vpkBytes: new Uint8Array(await convertFile.arrayBuffer()),
         baseHudXml,
@@ -419,12 +495,10 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             </div>
             <div className="detail-scroll">
               <div className="schema-field-list">
-                {(currentGroup?.fields || []).map((field) => (
-                  isFieldVisible(field, state)
-                    ? <SchemaField key={field.id} field={field} value={state[field.id]} onChange={updateField} />
-                    : null
+                {visibleFields.map((field) => (
+                  <SchemaField key={field.id} field={field} value={state[field.id]} onChange={updateField} />
                 ))}
-                {(currentGroup?.fields || []).every((field) => !isFieldVisible(field, state)) ? (
+                {visibleFields.length === 0 ? (
                   <div className="empty-panel">
                     <strong>No visible controls</strong>
                     <span>Enable the related setting in this preset to reveal the dependent options.</span>
@@ -439,20 +513,21 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <span className="panorama-kicker">Tools</span>
               <strong>Preset utility</strong>
             </div>
-            <DisclosurePanel title="Import preset" open={importOpen} onOpenChange={setImportOpen}>
+            <DisclosurePanel title="Import game preset codes" open={importOpen} onOpenChange={setImportOpen}>
               <div className="import-panel-body">
+                <p className="panel-helper">Paste COPY ALL from the in-game HP Colors menu, or paste several individual HP Colors codes. Bundles import as separate profiles.</p>
                 <textarea
                   id="importText"
                   className="builder-textarea"
                   rows={5}
                   value={importText}
                   onChange={(e) => setImportText(e.target.value)}
-                  placeholder="Paste HP Colors import code here"
+                  placeholder="Paste COPY ALL or HP Colors import codes here"
                 />
                 <div className="rail-actions">
                   <button type="button" className="secondary-action" onClick={handleImport}>
                     <Upload aria-hidden="true" />
-                    <span>Import</span>
+                    <span>Import codes</span>
                   </button>
                 </div>
               </div>

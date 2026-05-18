@@ -679,7 +679,6 @@
   padding-right: 6px;
 }
 
-.anita-tree-node,
 .anita-tree-children {
   display: grid;
   gap: 6px;
@@ -811,11 +810,6 @@
   font-size: 0.9rem;
   font-weight: 700;
   line-height: 1.25;
-}
-
-.schema-field-hint {
-  color: var(--muted-foreground);
-  font-size: 0.78rem;
 }
 
 .schema-field-control {
@@ -1140,68 +1134,6 @@
   font-weight: 780;
 }
 
-.secondary-panels {
-  display: grid;
-  gap: 8px;
-}
-
-.profile-manager {
-  display: grid;
-  gap: 10px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-.profile-manager-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-  font-weight: 760;
-  text-transform: uppercase;
-}
-
-.profile-manager-heading strong {
-  display: inline-grid;
-  min-width: 24px;
-  min-height: 24px;
-  place-items: center;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--foreground);
-  font-size: 0.78rem;
-}
-
-.profile-list {
-  display: grid;
-  gap: 6px;
-}
-
-.profile-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: center;
-  width: 100%;
-  min-height: 38px;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--card);
-  color: var(--foreground);
-  text-align: left;
-  cursor: pointer;
-}
-
-.profile-row:hover,
-.profile-row.is-active {
-  border-color: var(--ring);
-  background: var(--accent);
-  color: var(--accent-foreground);
-}
-
 .profile-row-name,
 .profile-row-meta {
   min-width: 0;
@@ -1218,22 +1150,6 @@
 .profile-row-meta {
   color: var(--muted-foreground);
   font-size: 0.72rem;
-}
-
-.profile-row.is-active .profile-row-meta,
-.profile-row:hover .profile-row-meta {
-  color: var(--accent-foreground);
-}
-
-.profile-actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.profile-actions .quiet-action {
-  min-width: 0;
-  padding: 0 8px;
 }
 
 .disclosure-panel {
@@ -1379,15 +1295,6 @@
   width: 18px;
   height: 18px;
   color: var(--primary);
-}
-
-.status-text {
-  color: var(--muted-foreground);
-  font-size: 0.875rem;
-}
-
-.status-text.is-error {
-  color: var(--destructive);
 }
 
 .build-warning-modal {
@@ -1766,7 +1673,6 @@
   color: var(--foreground);
 }
 
-.sr-only,
 .skip-link {
   position: absolute;
   width: 1px;

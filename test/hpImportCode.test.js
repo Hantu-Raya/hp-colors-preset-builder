@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { HP_SCHEMA } from "../src/hpSchema.js";
-import { extractHpColorsImportToken, parseHpColorsImportCode } from "../src/hpImportCode.js";
+import { extractHpColorsImportToken, parseHpColorsImportCode, parseHpColorsImportProfiles } from "../src/hpImportCode.js";
 
 function base64UrlEncode(text) {
   return Buffer.from(text, "utf8")
@@ -48,6 +48,67 @@ test("parses raw HPColorsPresetStore entry tokens", () => {
   assert.equal(state.hp_text_color_mode, 1);
   assert.equal(state.hp_text_color_low, "#FFB0B0");
   assert.deepEqual(Object.keys(state), Object.keys(HP_SCHEMA));
+});
+
+test("parses a bundled HP Colors token into multiple preset profiles", () => {
+  const profiles = parseHpColorsImportProfiles(buildToken({
+    v: 97,
+    c: 1,
+    values: { e: false },
+    presets: [
+      { name: "main hantu", version: 1, values: { e: false, cl: "#112233" } },
+      { name: "razzor", version: 1, values: { m: 1, ch: "#445566" } },
+      { name: "Current live settings", version: 1, values: { p: "12,34", pce: true } }
+    ]
+  }), HP_SCHEMA);
+
+  assert.equal(profiles.length, 3);
+  assert.equal(profiles[0].name, "main hantu");
+  assert.equal(profiles[0].values.hp_enabled, false);
+  assert.equal(profiles[0].values.hp_color_low, "#112233");
+  assert.equal(profiles[1].name, "razzor");
+  assert.equal(profiles[1].values.hp_mode, 1);
+  assert.equal(profiles[1].values.hp_color_high, "#445566");
+  assert.equal(profiles[2].name, "Current live settings");
+  assert.equal(profiles[2].values.hp_counter_position, "12,34");
+  assert.equal(profiles[2].values.hp_pulse_color_enabled, true);
+});
+
+test("parses a compact COPY ALL HP Colors bundle into multiple preset profiles", () => {
+  const profiles = parseHpColorsImportProfiles(buildToken({
+    v: 97,
+    c: 1,
+    values: { e: false },
+    ps: [
+      { n: "main hantu", vs: { e: false, cl: "#112233" } },
+      { n: "razzor", vs: { m: 1, ch: "#445566" } },
+      { n: "Current live settings", vs: { p: "12,34", pce: true } }
+    ]
+  }), HP_SCHEMA);
+
+  assert.equal(profiles.length, 3);
+  assert.equal(profiles[0].name, "main hantu");
+  assert.equal(profiles[0].values.hp_enabled, false);
+  assert.equal(profiles[0].values.hp_color_low, "#112233");
+  assert.equal(profiles[1].name, "razzor");
+  assert.equal(profiles[1].values.hp_mode, 1);
+  assert.equal(profiles[1].values.hp_color_high, "#445566");
+  assert.equal(profiles[2].name, "Current live settings");
+  assert.equal(profiles[2].values.hp_counter_position, "12,34");
+  assert.equal(profiles[2].values.hp_pulse_color_enabled, true);
+});
+
+test("parses multiple pasted HP Colors tokens into multiple preset profiles", () => {
+  const first = buildToken({ v: 97, c: 1, values: { e: false, cl: "#112233" } });
+  const second = buildToken({ v: 97, c: 1, values: { m: 1, ch: "#445566" } });
+
+  const profiles = parseHpColorsImportProfiles(`main hantu\n${first}\n\nrazzor\n${second}`, HP_SCHEMA);
+
+  assert.equal(profiles.length, 2);
+  assert.equal(profiles[0].name, "Imported preset 1");
+  assert.equal(profiles[0].values.hp_color_low, "#112233");
+  assert.equal(profiles[1].name, "Imported preset 2");
+  assert.equal(profiles[1].values.hp_mode, 1);
 });
 
 test("parses a bare HPColorsPresetStore encoded preset payload", () => {

@@ -1,4 +1,4 @@
-import { HP_COLORS_MOD_VARIANTS } from './packageBuilder.js';
+import { HP_COLORS_MOD_VARIANTS } from './hpModVariants.js';
 
 const BUILD_VARIANTS = new Set(Object.values(HP_COLORS_MOD_VARIANTS));
 

@@ -1,5 +1,5 @@
-import React, { useCallback, useRef, useState } from 'react';
-import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { useCallback, useRef, useState } from 'preact/hooks';
+import { Minus, Plus, RotateCcw } from 'lucide-preact';
 import { normalizeHexColor, parsePositionValue, formatPositionValue, clampNumber } from './schema-control-utils.js';
 
 function StepButton({ direction, label, onClick }) {

@@ -1,13 +1,11 @@
 import { HP_SCHEMA } from "./hpSchema.js";
 import { createDefaultFormState, sanitizeFormState } from "./hpFormModel.js";
+import { HP_COLORS_MOD_VARIANTS } from "./hpModVariants.js";
 import { injectPresetStoreIntoBaseHudXml } from "./presetStoreXml.js";
 import { compilePanoramaLayoutResource, compileTextResource } from "./source2ResourceWriter.js";
 
 export const BASE_HUD_SOURCE_PATH = "public/templates/hp_colors/panorama/layout/base_hud.xml";
-export const HP_COLORS_MOD_VARIANTS = Object.freeze({
-  FULL: "full",
-  MINIMAL: "minimal"
-});
+export { HP_COLORS_MOD_VARIANTS };
 
 const MINIMAL_MOD_INCLUDE_RE = /^[\t ]*<include\s+src="s2r:\/\/panorama\/(?:styles\/anita_ui\.vcss_c|scripts\/(?:anita_persist_loader|hp_registrar)\.vjs_c)"\s*\/>\r?\n?/gm;
 

@@ -8,6 +8,8 @@ export const HP_IMPORT_CODE_LEGACY_VERSIONS = new Set([25]);
 const MAX_IMPORT_TEXT_CHARS = 32768;
 const MAX_IMPORT_TOKEN_CHARS = 16384;
 const MAX_IMPORT_PAYLOAD_CHARS = 8192;
+const BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const BASE64_LOOKUP = new Map(Array.from(BASE64_CHARS, (ch, idx) => [ch, idx]));
 
 export const HP_PERSIST_ALIASES = Object.freeze({
   hp_enabled: "e",
@@ -89,14 +91,12 @@ function decodeBase64UrlStrict(input) {
 }
 
 function binaryFromBase64(base64) {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-  const lookup = new Map(Array.from(chars, (ch, idx) => [ch, idx]));
   let bits = 0;
   let bitCount = 0;
   let out = "";
   for (const ch of String(base64 || "").replace(/=+$/g, "")) {
-    if (!lookup.has(ch)) throw new Error("Invalid base64url token");
-    bits = (bits << 6) | lookup.get(ch);
+    if (!BASE64_LOOKUP.has(ch)) throw new Error("Invalid base64url token");
+    bits = (bits << 6) | BASE64_LOOKUP.get(ch);
     bitCount += 6;
     while (bitCount >= 8) {
       bitCount -= 8;
@@ -107,7 +107,6 @@ function binaryFromBase64(base64) {
 }
 
 function base64UrlFromBinary(binary) {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   let bits = 0;
   let bitCount = 0;
   let out = "";
@@ -116,24 +115,16 @@ function base64UrlFromBinary(binary) {
     bitCount += 8;
     while (bitCount >= 6) {
       bitCount -= 6;
-      out += chars[(bits >> bitCount) & 63];
+      out += BASE64_CHARS[(bits >> bitCount) & 63];
     }
   }
-  if (bitCount > 0) out += chars[(bits << (6 - bitCount)) & 63];
+  if (bitCount > 0) out += BASE64_CHARS[(bits << (6 - bitCount)) & 63];
   return out.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 function utf8FromBinary(binary) {
   const bytes = Uint8Array.from(String(binary || ""), (ch) => ch.charCodeAt(0));
   return typeof TextDecoder === "function" ? new TextDecoder("utf-8").decode(bytes) : binary;
-}
-
-function sanitizeSchemaState(schema, state) {
-  const next = {};
-  for (const [id, spec] of Object.entries(schema || {})) {
-    next[id] = coerceHpValue(id, Object.prototype.hasOwnProperty.call(state || {}, id) ? state[id] : spec?.defaultValue);
-  }
-  return next;
 }
 
 function expandValues(values, schema) {
@@ -173,6 +164,17 @@ export function extractHpColorsImportToken(text) {
   throw new Error("Malformed HP Colors import code");
 }
 
+function extractHpColorsImportTokens(text) {
+  const body = String(text || "").trim();
+  if (!body) throw new Error("Malformed HP Colors import code");
+  if (body.length > MAX_IMPORT_TEXT_CHARS) throw new Error("Import code is too large");
+  const hpMatches = body.match(/\[ANITA-v1-hp_colors\]:[^\s]+/g) || [];
+  for (const token of hpMatches) {
+    if (token.length > MAX_IMPORT_TOKEN_CHARS) throw new Error("Import code is too large");
+  }
+  return hpMatches;
+}
+
 function decodeImportPayloadText(text) {
   const body = String(text || "").trim();
   let token;
@@ -197,8 +199,7 @@ function decodeImportPayloadText(text) {
   return decodeBase64UrlStrict(match[2]);
 }
 
-export function parseHpColorsImportCode(text, schema = HP_SCHEMA) {
-  const payloadText = decodeImportPayloadText(text);
+function parsePayloadText(payloadText) {
   let parsed;
   try {
     parsed = JSON.parse(payloadText);
@@ -209,10 +210,10 @@ export function parseHpColorsImportCode(text, schema = HP_SCHEMA) {
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new Error("Invalid JSON payload");
   }
-  if (!parsed.values || typeof parsed.values !== "object" || Array.isArray(parsed.values)) {
-    throw new Error("Invalid JSON payload");
-  }
+  return parsed;
+}
 
+function assertPayloadVersion(parsed) {
   if (Object.prototype.hasOwnProperty.call(parsed, "v") || Object.prototype.hasOwnProperty.call(parsed, "c")) {
     if (!Object.prototype.hasOwnProperty.call(parsed, "v") || !Object.prototype.hasOwnProperty.call(parsed, "c")) {
       throw new Error("Invalid JSON payload");
@@ -227,12 +228,86 @@ export function parseHpColorsImportCode(text, schema = HP_SCHEMA) {
   } else {
     throw new Error("Invalid JSON payload");
   }
+}
 
-  const expanded = expandValues(parsed.values, schema);
+function valuesToSchemaState(values, schema) {
+  if (!values || typeof values !== "object" || Array.isArray(values)) {
+    throw new Error("Invalid JSON payload");
+  }
+
+  const expanded = expandValues(values, schema);
   const result = {};
   for (const [id, spec] of Object.entries(schema || {})) {
     const value = Object.prototype.hasOwnProperty.call(expanded, id) ? expanded[id] : spec?.defaultValue;
     result[id] = coerceHpValue(id, value);
   }
-  return sanitizeSchemaState(schema, result);
+  return result;
+}
+
+function parseImportPayloadValues(parsed, schema) {
+  assertPayloadVersion(parsed);
+  return valuesToSchemaState(parsed.values, schema);
+}
+
+function cleanImportedPresetName(name, index) {
+  const value = String(name || "").trim();
+  return value || `Imported preset ${index + 1}`;
+}
+
+function hasVersionFields(value) {
+  return Object.prototype.hasOwnProperty.call(value, "v") ||
+    Object.prototype.hasOwnProperty.call(value, "c") ||
+    Object.prototype.hasOwnProperty.call(value, "version");
+}
+
+function parseImportProfileEntry(preset, schema, index, allowInheritedVersion) {
+  if (!preset || typeof preset !== "object" || Array.isArray(preset)) {
+    throw new Error("Invalid JSON payload");
+  }
+  if (hasVersionFields(preset)) {
+    assertPayloadVersion(preset);
+  } else if (!allowInheritedVersion) {
+    throw new Error("Invalid JSON payload");
+  }
+  const values = Object.prototype.hasOwnProperty.call(preset, "vs") ? preset.vs : preset.values;
+  const name = Object.prototype.hasOwnProperty.call(preset, "n") ? preset.n : preset.name;
+  return {
+    name: cleanImportedPresetName(name, index),
+    values: valuesToSchemaState(values, schema)
+  };
+}
+
+function parseImportProfilesFromPayload(parsed, schema, fallbackIndex = 0) {
+  assertPayloadVersion(parsed);
+  if (Object.prototype.hasOwnProperty.call(parsed, "ps")) {
+    if (!Array.isArray(parsed.ps) || parsed.ps.length === 0) throw new Error("Invalid JSON payload");
+    return parsed.ps.map((preset, index) => parseImportProfileEntry(preset, schema, index, true));
+  }
+  if (Array.isArray(parsed.presets) && parsed.presets.length > 0) {
+    return parsed.presets.map((preset, index) => parseImportProfileEntry(preset, schema, index, false));
+  }
+
+  return [{
+    name: cleanImportedPresetName(parsed.name, fallbackIndex),
+    values: valuesToSchemaState(parsed.values, schema)
+  }];
+}
+
+export function parseHpColorsImportCode(text, schema = HP_SCHEMA) {
+  const payloadText = decodeImportPayloadText(text);
+  return parseImportPayloadValues(parsePayloadText(payloadText), schema);
+}
+
+export function parseHpColorsImportProfiles(text, schema = HP_SCHEMA) {
+  const body = String(text || "").trim();
+  const tokens = extractHpColorsImportTokens(body);
+  if (tokens.length > 0) {
+    return tokens.flatMap((token, index) => {
+      const payloadText = decodeImportPayloadText(token);
+      return parseImportProfilesFromPayload(parsePayloadText(payloadText), schema, index);
+    });
+  }
+
+  const payloadText = decodeImportPayloadText(body);
+  return parseImportProfilesFromPayload(parsePayloadText(payloadText), schema, 0);
 }

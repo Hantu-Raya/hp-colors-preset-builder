@@ -42,46 +42,10 @@ export function createDefaultFormState(schema = HP_SCHEMA) {
   return state;
 }
 
-export function buildCategoryGroups(schema = HP_SCHEMA) {
-  const groups = [];
-  const byCategory = new Map();
-  for (const [id, spec] of Object.entries(schema || {})) {
-    if (!spec || !spec.category) continue;
-    let group = byCategory.get(spec.category);
-    if (!group) {
-      group = { category: spec.category, fields: [] };
-      byCategory.set(spec.category, group);
-      groups.push(group);
-    }
-    group.fields.push({ id, ...spec });
-  }
-  return groups;
-}
-
 export function isFieldVisible(spec, state) {
   if (!spec?.visibleWhen) return true;
   const { id, equals } = spec.visibleWhen;
   return state?.[id] === equals;
-}
-
-export function countVisibleFields(fields = [], state = {}) {
-  return fields.reduce((count, field) => count + (isFieldVisible(field, state) ? 1 : 0), 0);
-}
-
-export function countVisibleGroupFields(group, state = {}) {
-  const own = countVisibleFields(group?.fields || [], state);
-  const child = (group?.children || []).reduce((count, entry) => count + countVisibleGroupFields(entry, state), 0);
-  return own + child;
-}
-
-export function flattenCategoryTree(groups = []) {
-  const entries = [];
-  const walk = (group) => {
-    entries.push(group);
-    for (const child of group.children || []) walk(child);
-  };
-  for (const group of groups || []) walk(group);
-  return entries;
 }
 
 export function getCategoryPathLabel(group) {

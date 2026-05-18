@@ -1,17 +1,34 @@
-import React from 'react';
-import { countVisibleGroupFields, getCategoryKey } from '../hpFormModel.js';
+import { useMemo } from 'preact/hooks';
+import { getCategoryKey, isFieldVisible } from '../hpFormModel.js';
 
-function groupHasModifiedFields(group, state, defaultState) {
-  const ownModified = (group.fields || []).some(
-    (field) => String(state?.[field.id]) !== String(defaultState?.[field.id])
-  );
-  if (ownModified) return true;
-  return (group.children || []).some(
-    (child) => groupHasModifiedFields(child, state, defaultState)
-  );
+function buildTreeStats(groups, state, defaultState) {
+  const statsByKey = new Map();
+  const walk = (group) => {
+    let isModified = false;
+    let visibleCount = 0;
+    for (const field of group.fields || []) {
+      if (String(state?.[field.id]) !== String(defaultState?.[field.id])) isModified = true;
+      if (isFieldVisible(field, state)) visibleCount += 1;
+    }
+    for (const child of group.children || []) {
+      const childStats = walk(child);
+      if (childStats.isModified) isModified = true;
+      visibleCount += childStats.visibleCount;
+    }
+    const stats = { isModified, visibleCount };
+    statsByKey.set(getCategoryKey(group), stats);
+    return stats;
+  };
+  for (const group of groups || []) walk(group);
+  return statsByKey;
 }
 
 export function SchemaTree({ groups, activeKey, state, defaultState = {}, onSelect }) {
+  const statsByKey = useMemo(
+    () => buildTreeStats(groups, state, defaultState),
+    [defaultState, groups, state]
+  );
+
   return (
     <aside className="anita-tree" aria-label="Schema categories">
       <div className="anita-tree-header">Categories</div>
@@ -23,7 +40,7 @@ export function SchemaTree({ groups, activeKey, state, defaultState = {}, onSele
               group={group}
               activeKey={activeKey}
               state={state}
-              defaultState={defaultState}
+              statsByKey={statsByKey}
               onSelect={onSelect}
               depth={0}
             />
@@ -34,15 +51,14 @@ export function SchemaTree({ groups, activeKey, state, defaultState = {}, onSele
   );
 }
 
-function TreeItem({ group, activeKey, state, defaultState, onSelect, depth }) {
+function TreeItem({ group, activeKey, statsByKey, onSelect, depth }) {
   const key = getCategoryKey(group);
   const isActive = key === activeKey;
-  const isModified = groupHasModifiedFields(group, state, defaultState);
-  const visibleCount = countVisibleGroupFields(group, state);
+  const stats = statsByKey.get(key) || { isModified: false, visibleCount: 0 };
 
   const depthClass = depth === 0 ? 'anita-tree-item--main' : 'anita-tree-item--sub';
   const activeClass = isActive ? ' is-active' : '';
-  const modifiedClass = isModified ? ' is-modified' : '';
+  const modifiedClass = stats.isModified ? ' is-modified' : '';
 
   return (
     <>
@@ -53,8 +69,8 @@ function TreeItem({ group, activeKey, state, defaultState, onSelect, depth }) {
         onClick={() => onSelect(group)}
       >
         <span className="anita-tree-label">{group.name}</span>
-        {isModified && <span className="anita-mod-dot" />}
-        <span className="anita-count">{visibleCount}</span>
+        {stats.isModified && <span className="anita-mod-dot" />}
+        <span className="anita-count">{stats.visibleCount}</span>
       </button>
       {group.children?.length ? (
         <div className="anita-tree-children">
@@ -63,8 +79,7 @@ function TreeItem({ group, activeKey, state, defaultState, onSelect, depth }) {
               key={getCategoryKey(child)}
               group={child}
               activeKey={activeKey}
-              state={state}
-              defaultState={defaultState}
+              statsByKey={statsByKey}
               onSelect={onSelect}
               depth={depth + 1}
             />
