@@ -98,6 +98,48 @@ test("parses a compact COPY ALL HP Colors bundle into multiple preset profiles",
   assert.equal(profiles[2].values.hp_pulse_color_enabled, true);
 });
 
+test("parses the minimal COPY ALL HP Colors bundle into multiple preset profiles", () => {
+  const code = base64UrlEncode(JSON.stringify({
+    v: 97,
+    p: [
+      ["main hantu", { e: false, cl: "#112233" }],
+      ["razzor", { m: 1, ch: "#445566" }]
+    ]
+  }));
+
+  const profiles = parseHpColorsImportProfiles(code, HP_SCHEMA);
+
+  assert.equal(profiles.length, 2);
+  assert.equal(profiles[0].name, "main hantu");
+  assert.equal(profiles[0].values.hp_enabled, false);
+  assert.equal(profiles[0].values.hp_color_low, "#112233");
+  assert.equal(profiles[1].name, "razzor");
+  assert.equal(profiles[1].values.hp_mode, 1);
+  assert.equal(profiles[1].values.hp_color_high, "#445566");
+});
+
+test("minimal COPY ALL bundle is shorter than the previous compact object bundle", () => {
+  const previous = buildToken({
+    v: 97,
+    c: 1,
+    values: { e: false, cl: "#112233" },
+    ps: [
+      { n: "main hantu", vs: { e: false, cl: "#112233" } },
+      { n: "razzor", vs: { m: 1, ch: "#445566" } }
+    ]
+  });
+  const minimal = base64UrlEncode(JSON.stringify({
+    v: 97,
+    p: [
+      ["main hantu", { e: false, cl: "#112233" }],
+      ["razzor", { m: 1, ch: "#445566" }]
+    ]
+  }));
+
+  assert.ok(minimal.length < previous.length);
+  assert.ok(previous.length - minimal.length >= 70);
+});
+
 test("parses multiple pasted HP Colors tokens into multiple preset profiles", () => {
   const first = buildToken({ v: 97, c: 1, values: { e: false, cl: "#112233" } });
   const second = buildToken({ v: 97, c: 1, values: { m: 1, ch: "#445566" } });

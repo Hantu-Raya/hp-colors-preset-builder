@@ -213,15 +213,18 @@ function parsePayloadText(payloadText) {
   return parsed;
 }
 
-function assertPayloadVersion(parsed) {
+function assertPayloadVersion(parsed, options = {}) {
   if (Object.prototype.hasOwnProperty.call(parsed, "v") || Object.prototype.hasOwnProperty.call(parsed, "c")) {
-    if (!Object.prototype.hasOwnProperty.call(parsed, "v") || !Object.prototype.hasOwnProperty.call(parsed, "c")) {
+    const requireCompactVersion = options.requireCompactVersion !== false;
+    if (!Object.prototype.hasOwnProperty.call(parsed, "v") || (requireCompactVersion && !Object.prototype.hasOwnProperty.call(parsed, "c"))) {
       throw new Error("Invalid JSON payload");
     }
     const version = Number(parsed.v);
     if (version !== HP_IMPORT_CODE_VERSION && !HP_IMPORT_CODE_LEGACY_VERSIONS.has(version)) throw new Error("Unsupported version");
-    const compactVersion = Number(parsed.c);
-    if (compactVersion !== HP_IMPORT_CODE_COMPACT_VERSION) throw new Error("Unsupported version");
+    if (Object.prototype.hasOwnProperty.call(parsed, "c")) {
+      const compactVersion = Number(parsed.c);
+      if (compactVersion !== HP_IMPORT_CODE_COMPACT_VERSION) throw new Error("Unsupported version");
+    }
   } else if (Object.prototype.hasOwnProperty.call(parsed, "version")) {
     const presetVersion = Number(parsed.version);
     if (presetVersion !== 1) throw new Error("Unsupported version");
@@ -254,6 +257,13 @@ function cleanImportedPresetName(name, index) {
   return value || `Imported preset ${index + 1}`;
 }
 
+function createImportProfile(name, values, schema, index) {
+  return {
+    name: cleanImportedPresetName(name, index),
+    values: valuesToSchemaState(values, schema)
+  };
+}
+
 function hasVersionFields(value) {
   return Object.prototype.hasOwnProperty.call(value, "v") ||
     Object.prototype.hasOwnProperty.call(value, "c") ||
@@ -271,13 +281,20 @@ function parseImportProfileEntry(preset, schema, index, allowInheritedVersion) {
   }
   const values = Object.prototype.hasOwnProperty.call(preset, "vs") ? preset.vs : preset.values;
   const name = Object.prototype.hasOwnProperty.call(preset, "n") ? preset.n : preset.name;
-  return {
-    name: cleanImportedPresetName(name, index),
-    values: valuesToSchemaState(values, schema)
-  };
+  return createImportProfile(name, values, schema, index);
+}
+
+function parseMinimalBundleEntry(entry, schema, index) {
+  if (!Array.isArray(entry) || entry.length !== 2) throw new Error("Invalid JSON payload");
+  return createImportProfile(entry[0], entry[1], schema, index);
 }
 
 function parseImportProfilesFromPayload(parsed, schema, fallbackIndex = 0) {
+  if (Object.prototype.hasOwnProperty.call(parsed, "p")) {
+    assertPayloadVersion(parsed, { requireCompactVersion: false });
+    if (!Array.isArray(parsed.p) || parsed.p.length === 0) throw new Error("Invalid JSON payload");
+    return parsed.p.map((entry, index) => parseMinimalBundleEntry(entry, schema, index));
+  }
   assertPayloadVersion(parsed);
   if (Object.prototype.hasOwnProperty.call(parsed, "ps")) {
     if (!Array.isArray(parsed.ps) || parsed.ps.length === 0) throw new Error("Invalid JSON payload");
