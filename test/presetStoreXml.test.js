@@ -44,6 +44,25 @@ test("injectPresetStoreIntoBaseHudXml preserves multiple preset labels", () => {
   assert.deepEqual(decoded.map((preset) => preset.name), ["One", "Two"]);
 });
 
+test("injectPresetStoreIntoBaseHudXml preserves preset heroes", () => {
+  const xml = [
+    "<root>",
+    '  <Panel id="AnitaUI_Anchor" hittest="false" />',
+    "</root>"
+  ].join("\n");
+  const preset = {
+    name: "Shiv",
+    version: 1,
+    values: { hp_color_low: "#FF00FF" },
+    heroes: ["hero_shiv", "hero_bebop"]
+  };
+
+  const patched = injectPresetStoreIntoBaseHudXml(xml, [preset]);
+  const encoded = patched.match(/text="([^"]+)"/)[1];
+
+  assert.deepEqual(JSON.parse(base64UrlDecode(encoded)).heroes, ["hero_shiv", "hero_bebop"]);
+});
+
 test("base64UrlEncode round-trips unicode-free JSON text", () => {
   const source = JSON.stringify({ name: "Magenta", values: { hp_color_low: "#FF00FF" } });
   assert.equal(base64UrlDecode(base64UrlEncode(source)), source);

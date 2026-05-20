@@ -3,6 +3,10 @@ _astro/
 dist/
 node_modules/
 .playwright-cli/
+.tools/
+.tmp-vpk-*/
 /index.html
 *.vpk
 *.png
+!public/heroes/
+!public/heroes/*.png

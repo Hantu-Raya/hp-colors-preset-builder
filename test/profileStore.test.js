@@ -49,6 +49,57 @@ test("loadProfileState restores ordered saved profiles and active selection", ()
   assert.equal(loaded.profiles[0].values.hp_enabled, defaultState.hp_enabled);
 });
 
+test("profile heroes round trip through storage and preset export", () => {
+  const defaultState = createDefaultFormState(HP_SCHEMA);
+  const storage = createMemoryStorage();
+  const profiles = [
+    createProfile({
+      id: "first",
+      name: "Lane",
+      values: { ...defaultState, hp_color_low: "#111111" },
+      heroes: ["shiv", "hero_bebop", "unknown_hero", "hero_shiv"]
+    })
+  ];
+
+  saveProfileState(storage, { profiles, activeProfileId: "first" });
+  const loaded = loadProfileState(storage, defaultState);
+  const preset = profileToPreset(loaded.profiles[0]);
+
+  assert.deepEqual(loaded.profiles[0].heroes, ["hero_shiv", "hero_bebop"]);
+  assert.equal(loaded.profiles[0].heroMode, "selected");
+  assert.deepEqual(preset.heroes, ["hero_shiv", "hero_bebop"]);
+  assert.equal(preset.heroMode, "selected");
+});
+
+test("missing profile heroes keep hero selection off", () => {
+  const defaultState = createDefaultFormState(HP_SCHEMA);
+  const profile = createProfile({ id: "first", name: "Global", values: defaultState });
+
+  assert.deepEqual(profile.heroes, []);
+  assert.equal(profile.heroMode, "off");
+  assert.deepEqual(profileToPreset(profile).heroes, []);
+  assert.equal(profileToPreset(profile).heroMode, "off");
+});
+
+test("profile hero scope modes round trip through storage and preset export", () => {
+  const defaultState = createDefaultFormState(HP_SCHEMA);
+  const storage = createMemoryStorage();
+  const profiles = [
+    createProfile({ id: "off", name: "Off", values: defaultState, heroMode: "off", heroes: ["hero_haze"] }),
+    createProfile({ id: "all", name: "All", values: defaultState, heroMode: "all", heroes: ["hero_haze"] }),
+    createProfile({ id: "selected", name: "Selected", values: defaultState, heroMode: "selected", heroes: ["haze"] })
+  ];
+
+  saveProfileState(storage, { profiles, activeProfileId: "selected" });
+  const loaded = loadProfileState(storage, defaultState);
+  const presets = loaded.profiles.map(profileToPreset);
+
+  assert.deepEqual(loaded.profiles.map((profile) => profile.heroMode), ["off", "all", "selected"]);
+  assert.deepEqual(loaded.profiles.map((profile) => profile.heroes), [[], [], ["hero_haze"]]);
+  assert.deepEqual(presets.map((preset) => preset.heroMode), ["off", "all", "selected"]);
+  assert.deepEqual(presets.map((preset) => preset.heroes), [[], [], ["hero_haze"]]);
+});
+
 test("saveProfileState writes builder-only profile state to local storage", () => {
   const defaultState = createDefaultFormState(HP_SCHEMA);
   const storage = createMemoryStorage();

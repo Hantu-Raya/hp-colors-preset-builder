@@ -1,11 +1,12 @@
 import { HP_SCHEMA } from "./hpSchema.js";
 import { createDefaultFormState, sanitizeFormState } from "./hpFormModel.js";
-import { HP_COLORS_MOD_VARIANTS } from "./hpModVariants.js";
+import { normalizeHeroScope } from "./hpHeroData.js";
+import { DEFAULT_HP_COLORS_MOD_VARIANT, HP_COLORS_MOD_VARIANTS } from "./hpModVariants.js";
 import { injectPresetStoreIntoBaseHudXml } from "./presetStoreXml.js";
 import { compilePanoramaLayoutResource, compileTextResource } from "./source2ResourceWriter.js";
 
 export const BASE_HUD_SOURCE_PATH = "public/templates/hp_colors/panorama/layout/base_hud.xml";
-export { HP_COLORS_MOD_VARIANTS };
+export { DEFAULT_HP_COLORS_MOD_VARIANT, HP_COLORS_MOD_VARIANTS };
 
 const MINIMAL_MOD_INCLUDE_RE = /^[\t ]*<include\s+src="s2r:\/\/panorama\/(?:styles\/anita_ui\.vcss_c|scripts\/(?:anita_persist_loader|hp_registrar)\.vjs_c)"\s*\/>\r?\n?/gm;
 
@@ -15,10 +16,13 @@ function normalizePreset(preset, index = 0) {
   const values = preset?.values && typeof preset.values === "object" && !Array.isArray(preset.values)
     ? preset.values
     : createDefaultFormState(HP_SCHEMA);
+  const scope = normalizeHeroScope(preset?.heroMode || preset?.hm, preset?.heroes || preset?.hs);
   return {
     name: rawName || fallbackName,
     version: 1,
-    values: sanitizeFormState(HP_SCHEMA, values)
+    values: sanitizeFormState(HP_SCHEMA, values),
+    heroMode: scope.heroMode,
+    heroes: scope.heroes
   };
 }
 
@@ -40,7 +44,8 @@ function compileSourceFile(sourcePath, sourceText) {
 
 function normalizeModVariant(modVariant) {
   if (modVariant === HP_COLORS_MOD_VARIANTS.MINIMAL) return HP_COLORS_MOD_VARIANTS.MINIMAL;
-  if (modVariant === HP_COLORS_MOD_VARIANTS.FULL || modVariant == null) return HP_COLORS_MOD_VARIANTS.FULL;
+  if (modVariant === HP_COLORS_MOD_VARIANTS.FULL) return HP_COLORS_MOD_VARIANTS.FULL;
+  if (modVariant == null) return DEFAULT_HP_COLORS_MOD_VARIANT;
   throw new Error(`Unknown HP Colors mod variant: ${modVariant}`);
 }
 
@@ -55,10 +60,10 @@ export function buildHpColorsPackage({
   sourceTexts,
   preset = null,
   presets = null,
-  modVariant = HP_COLORS_MOD_VARIANTS.FULL
+  modVariant = DEFAULT_HP_COLORS_MOD_VARIANT
 }) {
   const activeModVariant = normalizeModVariant(modVariant);
-  const defaultPreset = { name: "Web Builder Preset", version: 1, values: createDefaultFormState(HP_SCHEMA) };
+  const defaultPreset = { name: "Web Builder Preset", version: 1, values: createDefaultFormState(HP_SCHEMA), heroMode: "off", heroes: [] };
   const sourcePresets = Array.isArray(presets) && presets.length > 0
     ? presets
     : [preset || defaultPreset];

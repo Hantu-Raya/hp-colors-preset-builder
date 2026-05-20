@@ -31,13 +31,13 @@ test('build modal swaps download links for descriptions after validation', () =>
   });
 });
 
-test('unvalidating clears the selected build target', () => {
+test('validating defaults to minimal and unvalidating clears the selected build target', () => {
   assert.deepEqual(getNextInstallValidationState({
     installValidated: false,
     buildVariant: null
   }), {
     installValidated: true,
-    buildVariant: null
+    buildVariant: HP_COLORS_MOD_VARIANTS.MINIMAL
   });
   assert.deepEqual(getNextInstallValidationState({
     installValidated: true,

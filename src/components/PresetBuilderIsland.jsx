@@ -18,36 +18,37 @@ import {
 } from 'lucide-preact';
 import { HP_SCHEMA, coerceHpValue } from '../hpSchema.js';
 import { createDefaultFormState, splitCategoryGroups, getCategoryKey, getCategoryPathLabel, isFieldVisible } from '../hpFormModel.js';
-import { HP_COLORS_MOD_VARIANTS } from '../hpModVariants.js';
+import {
+  getHpHeroById,
+  HP_HEROES,
+  HP_HERO_SCOPE_ALL,
+  HP_HERO_SCOPE_OFF,
+  HP_HERO_SCOPE_SELECTED,
+  normalizeHeroIds,
+  normalizeHeroScopeMode
+} from '../hpHeroData.js';
+import { DEFAULT_HP_COLORS_MOD_VARIANT, HP_COLORS_MOD_VARIANTS } from '../hpModVariants.js';
 import { downloadBytes } from '../download.js';
 import { buildConvertedVpkFileName, buildPresetVpkFileName } from '../presetVpkFileName.js';
 import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitCommitInfoRefresh.js';
 import {
-  canChooseBuildMod,
   canConfirmBuild,
   getBuildVariantWarning,
-  getBuildChoiceVisibility,
   getNextInstallValidationState
 } from '../buildModalState.js';
-import { addProfile, cleanProfileName, countPresetOverrides, createInitialProfile, createProfile, FIRST_PROFILE_ID, profileToPreset, removeProfile, reorderProfiles, loadProfileState, saveProfileState } from '../profileStore.js';
+import {
+  TARGET_MODE_CHOICES,
+  getBuildProfilesForTargetMode,
+  getTargetModeDetails,
+  isFullTargetMode,
+  loadTargetModeState,
+  saveTargetModeState
+} from '../targetModeStore.js';
+import { addProfile, cleanProfileName, countPresetOverrides, createInitialProfile, createProfile, FIRST_PROFILE_ID, profileToPreset, removeProfile, reorderProfiles, loadProfileState, saveProfileState, STORAGE_KEY as PROFILE_STORAGE_KEY } from '../profileStore.js';
 import { SchemaField } from './schema-field.jsx';
 import { SchemaTree } from './schema-tree.jsx';
 
 const DEFAULT_PRESET_NAME = 'Web Builder Preset';
-const BUILD_MOD_CHOICES = [
-  {
-    id: HP_COLORS_MOD_VARIANTS.FULL,
-    title: 'Full mod',
-    description: 'Use with the full HP Colors mod. Keeps the Anita UI menu and live in-game customization.',
-    downloadHref: 'https://gamebanana.com/mods/download/603113#FileInfo_1701236'
-  },
-  {
-    id: HP_COLORS_MOD_VARIANTS.MINIMAL,
-    title: 'Minimal mod',
-    description: 'Use with the minimal mod. Preset functionality only, no Anita UI menu, favors performance.',
-    downloadHref: 'https://gamebanana.com/mods/download/603113#FileInfo_1701235'
-  }
-];
 
 let baseHudXmlPromise = null;
 
@@ -87,6 +88,15 @@ function scheduleIdleWork(callback) {
   return () => window.clearTimeout(id);
 }
 
+function formatHeroSelection(heroMode, heroIds) {
+  const selected = normalizeHeroIds(heroIds);
+  const mode = normalizeHeroScopeMode(heroMode, selected);
+  if (mode === HP_HERO_SCOPE_OFF) return 'Hero select off';
+  if (mode === HP_HERO_SCOPE_ALL) return 'All heroes';
+  if (selected.length === 1) return getHpHeroById(selected[0])?.name || selected[0];
+  return `${selected.length} heroes`;
+}
+
 export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const defaultState = useMemo(() => createDefaultFormState(HP_SCHEMA), []);
   const [freshGitCommitInfo, setFreshGitCommitInfo] = useState(gitCommitInfo);
@@ -96,6 +106,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const [activeProfileId, setActiveProfileId] = useState(FIRST_PROFILE_ID);
   const [profilesLoaded, setProfilesLoaded] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [heroMenuOpen, setHeroMenuOpen] = useState(false);
   const [dragIndex, setDragIndex] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
@@ -104,7 +115,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [warningOpen, setWarningOpen] = useState(false);
   const [installValidated, setInstallValidated] = useState(false);
-  const [buildVariant, setBuildVariant] = useState(null);
+  const [targetMode, setTargetMode] = useState(DEFAULT_HP_COLORS_MOD_VARIANT);
+  const [targetModeLoaded, setTargetModeLoaded] = useState(false);
+  const [modePickerOpen, setModePickerOpen] = useState(false);
+  const [modePickerRequired, setModePickerRequired] = useState(false);
+  const [modePickerUpgrade, setModePickerUpgrade] = useState(false);
   const latestProfileSnapshot = useRef({ profiles, activeProfileId });
   const groups = useMemo(() => splitCategoryGroups(HP_SCHEMA), []);
 
@@ -122,31 +137,58 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const activeProfileIndex = Math.max(0, profiles.findIndex((profile) => profile.id === activeProfile.id));
   const presetName = cleanProfileName(activeProfile.name, activeProfileIndex);
   const state = activeProfile.values;
+  const activeHeroMode = normalizeHeroScopeMode(activeProfile.heroMode || activeProfile.hm, activeProfile.heroes || activeProfile.hs);
+  const selectedHeroIds = activeHeroMode === HP_HERO_SCOPE_SELECTED ? normalizeHeroIds(activeProfile.heroes) : [];
+  const selectedHeroSet = useMemo(() => new Set(selectedHeroIds), [selectedHeroIds]);
+  const heroSelectionLabel = formatHeroSelection(activeHeroMode, selectedHeroIds);
   const currentGroup = flatGroups.find((group) => getCategoryKey(group) === activeKey) || flatGroups[0];
   const visibleFields = useMemo(() => getVisibleFields(currentGroup, state), [currentGroup, state]);
   const visibleCount = visibleFields.length;
   const activeOverrideCount = countPresetOverrides(state, defaultState);
-  const preview = useMemo(
-    () => (previewOpen ? JSON.stringify({ presets: profiles.map(profileToPreset) }, null, 2) : ''),
-    [previewOpen, profiles]
+  const targetModeDetails = getTargetModeDetails(targetMode);
+  const fullTargetMode = isFullTargetMode(targetMode);
+  const buildProfilePresets = useMemo(
+    () => getBuildProfilesForTargetMode(profiles.map(profileToPreset), targetMode),
+    [profiles, targetMode]
   );
-  const canPickBuildVariant = canChooseBuildMod({ installValidated });
-  const canConfirmBuildVariant = canConfirmBuild({ installValidated, buildVariant });
-  const buildChoiceVisibility = getBuildChoiceVisibility({ installValidated });
+  const preview = useMemo(
+    () => (previewOpen ? JSON.stringify({ targetMode, presets: buildProfilePresets }, null, 2) : ''),
+    [buildProfilePresets, previewOpen, targetMode]
+  );
+  const canConfirmBuildVariant = canConfirmBuild({ installValidated, buildVariant: targetMode });
   const presetVpkFileName = buildPresetVpkFileName(presetName || DEFAULT_PRESET_NAME);
   const activeGitCommitInfo = freshGitCommitInfo || gitCommitInfo;
   const topPresetName = cleanProfileName(profiles[0]?.name, 0);
   const buildVariantWarning = getBuildVariantWarning({
-    buildVariant,
-    profileCount: profiles.length,
+    buildVariant: targetMode,
+    profileCount: buildProfilePresets.length,
     firstPresetName: topPresetName
   });
 
   const openBuildWarning = useCallback(() => {
     setInstallValidated(false);
-    setBuildVariant(null);
     setWarningOpen(true);
   }, []);
+
+  function commitTargetMode(nextMode) {
+    setTargetMode(nextMode);
+    setModePickerOpen(false);
+    setModePickerRequired(false);
+    setModePickerUpgrade(false);
+    setInstallValidated(false);
+    setTargetModeLoaded(true);
+    saveTargetModeState(typeof window !== 'undefined' ? window.localStorage : null, nextMode);
+    if (!isFullTargetMode(nextMode)) {
+      setActiveProfileId((profiles[0] || activeProfile).id);
+      setProfileMenuOpen(false);
+      setHeroMenuOpen(false);
+    }
+  }
+
+  function openTargetModePicker() {
+    setModePickerRequired(false);
+    setModePickerOpen(true);
+  }
 
   useEffect(() => {
     latestProfileSnapshot.current = { profiles, activeProfileId };
@@ -155,8 +197,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   useEffect(() => {
     const storage = typeof window !== 'undefined' ? window.localStorage : null;
     const loaded = loadProfileState(storage, defaultState);
+    const loadedTargetMode = loadTargetModeState(storage, { profileStorageKey: PROFILE_STORAGE_KEY });
     setProfiles(loaded.profiles);
     setActiveProfileId(loaded.activeProfileId);
+    setTargetMode(loadedTargetMode.targetMode);
+    setModePickerOpen(loadedTargetMode.shouldShowPicker);
+    setModePickerRequired(loadedTargetMode.shouldShowPicker);
+    setModePickerUpgrade(loadedTargetMode.isUpgradePrompt);
+    setTargetModeLoaded(true);
     setProfilesLoaded(true);
   }, [defaultState]);
 
@@ -167,6 +215,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
       saveProfileState(storage, latestProfileSnapshot.current);
     });
   }, [activeProfileId, profiles, profilesLoaded]);
+
+  useEffect(() => {
+    if (!targetModeLoaded || fullTargetMode || !profiles[0] || activeProfileId === profiles[0].id) return;
+    setActiveProfileId(profiles[0].id);
+  }, [activeProfileId, fullTargetMode, profiles, targetModeLoaded]);
 
   useEffect(() => {
     if (!profilesLoaded || typeof window === 'undefined') return;
@@ -230,6 +283,34 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     updateActiveProfile({ name });
   }
 
+  function handleHeroToggle(heroId) {
+    const normalized = normalizeHeroIds([heroId])[0];
+    if (!normalized) return;
+    updateActiveProfile((profile) => {
+      const currentMode = normalizeHeroScopeMode(profile.heroMode || profile.hm, profile.heroes || profile.hs);
+      const current = currentMode === HP_HERO_SCOPE_SELECTED ? normalizeHeroIds(profile.heroes) : [];
+      const currentSet = new Set(current);
+      if (currentSet.has(normalized)) {
+        currentSet.delete(normalized);
+      } else {
+        currentSet.add(normalized);
+      }
+      const heroes = HP_HEROES.map((hero) => hero.id).filter((id) => currentSet.has(id));
+      return {
+        heroMode: heroes.length ? HP_HERO_SCOPE_SELECTED : HP_HERO_SCOPE_OFF,
+        heroes
+      };
+    });
+  }
+
+  function handleClearHeroes() {
+    updateActiveProfile({ heroMode: HP_HERO_SCOPE_ALL, heroes: [] });
+  }
+
+  function handleDisableHeroSelection() {
+    updateActiveProfile({ heroMode: HP_HERO_SCOPE_OFF, heroes: [] });
+  }
+
   function handleSelectGroup(group) {
     let cursor = group;
     while (cursor?.children?.length) cursor = cursor.children[0];
@@ -240,9 +321,29 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     try {
       const { parseHpColorsImportProfiles } = await import('../hpImportCode.js');
       const importedProfiles = parseHpColorsImportProfiles(importText, HP_SCHEMA);
+      if (!fullTargetMode) {
+        const imported = importedProfiles[0];
+        const current = profiles.length ? profiles : [createInitialProfile(defaultState)];
+        const first = current[0] || createInitialProfile(defaultState);
+        setProfiles([
+          createProfile({
+            id: first.id,
+            name: imported.name,
+            values: imported.values,
+            heroMode: HP_HERO_SCOPE_OFF,
+            heroes: []
+          }),
+          ...current.slice(1)
+        ]);
+        setActiveProfileId(first.id);
+        setStatus(importedProfiles.length > 1
+          ? 'Imported the first preset for minimal mode. Switch to Full mod to use profile bundles.'
+          : `Imported ${cleanProfileName(imported.name, 0)}.`);
+        return;
+      }
       if (importedProfiles.length <= 1) {
         const imported = importedProfiles[0];
-        updateActiveProfile({ name: imported.name, values: imported.values });
+        updateActiveProfile({ name: imported.name, values: imported.values, heroMode: imported.heroMode, heroes: imported.heroes });
         setStatus(`Imported ${cleanProfileName(imported.name, activeProfileIndex)}.`);
         return;
       }
@@ -251,7 +352,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
       const appendedProfiles = importedProfiles.map((profile, index) => createProfile({
         id: nextImportedProfileId(usedIds),
         name: cleanProfileName(profile.name, profiles.length + index),
-        values: profile.values
+        values: profile.values,
+        heroMode: profile.heroMode,
+        heroes: profile.heroes
       }));
       setProfiles([...profiles, ...appendedProfiles]);
       setActiveProfileId(appendedProfiles[0].id);
@@ -308,7 +411,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   }
 
   async function performBuild(modVariant) {
-    const activeModVariant = modVariant || HP_COLORS_MOD_VARIANTS.FULL;
+    const activeModVariant = modVariant || targetMode;
     const activePresetName = String(presetName || DEFAULT_PRESET_NAME).trim() || DEFAULT_PRESET_NAME;
     const activePresetVpkFileName = buildPresetVpkFileName(activePresetName);
     setStatus(`Building ${activePresetVpkFileName}...`);
@@ -318,7 +421,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
         import('../vpkWriter.js')
       ]);
       const baseHudXml = await loadBaseHudXml();
-      const buildPresets = profiles.map(profileToPreset);
+      const buildPresets = getBuildProfilesForTargetMode(profiles.map(profileToPreset), activeModVariant);
       const { files } = buildHpColorsPackage({
         sourceTexts: { [BASE_HUD_SOURCE_PATH]: baseHudXml },
         presets: buildPresets,
@@ -405,67 +508,145 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <Star aria-hidden="true" />
               <span>Star</span>
             </a>
-            <div className="topbar-profile-controls" aria-label="Preset profiles">
-              <button type="button" className="profile-icon-action" onClick={handleAddProfile} aria-label="Add preset">
-                <Plus aria-hidden="true" />
-              </button>
-              <button type="button" className="profile-icon-action" onClick={handleDeleteProfile} disabled={profiles.length <= 1} aria-label="Remove preset">
-                <Trash2 aria-hidden="true" />
-              </button>
-              <div className="profile-selector">
-                <button
-                  type="button"
-                  className="profile-selector-trigger"
-                  onClick={() => setProfileMenuOpen((open) => !open)}
-                  aria-expanded={profileMenuOpen}
-                  aria-haspopup="listbox"
-                >
-                  <span className="profile-selector-title">{presetName}</span>
-                  <span className="profile-selector-meta">{activeOverrideCount} override{activeOverrideCount === 1 ? '' : 's'} / {profiles.length}</span>
-                  <ChevronDown aria-hidden="true" />
+            <button type="button" className="target-mode-trigger" onClick={openTargetModePicker}>
+              <Layers3 aria-hidden="true" />
+              <span className="target-mode-text">
+                <span>Preset target</span>
+                <strong>{targetModeDetails.label}</strong>
+              </span>
+            </button>
+            {fullTargetMode ? (
+              <div className="topbar-profile-controls" aria-label="Preset profiles">
+                <button type="button" className="profile-icon-action" onClick={handleAddProfile} aria-label="Add preset">
+                  <Plus aria-hidden="true" />
                 </button>
-                {profileMenuOpen && (
-                  <div className="profile-selector-menu" role="listbox" aria-label="Preset profiles">
-                    {profiles.map((profile, index) => {
-                      const label = cleanProfileName(profile.name, index);
-                      const overrides = countPresetOverrides(profile.values, defaultState);
-                      return (
-                        <button
-                          key={profile.id}
-                          type="button"
-                          draggable
-                          className={profile.id === activeProfile.id ? 'profile-menu-row is-active' : 'profile-menu-row'}
-                          role="option"
-                          aria-selected={profile.id === activeProfile.id}
-                          onClick={() => handleSelectProfile(profile.id)}
-                          onDragStart={(event) => {
-                            setDragIndex(index);
-                            event.dataTransfer.effectAllowed = 'move';
-                            event.dataTransfer.setData('text/plain', String(index));
-                          }}
-                          onDragOver={(event) => {
-                            event.preventDefault();
-                            event.dataTransfer.dropEffect = 'move';
-                          }}
-                          onDrop={(event) => handleDropProfile(event, index)}
-                          onDragEnd={() => setDragIndex(null)}
-                        >
-                          <GripVertical className="profile-drag-handle" aria-hidden="true" />
-                          <span className="profile-menu-text">
-                            <span className="profile-row-name">{label}</span>
-                            <span className="profile-row-meta">{overrides} override{overrides === 1 ? '' : 's'} / priority {index + 1}</span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                <button type="button" className="profile-icon-action" onClick={handleDeleteProfile} disabled={profiles.length <= 1} aria-label="Remove preset">
+                  <Trash2 aria-hidden="true" />
+                </button>
+                <div className="profile-selector">
+                  <button
+                    type="button"
+                    className="profile-selector-trigger"
+                    onClick={() => setProfileMenuOpen((open) => !open)}
+                    aria-expanded={profileMenuOpen}
+                    aria-haspopup="listbox"
+                  >
+                    <span className="profile-selector-title">{presetName}</span>
+                    <span className="profile-selector-meta">{activeOverrideCount} override{activeOverrideCount === 1 ? '' : 's'} / {profiles.length}</span>
+                    <ChevronDown aria-hidden="true" />
+                  </button>
+                  {profileMenuOpen && (
+                    <div className="profile-selector-menu" role="listbox" aria-label="Preset profiles">
+                      {profiles.map((profile, index) => {
+                        const label = cleanProfileName(profile.name, index);
+                        const overrides = countPresetOverrides(profile.values, defaultState);
+                        return (
+                          <button
+                            key={profile.id}
+                            type="button"
+                            draggable
+                            className={profile.id === activeProfile.id ? 'profile-menu-row is-active' : 'profile-menu-row'}
+                            role="option"
+                            aria-selected={profile.id === activeProfile.id}
+                            onClick={() => handleSelectProfile(profile.id)}
+                            onDragStart={(event) => {
+                              setDragIndex(index);
+                              event.dataTransfer.effectAllowed = 'move';
+                              event.dataTransfer.setData('text/plain', String(index));
+                            }}
+                            onDragOver={(event) => {
+                              event.preventDefault();
+                              event.dataTransfer.dropEffect = 'move';
+                            }}
+                            onDrop={(event) => handleDropProfile(event, index)}
+                            onDragEnd={() => setDragIndex(null)}
+                          >
+                            <GripVertical className="profile-drag-handle" aria-hidden="true" />
+                            <span className="profile-menu-text">
+                              <span className="profile-row-name">{label}</span>
+                              <span className="profile-row-meta">{overrides} override{overrides === 1 ? '' : 's'} / priority {index + 1}</span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : null}
             <label className="preset-name-control" htmlFor="presetName">
-              <span>Profile</span>
+              <span>{fullTargetMode ? 'Profile' : 'Preset'}</span>
               <input id="presetName" className="builder-input" value={activeProfile.name} onChange={(e) => renameActiveProfile(e.target.value)} />
             </label>
+            {fullTargetMode ? (
+            <div className="hero-selector">
+              <button
+                type="button"
+                className="hero-selector-trigger"
+                onClick={() => setHeroMenuOpen((open) => !open)}
+                aria-expanded={heroMenuOpen}
+                aria-haspopup="listbox"
+              >
+                <span className="hero-selector-stack" aria-hidden="true">
+                  {activeHeroMode === HP_HERO_SCOPE_OFF ? (
+                    <span className="hero-avatar hero-avatar-all" aria-hidden="true">Off</span>
+                  ) : (
+                    (selectedHeroIds.length ? selectedHeroIds.slice(0, 3) : HP_HEROES.slice(0, 3).map((hero) => hero.id)).map((heroId) => (
+                      <HeroAvatar key={heroId} hero={getHpHeroById(heroId)} />
+                    ))
+                  )}
+                </span>
+                <span className="hero-selector-text">
+                  <span className="hero-selector-label">Heroes</span>
+                  <span className="hero-selector-value">{heroSelectionLabel}</span>
+                </span>
+                <ChevronDown aria-hidden="true" />
+              </button>
+              {heroMenuOpen ? (
+                <div className="hero-selector-menu" role="listbox" aria-label="Target heroes" aria-multiselectable="true">
+                  <button
+                    type="button"
+                    className={activeHeroMode === HP_HERO_SCOPE_OFF ? 'hero-menu-row is-active' : 'hero-menu-row'}
+                    role="option"
+                    aria-selected={activeHeroMode === HP_HERO_SCOPE_OFF}
+                    onClick={handleDisableHeroSelection}
+                  >
+                    <span className="hero-avatar hero-avatar-all" aria-hidden="true">Off</span>
+                    <span className="hero-menu-name">Hero select off</span>
+                    {activeHeroMode === HP_HERO_SCOPE_OFF ? <Check aria-hidden="true" /> : null}
+                  </button>
+                  <button
+                    type="button"
+                    className={activeHeroMode === HP_HERO_SCOPE_ALL ? 'hero-menu-row is-active' : 'hero-menu-row'}
+                    role="option"
+                    aria-selected={activeHeroMode === HP_HERO_SCOPE_ALL}
+                    onClick={handleClearHeroes}
+                  >
+                    <span className="hero-avatar hero-avatar-all" aria-hidden="true">All</span>
+                    <span className="hero-menu-name">All heroes</span>
+                    {activeHeroMode === HP_HERO_SCOPE_ALL ? <Check aria-hidden="true" /> : null}
+                  </button>
+                  {HP_HEROES.map((hero) => {
+                    const selected = selectedHeroSet.has(hero.id);
+                    return (
+                      <button
+                        key={hero.id}
+                        type="button"
+                        className={selected ? 'hero-menu-row is-active' : 'hero-menu-row'}
+                        role="option"
+                        aria-selected={selected}
+                        onClick={() => handleHeroToggle(hero.id)}
+                      >
+                        <HeroAvatar hero={hero} />
+                        <span className="hero-menu-name">{hero.name}</span>
+                        {selected ? <Check aria-hidden="true" /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+            ) : null}
             <button type="button" className="build-action" onClick={openBuildWarning}>
               <Download aria-hidden="true" />
               <span>Build VPK</span>
@@ -480,7 +661,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             <div className="anita-detail-header-row">
               <div>
                 <h2>{getCategoryPathLabel(currentGroup)}</h2>
-                <p className="anita-detail-hint">{visibleCount} visible controls / {profiles.length} profile{profiles.length === 1 ? '' : 's'}</p>
+                <p className="anita-detail-hint">
+                  {visibleCount} visible controls / {fullTargetMode ? `${profiles.length} profile${profiles.length === 1 ? '' : 's'}` : '1 minimal preset'}
+                </p>
               </div>
               <div className="reset-actions">
                 <button type="button" className="quiet-action" onClick={handleResetPage}>
@@ -515,7 +698,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             </div>
             <DisclosurePanel title="Import game preset codes" open={importOpen} onOpenChange={setImportOpen}>
               <div className="import-panel-body">
-                <p className="panel-helper">Paste COPY ALL from the in-game HP Colors menu, or paste several individual HP Colors codes. Bundles import as separate profiles.</p>
+                <p className="panel-helper">
+                  {fullTargetMode
+                    ? 'Paste COPY ALL from the in-game HP Colors menu, or paste several individual HP Colors codes. Bundles import as separate profiles.'
+                    : 'Paste a HP Colors code to replace the minimal preset. COPY ALL bundles use the first preset only.'}
+                </p>
                 <textarea
                   id="importText"
                   className="builder-textarea"
@@ -549,24 +736,28 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 </label>
                 <p className="panel-helper">Rebuild a generated HP Colors preset VPK for the other base mod.</p>
                 <div className="convert-action-grid">
-                  <button
-                    type="button"
-                    className="secondary-action"
-                    disabled={!convertFile}
-                    onClick={() => performConvert(HP_COLORS_MOD_VARIANTS.FULL)}
-                  >
-                    <RotateCcw aria-hidden="true" />
-                    <span>To Full</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-action"
-                    disabled={!convertFile}
-                    onClick={() => performConvert(HP_COLORS_MOD_VARIANTS.MINIMAL)}
-                  >
-                    <RotateCcw aria-hidden="true" />
-                    <span>To Minimal</span>
-                  </button>
+                  {!fullTargetMode ? (
+                    <button
+                      type="button"
+                      className="secondary-action"
+                      disabled={!convertFile}
+                      onClick={() => performConvert(HP_COLORS_MOD_VARIANTS.FULL)}
+                    >
+                      <RotateCcw aria-hidden="true" />
+                      <span>To Full</span>
+                    </button>
+                  ) : null}
+                  {fullTargetMode ? (
+                    <button
+                      type="button"
+                      className="secondary-action"
+                      disabled={!convertFile}
+                      onClick={() => performConvert(HP_COLORS_MOD_VARIANTS.MINIMAL)}
+                    >
+                      <RotateCcw aria-hidden="true" />
+                      <span>To Minimal</span>
+                    </button>
+                  ) : null}
                 </div>
                 {convertStatus ? <p className="convert-status">{convertStatus}</p> : null}
               </div>
@@ -584,12 +775,58 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
         </div>
       </div>
 
+      {modePickerOpen && targetModeLoaded ? (
+        <div className="build-warning-modal target-mode-modal" role="dialog" aria-modal="true" aria-labelledby="targetModeTitle">
+          {!modePickerRequired ? (
+            <button type="button" className="build-warning-backdrop" onClick={() => setModePickerOpen(false)} aria-label="Cancel" />
+          ) : (
+            <div className="build-warning-backdrop" aria-hidden="true" />
+          )}
+          <div className="build-warning-panel target-mode-panel">
+            <div className="build-warning-badge">{modePickerUpgrade ? 'New setup step' : 'Setup'}</div>
+            <h3 id="targetModeTitle">Choose your HP Colors mod</h3>
+            <p>
+              {modePickerUpgrade
+                ? 'This update needs to know which base mod your preset VPK is for. Your saved presets are still here.'
+                : 'Pick the base mod that will read the preset VPK. You can change this later from the top bar.'}
+            </p>
+            <div className="target-mode-choice-grid" role="group" aria-label="HP Colors target mod">
+              {TARGET_MODE_CHOICES.map((choice) => {
+                const selected = targetMode === choice.id;
+                return (
+                  <div key={choice.id} className={selected ? 'target-mode-choice is-selected' : 'target-mode-choice'}>
+                    <button type="button" className="target-mode-choice-select" onClick={() => commitTargetMode(choice.id)}>
+                      <span className="target-mode-choice-title">
+                        <Layers3 aria-hidden="true" />
+                        <strong>{choice.title}</strong>
+                        {selected ? <Check aria-hidden="true" /> : null}
+                      </span>
+                      <span className="target-mode-choice-summary">{choice.summary}</span>
+                      <span className="target-mode-choice-description">{choice.description}</span>
+                    </button>
+                    <a className="target-mode-choice-download" href={choice.downloadHref} target="_blank" rel="noreferrer">
+                      <Download aria-hidden="true" />
+                      <span>Download this mod</span>
+                    </a>
+                  </div>
+                );
+              })}
+            </div>
+            {!modePickerRequired ? (
+              <div className="build-warning-actions">
+                <button type="button" className="secondary-action" onClick={() => setModePickerOpen(false)}>Cancel</button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {warningOpen && (
         <div className="build-warning-modal" role="dialog" aria-modal="true" aria-labelledby="buildWarningTitle">
           <button type="button" className="build-warning-backdrop" onClick={() => setWarningOpen(false)} aria-label="Cancel" />
           <div className="build-warning-panel">
-            <div className="build-warning-badge">Warning</div>
-            <h3 id="buildWarningTitle">Choose target mod</h3>
+            <div className="build-warning-badge">Build target</div>
+            <h3 id="buildWarningTitle">Confirm {targetModeDetails.label} preset VPK</h3>
             <div className="build-warning-summary" aria-label="Build summary">
               <div className="build-warning-item">
                 <span className="build-warning-item-icon"><PakFileIcon aria-hidden="true" /></span>
@@ -613,6 +850,26 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 </span>
               </div>
             </div>
+            <div className="target-mode-summary-card">
+              <div>
+                <span className="target-mode-summary-label">Selected base mod</span>
+                <strong>{targetModeDetails.title}</strong>
+                <p>{targetModeDetails.description}</p>
+              </div>
+              <div className="target-mode-summary-actions">
+                <a className="secondary-action" href={targetModeDetails.downloadHref} target="_blank" rel="noreferrer">
+                  <Download aria-hidden="true" />
+                  <span>Download mod</span>
+                </a>
+                <button type="button" className="secondary-action" onClick={() => {
+                  setWarningOpen(false);
+                  openTargetModePicker();
+                }}>
+                  <Layers3 aria-hidden="true" />
+                  <span>Change target</span>
+                </button>
+              </div>
+            </div>
             <div className={installValidated ? 'build-validation-card is-valid' : 'build-validation-card'}>
               <div>
                 <span className="build-validation-label">Install check</span>
@@ -622,60 +879,13 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 type="button"
                 className="secondary-action build-validation-action"
                 onClick={() => {
-                  const next = getNextInstallValidationState({ installValidated, buildVariant });
+                  const next = getNextInstallValidationState({ installValidated, buildVariant: targetMode });
                   setInstallValidated(next.installValidated);
-                  setBuildVariant(next.buildVariant);
                 }}
               >
                 <ShieldCheck aria-hidden="true" />
                 <span>{installValidated ? 'Unvalidate' : 'Validate install'}</span>
               </button>
-            </div>
-            <div className="build-mod-choice-grid" role="group" aria-label="Target HP Colors mod">
-              {BUILD_MOD_CHOICES.map((choice) => {
-                const selected = buildVariant === choice.id;
-                return (
-                  <div
-                    key={choice.id}
-                    className={[
-                      'build-mod-choice',
-                      selected ? 'is-selected' : '',
-                      canPickBuildVariant ? '' : 'is-locked'
-                    ].filter(Boolean).join(' ')}
-                  >
-                    <button
-                      type="button"
-                      className="build-mod-choice-select"
-                      aria-pressed={selected}
-                      disabled={!canPickBuildVariant}
-                      onClick={() => {
-                        if (!canPickBuildVariant) return;
-                        setBuildVariant(choice.id);
-                      }}
-                    >
-                      <span className="build-mod-choice-title">{choice.title}</span>
-                      {buildChoiceVisibility.showDescription ? (
-                        <span className="build-mod-choice-description">{choice.description}</span>
-                      ) : null}
-                    </button>
-                    {buildChoiceVisibility.showDownload ? (
-                      <a
-                        className="build-mod-choice-download"
-                        href={choice.downloadHref}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Download this mod
-                      </a>
-                    ) : null}
-                    {selected ? (
-                      <span className="build-mod-choice-check" aria-hidden="true">
-                        <Check />
-                      </span>
-                    ) : null}
-                  </div>
-                );
-              })}
             </div>
             {buildVariantWarning ? (
               <div className="build-mod-warning" role="alert" aria-live="polite">
@@ -696,9 +906,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 disabled={!canConfirmBuildVariant}
                 onClick={async () => {
                   if (!canConfirmBuildVariant) return;
-                  const selectedVariant = buildVariant;
                   setWarningOpen(false);
-                  await performBuild(selectedVariant);
+                  await performBuild(targetMode);
                 }}
               >
                 <Download aria-hidden="true" />
@@ -772,6 +981,29 @@ function PakFileIcon({ showLabel = false, ...props }) {
         </text>
       ) : null}
     </svg>
+  );
+}
+
+function HeroAvatar({ hero }) {
+  if (!hero) return <span className="hero-avatar hero-avatar-fallback" aria-hidden="true">?</span>;
+  const colors = Array.isArray(hero.icon?.colors) && hero.icon.colors.length >= 2
+    ? hero.icon.colors
+    : ['#4D556A', '#B9C2D6'];
+  if (hero.icon?.src) {
+    return (
+      <span className="hero-avatar" aria-hidden="true">
+        <img src={hero.icon.src} alt="" loading="lazy" />
+      </span>
+    );
+  }
+  return (
+    <span
+      className="hero-avatar"
+      style={{ background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})` }}
+      aria-hidden="true"
+    >
+      {hero.icon?.initials || hero.name.slice(0, 2).toUpperCase()}
+    </span>
   );
 }
 

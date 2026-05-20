@@ -15,6 +15,7 @@ const BASE_HUD_TEMPLATE = [
   '\t\t<include src="s2r://panorama/styles/anita_ui.vcss_c" />',
   "\t</styles>",
   "\t<scripts>",
+  '\t\t<include src="s2r://panorama/scripts/anita_ui_core.vjs_c" />',
   '\t\t<include src="s2r://panorama/scripts/anita_persist_loader.vjs_c" />',
   '\t\t<include src="s2r://panorama/scripts/hp_registrar.vjs_c" />',
   "\t</scripts>",
@@ -32,10 +33,11 @@ const PRESET = {
   }
 };
 
-function buildPresetVpk(modVariant) {
+function buildPresetVpk(modVariant, overrides = {}) {
   const result = buildHpColorsPackage({
     sourceTexts: { [BASE_HUD_SOURCE_PATH]: BASE_HUD_TEMPLATE },
-    preset: PRESET,
+    preset: overrides.preset || PRESET,
+    presets: overrides.presets,
     modVariant
   });
   return writeVpk(result.files);
@@ -63,6 +65,21 @@ test("convertHpColorsPresetVpk retargets a full preset VPK to the minimal mod", 
   assert.equal(converted.preset.values.hp_color_low, "#E16161");
   assert.equal(converted.preset.values.hp_counter_size, 187);
   assert.doesNotMatch(xml, /s2r:\/\/panorama\/styles\/anita_ui\.vcss_c/);
+  assert.match(xml, /s2r:\/\/panorama\/scripts\/anita_ui_core\.vjs_c/);
+  assert.doesNotMatch(xml, /s2r:\/\/panorama\/scripts\/anita_persist_loader\.vjs_c/);
+  assert.doesNotMatch(xml, /s2r:\/\/panorama\/scripts\/hp_registrar\.vjs_c/);
+});
+
+test("convertHpColorsPresetVpk defaults to the minimal mod", () => {
+  const converted = convertHpColorsPresetVpk({
+    vpkBytes: buildPresetVpk(HP_COLORS_MOD_VARIANTS.FULL),
+    baseHudXml: BASE_HUD_TEMPLATE
+  });
+  const xml = readConvertedBaseHudXml(converted.files);
+
+  assert.equal(converted.modVariant, HP_COLORS_MOD_VARIANTS.MINIMAL);
+  assert.doesNotMatch(xml, /s2r:\/\/panorama\/styles\/anita_ui\.vcss_c/);
+  assert.match(xml, /s2r:\/\/panorama\/scripts\/anita_ui_core\.vjs_c/);
   assert.doesNotMatch(xml, /s2r:\/\/panorama\/scripts\/anita_persist_loader\.vjs_c/);
   assert.doesNotMatch(xml, /s2r:\/\/panorama\/scripts\/hp_registrar\.vjs_c/);
 });
@@ -82,4 +99,41 @@ test("convertHpColorsPresetVpk retargets a minimal preset VPK back to the full m
   assert.match(xml, /s2r:\/\/panorama\/scripts\/anita_persist_loader\.vjs_c/);
   assert.match(xml, /s2r:\/\/panorama\/scripts\/hp_registrar\.vjs_c/);
   assert.match(xml, /HPColorsPresetStore/);
+});
+
+test("convertHpColorsPresetVpk preserves multiple hero-targeted presets", () => {
+  const converted = convertHpColorsPresetVpk({
+    vpkBytes: buildPresetVpk(HP_COLORS_MOD_VARIANTS.FULL, {
+      presets: [
+        { name: "Shiv", version: 1, values: { hp_color_low: "#111111" }, heroes: ["hero_shiv"] },
+        { name: "Bebop", version: 1, values: { hp_color_low: "#222222" }, heroes: ["hero_bebop"] }
+      ]
+    }),
+    baseHudXml: BASE_HUD_TEMPLATE,
+    targetModVariant: HP_COLORS_MOD_VARIANTS.FULL
+  });
+
+  const xml = readConvertedBaseHudXml(converted.files);
+
+  assert.equal(converted.presets.length, 2);
+  assert.deepEqual(converted.presets.map((preset) => preset.name), ["Shiv", "Bebop"]);
+  assert.deepEqual(converted.presets.map((preset) => preset.heroMode), ["selected", "selected"]);
+  assert.deepEqual(converted.presets.map((preset) => preset.heroes), [["hero_shiv"], ["hero_bebop"]]);
+  assert.equal((xml.match(/hp_colors_preset_entry/g) || []).length, 2);
+});
+
+test("convertHpColorsPresetVpk preserves explicit off and all hero modes", () => {
+  const converted = convertHpColorsPresetVpk({
+    vpkBytes: buildPresetVpk(HP_COLORS_MOD_VARIANTS.FULL, {
+      presets: [
+        { name: "Disabled", version: 1, values: { hp_color_low: "#111111" }, heroMode: "off", heroes: ["hero_haze"] },
+        { name: "Global", version: 1, values: { hp_color_low: "#222222" }, heroMode: "all", heroes: ["hero_haze"] }
+      ]
+    }),
+    baseHudXml: BASE_HUD_TEMPLATE,
+    targetModVariant: HP_COLORS_MOD_VARIANTS.FULL
+  });
+
+  assert.deepEqual(converted.presets.map((preset) => preset.heroMode), ["off", "all"]);
+  assert.deepEqual(converted.presets.map((preset) => preset.heroes), [[], []]);
 });

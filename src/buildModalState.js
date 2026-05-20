@@ -1,4 +1,4 @@
-import { HP_COLORS_MOD_VARIANTS } from './hpModVariants.js';
+import { DEFAULT_HP_COLORS_MOD_VARIANT, HP_COLORS_MOD_VARIANTS } from './hpModVariants.js';
 
 const BUILD_VARIANTS = new Set(Object.values(HP_COLORS_MOD_VARIANTS));
 
@@ -27,7 +27,7 @@ export function getNextInstallValidationState({ installValidated, buildVariant }
   }
   return {
     installValidated: true,
-    buildVariant: BUILD_VARIANTS.has(buildVariant) ? buildVariant : null
+    buildVariant: BUILD_VARIANTS.has(buildVariant) ? buildVariant : DEFAULT_HP_COLORS_MOD_VARIANT
   };
 }
 

@@ -1,4 +1,5 @@
 import { HP_SCHEMA, coerceHpValue } from "./hpSchema.js";
+import { normalizeHeroIds, normalizeHeroScope } from "./hpHeroData.js";
 
 export const HP_IMPORT_CODE_PREFIX = "[ANITA-v1-hp_colors]:";
 export const HP_IMPORT_CODE_NAMESPACE = "hp_colors";
@@ -257,10 +258,26 @@ function cleanImportedPresetName(name, index) {
   return value || `Imported preset ${index + 1}`;
 }
 
-function createImportProfile(name, values, schema, index) {
+function getPayloadHeroes(payload) {
+  if (!payload || typeof payload !== "object") return [];
+  if (Object.prototype.hasOwnProperty.call(payload, "hs")) return normalizeHeroIds(payload.hs);
+  if (Object.prototype.hasOwnProperty.call(payload, "heroes")) return normalizeHeroIds(payload.heroes);
+  return [];
+}
+
+function getPayloadHeroMode(payload, heroes) {
+  if (!payload || typeof payload !== "object") return normalizeHeroScope(null, heroes).heroMode;
+  const rawMode = Object.prototype.hasOwnProperty.call(payload, "hm") ? payload.hm : payload.heroMode;
+  return normalizeHeroScope(rawMode, heroes).heroMode;
+}
+
+function createImportProfile(name, values, schema, index, heroes = [], heroMode = null) {
+  const scope = normalizeHeroScope(heroMode, heroes);
   return {
     name: cleanImportedPresetName(name, index),
-    values: valuesToSchemaState(values, schema)
+    values: valuesToSchemaState(values, schema),
+    heroMode: scope.heroMode,
+    heroes: scope.heroes
   };
 }
 
@@ -281,12 +298,16 @@ function parseImportProfileEntry(preset, schema, index, allowInheritedVersion) {
   }
   const values = Object.prototype.hasOwnProperty.call(preset, "vs") ? preset.vs : preset.values;
   const name = Object.prototype.hasOwnProperty.call(preset, "n") ? preset.n : preset.name;
-  return createImportProfile(name, values, schema, index);
+  const heroes = getPayloadHeroes(preset);
+  return createImportProfile(name, values, schema, index, heroes, getPayloadHeroMode(preset, heroes));
 }
 
 function parseMinimalBundleEntry(entry, schema, index) {
-  if (!Array.isArray(entry) || entry.length !== 2) throw new Error("Invalid JSON payload");
-  return createImportProfile(entry[0], entry[1], schema, index);
+  if (!Array.isArray(entry) || entry.length < 2 || entry.length > 3) throw new Error("Invalid JSON payload");
+  const scope = entry[2];
+  const heroes = Array.isArray(scope) ? scope : [];
+  const heroMode = Array.isArray(scope) ? "selected" : scope;
+  return createImportProfile(entry[0], entry[1], schema, index, heroes, heroMode);
 }
 
 function parseImportProfilesFromPayload(parsed, schema, fallbackIndex = 0) {
@@ -304,9 +325,13 @@ function parseImportProfilesFromPayload(parsed, schema, fallbackIndex = 0) {
     return parsed.presets.map((preset, index) => parseImportProfileEntry(preset, schema, index, false));
   }
 
+  const heroes = getPayloadHeroes(parsed);
+  const scope = normalizeHeroScope(getPayloadHeroMode(parsed, heroes), heroes);
   return [{
     name: cleanImportedPresetName(parsed.name, fallbackIndex),
-    values: valuesToSchemaState(parsed.values, schema)
+    values: valuesToSchemaState(parsed.values, schema),
+    heroMode: scope.heroMode,
+    heroes: scope.heroes
   }];
 }
 

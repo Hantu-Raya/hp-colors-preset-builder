@@ -98,6 +98,85 @@ test("parses a compact COPY ALL HP Colors bundle into multiple preset profiles",
   assert.equal(profiles[2].values.hp_pulse_color_enabled, true);
 });
 
+test("parses compact hs and verbose heroes in import profiles", () => {
+  const profiles = parseHpColorsImportProfiles(buildToken({
+    v: 97,
+    c: 1,
+    values: { e: false },
+    ps: [
+      { n: "shiv lane", vs: { e: false, cl: "#112233" }, hs: ["shiv", "hero_bebop"] },
+      { n: "global", vs: { m: 1 }, heroes: ["Grey Talon", "unknown"] }
+    ]
+  }), HP_SCHEMA);
+
+  assert.deepEqual(profiles[0].heroes, ["hero_shiv", "hero_bebop"]);
+  assert.equal(profiles[0].heroMode, "selected");
+  assert.deepEqual(profiles[1].heroes, ["hero_orion"]);
+  assert.equal(profiles[1].heroMode, "selected");
+});
+
+test("parses legacy tuple bundle heroes", () => {
+  const code = base64UrlEncode(JSON.stringify({
+    v: 97,
+    p: [
+      ["shiv tuple", { e: false, cl: "#112233" }, ["hero_shiv", "Bebop"]]
+    ]
+  }));
+
+  const profiles = parseHpColorsImportProfiles(code, HP_SCHEMA);
+
+  assert.equal(profiles[0].name, "shiv tuple");
+  assert.equal(profiles[0].values.hp_color_low, "#112233");
+  assert.deepEqual(profiles[0].heroes, ["hero_shiv", "hero_bebop"]);
+  assert.equal(profiles[0].heroMode, "selected");
+});
+
+test("parses minimal COPY ALL bundle hero scope modes", () => {
+  const code = base64UrlEncode(JSON.stringify({
+    v: 97,
+    p: [
+      ["disabled", { e: false }, "off"],
+      ["global", { m: 1 }, "all"],
+      ["haze only", { ch: "#445566" }, ["hero_haze"]]
+    ]
+  }));
+
+  const profiles = parseHpColorsImportProfiles(code, HP_SCHEMA);
+
+  assert.equal(profiles.length, 3);
+  assert.equal(profiles[0].name, "disabled");
+  assert.equal(profiles[0].heroMode, "off");
+  assert.deepEqual(profiles[0].heroes, []);
+  assert.equal(profiles[1].name, "global");
+  assert.equal(profiles[1].heroMode, "all");
+  assert.deepEqual(profiles[1].heroes, []);
+  assert.equal(profiles[2].name, "haze only");
+  assert.equal(profiles[2].heroMode, "selected");
+  assert.deepEqual(profiles[2].heroes, ["hero_haze"]);
+});
+
+test("parses single-profile heroes and hs payloads", () => {
+  const verbose = parseHpColorsImportProfiles(buildToken({
+    v: 97,
+    c: 1,
+    name: "Verbose",
+    values: { e: false },
+    heroes: ["Shiv"]
+  }), HP_SCHEMA);
+  const compact = parseHpColorsImportProfiles(buildToken({
+    v: 97,
+    c: 1,
+    name: "Compact",
+    values: { e: true },
+    hs: ["hero_bebop"]
+  }), HP_SCHEMA);
+
+  assert.deepEqual(verbose[0].heroes, ["hero_shiv"]);
+  assert.equal(verbose[0].heroMode, "selected");
+  assert.deepEqual(compact[0].heroes, ["hero_bebop"]);
+  assert.equal(compact[0].heroMode, "selected");
+});
+
 test("parses the minimal COPY ALL HP Colors bundle into multiple preset profiles", () => {
   const code = base64UrlEncode(JSON.stringify({
     v: 97,
@@ -111,9 +190,11 @@ test("parses the minimal COPY ALL HP Colors bundle into multiple preset profiles
 
   assert.equal(profiles.length, 2);
   assert.equal(profiles[0].name, "main hantu");
+  assert.equal(profiles[0].heroMode, "off");
   assert.equal(profiles[0].values.hp_enabled, false);
   assert.equal(profiles[0].values.hp_color_low, "#112233");
   assert.equal(profiles[1].name, "razzor");
+  assert.equal(profiles[1].heroMode, "off");
   assert.equal(profiles[1].values.hp_mode, 1);
   assert.equal(profiles[1].values.hp_color_high, "#445566");
 });

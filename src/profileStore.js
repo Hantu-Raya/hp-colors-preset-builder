@@ -1,5 +1,6 @@
 import { HP_SCHEMA } from "./hpSchema.js";
 import { sanitizeFormState } from "./hpFormModel.js";
+import { normalizeHeroScope } from "./hpHeroData.js";
 
 export const STORAGE_KEY = "hp_colors_preset_builder_profiles_v1";
 export const DEFAULT_PRESET_NAME = "Web Builder Preset";
@@ -13,11 +14,14 @@ export function cleanProfileName(name, index = 0) {
   return String(name || "").trim() || defaultProfileName(index);
 }
 
-export function createProfile({ id = FIRST_PROFILE_ID, name = DEFAULT_PRESET_NAME, values = {} } = {}) {
+export function createProfile({ id = FIRST_PROFILE_ID, name = DEFAULT_PRESET_NAME, values = {}, heroes = [], heroMode = null } = {}) {
+  const scope = normalizeHeroScope(heroMode, heroes);
   return {
     id: String(id || FIRST_PROFILE_ID),
     name: String(name || ""),
-    values: sanitizeFormState(HP_SCHEMA, values || {})
+    values: sanitizeFormState(HP_SCHEMA, values || {}),
+    heroMode: scope.heroMode,
+    heroes: scope.heroes
   };
 }
 
@@ -44,7 +48,9 @@ function normalizeProfiles(rawProfiles, defaultState) {
     return createProfile({
       id,
       name: cleanProfileName(rawProfile?.name, index),
-      values: rawProfile?.values || defaultState
+      values: rawProfile?.values || defaultState,
+      heroMode: rawProfile?.heroMode || rawProfile?.hm,
+      heroes: rawProfile?.heroes || rawProfile?.hs || []
     });
   });
 }
@@ -79,11 +85,16 @@ export function saveProfileState(storage, state) {
   storage.setItem(STORAGE_KEY, JSON.stringify({
     version: 1,
     activeProfileId,
-    profiles: profiles.map((profile, index) => ({
-      id: String(profile.id || `profile-${index + 1}`),
-      name: cleanProfileName(profile.name, index),
-      values: sanitizeFormState(HP_SCHEMA, profile.values || {})
-    }))
+    profiles: profiles.map((profile, index) => {
+      const scope = normalizeHeroScope(profile.heroMode || profile.hm, profile.heroes || profile.hs);
+      return {
+        id: String(profile.id || `profile-${index + 1}`),
+        name: cleanProfileName(profile.name, index),
+        values: sanitizeFormState(HP_SCHEMA, profile.values || {}),
+        heroMode: scope.heroMode,
+        heroes: scope.heroes
+      };
+    })
   }));
 }
 
@@ -120,10 +131,13 @@ export function reorderProfiles(profiles, fromIndex, toIndex) {
 }
 
 export function profileToPreset(profile, index = 0) {
+  const scope = normalizeHeroScope(profile?.heroMode || profile?.hm, profile?.heroes || profile?.hs);
   return {
     name: cleanProfileName(profile?.name, index),
     version: 1,
-    values: sanitizeFormState(HP_SCHEMA, profile?.values || {})
+    values: sanitizeFormState(HP_SCHEMA, profile?.values || {}),
+    heroMode: scope.heroMode,
+    heroes: scope.heroes
   };
 }
 
