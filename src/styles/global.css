@@ -1751,36 +1751,68 @@
 .target-mode-summary-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 14px;
-  align-items: start;
-  padding: 12px;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
   border: 1px solid color-mix(in srgb, var(--primary) 38%, var(--border));
   border-radius: 8px;
   background: color-mix(in srgb, var(--primary) 10%, var(--muted));
 }
 
 .target-mode-summary-card p {
-  margin-top: 4px;
+  margin-top: 2px;
   color: var(--muted-foreground);
-  font-size: 0.8rem;
-  line-height: 1.45;
+  font-size: 0.75rem;
+  line-height: 1.32;
 }
 
 .target-mode-summary-label {
   display: block;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
   color: var(--primary);
-  font-size: 0.7rem;
+  font-size: 0.64rem;
   font-weight: 780;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.target-mode-summary-card strong {
+  font-size: 0.98rem;
+  line-height: 1.2;
+}
+
+.target-mode-summary-download-link {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 5px;
+  color: #7db7ff;
+  font-size: 0.74rem;
+  font-weight: 760;
+  line-height: 1.25;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.target-mode-summary-download-link:hover {
+  color: #a9ceff;
 }
 
 .target-mode-summary-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 7px;
+}
+
+.target-mode-summary-actions .secondary-action {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 0.78rem;
+}
+
+.target-mode-summary-actions .secondary-action svg {
+  width: 15px;
+  height: 15px;
 }
 
 .build-validation-card {

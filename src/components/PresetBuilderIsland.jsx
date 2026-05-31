@@ -820,13 +820,12 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <div>
                 <span className="target-mode-summary-label">Selected base mod</span>
                 <strong>{targetModeDetails.title}</strong>
-                <p>{targetModeDetails.description}</p>
+                <p>{targetModeDetails.summary}</p>
+                <a className="target-mode-summary-download-link" href={targetModeDetails.downloadHref} target="_blank" rel="noreferrer">
+                  Need the base mod? Download it first.
+                </a>
               </div>
               <div className="target-mode-summary-actions">
-                <a className="secondary-action" href={targetModeDetails.downloadHref} target="_blank" rel="noreferrer">
-                  <Download aria-hidden="true" />
-                  <span>Download mod</span>
-                </a>
                 <button type="button" className="secondary-action" onClick={() => {
                   setWarningOpen(false);
                   openTargetModePicker();
