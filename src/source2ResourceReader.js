@@ -30,10 +30,6 @@ function readDataBlock(input) {
   throw new Error("Missing Source 2 DATA block");
 }
 
-export function extractTextResourceSource(input) {
-  return new TextDecoder().decode(readDataBlock(input));
-}
-
 export function extractPanoramaLayoutSource(input) {
   const data = readDataBlock(input);
   if (data.byteLength < 6) throw new Error("Invalid Panorama layout resource");

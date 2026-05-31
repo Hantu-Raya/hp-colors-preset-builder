@@ -1,90 +1,291 @@
 
 > dev
-> astro dev --host 127.0.0.1 --port 4327
+> astro dev --host 127.0.0.1 --port 4321
 
-[2m08:32:19[22m [34m[types][39m Generated [2m1ms[22m
-[2m08:32:19[22m [34m[content][39m Syncing content
-[2m08:32:19[22m [34m[content][39m Astro config changed
-[2m08:32:19[22m [34m[content][39m Clearing content store
-[2m08:32:19[22m [34m[content][39m Synced content
-[2m08:32:19[22m [34m[vite][39m Re-optimizing dependencies because vite config has changed
-
-[42m[1m astro [22m[49m [32mv5.18.1[39m [2mready in[22m 332 [2mms[22m
-
-[2m┃[22m Local    [36mhttp://127.0.0.1:4327/hp-colors-preset-builder/[39m
-
-[2m08:32:19[22m [32mwatching for file changes...[39m
-[2m08:32:59[22m [34m[200][39m / [2m209ms[22m
-[2m08:33:30[22m [34m[200][39m / [2m43ms[22m
-[2m08:33:41[22m [34m[200][39m / [2m40ms[22m
-[2m08:34:19[22m [34m[watch][39m /@fs/D:\web\hp-colors-preset-builder\src\components\PresetBuilderIsland.jsx, /src/styles/global.css
-[2m08:34:19[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
-[2m08:36:58[22m [34m[200][39m / [2m139ms[22m
-[2m08:38:40[22m [34m[watch][39m /src/styles/global.css
-[2m08:38:41[22m [34m[200][39m / [2m178ms[22m
-[2m08:39:09[22m [34m[200][39m / [2m51ms[22m
-[2m08:43:05[22m [34m[watch][39m /@fs/D:\web\hp-colors-preset-builder\src\components\PresetBuilderIsland.jsx, /src/styles/global.css
-[2m08:43:05[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
-[2m08:43:45[22m [34m[watch][39m /src/styles/global.css
-[2m08:43:47[22m [34m[200][39m / [2m176ms[22m
-[2m08:43:55[22m [34m[watch][39m /src/styles/global.css
-[2m08:43:56[22m [34m[200][39m / [2m256ms[22m
-[2m08:44:31[22m [34m[200][39m / [2m49ms[22m
-[2m08:47:41[22m [34m[watch][39m /@fs/D:\web\hp-colors-preset-builder\src\components\PresetBuilderIsland.jsx, /src/styles/global.css
-[2m08:47:41[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
-[2m08:47:53[22m [34m[watch][39m /src/styles/global.css
-[2m08:47:54[22m [34m[200][39m / [2m182ms[22m
-[2m08:48:09[22m [34m[watch][39m /src/styles/global.css
-[2m08:48:10[22m [34m[200][39m / [2m172ms[22m
-[2m08:48:40[22m [34m[200][39m / [2m38ms[22m
-[2m08:48:41[22m [34m[200][39m / [2m36ms[22m
-[2m08:48:42[22m [34m[200][39m / [2m37ms[22m
-[2m08:49:10[22m [34m[watch][39m /src/styles/global.css
-[2m08:49:11[22m [34m[200][39m / [2m172ms[22m
-[2m08:49:23[22m [34m[200][39m / [2m39ms[22m
-[2m08:49:44[22m [34m[watch][39m /src/styles/global.css
-[2m08:49:45[22m [34m[200][39m / [2m178ms[22m
-[2m08:50:00[22m [34m[200][39m / [2m43ms[22m
-[2m08:50:01[22m [34m[200][39m / [2m42ms[22m
-[2m08:50:02[22m [34m[200][39m / [2m37ms[22m
-[2m20:33:38[22m [34m[watch][39m LICENSE
-[2m20:33:38[22m [34m[watch][39m LICENSE
-[2m20:33:38[22m [34m[watch][39m LICENSE
-[2m20:33:38[22m [34m[watch][39m LICENSE
-[2m20:33:39[22m [34m[200][39m / [2m161ms[22m
-[2m20:33:54[22m Configuration file updated. Restarting...
-[2m20:33:54[22m [34m[watch][39m package.json
-[2m20:33:54[22m [34m[watch][39m package.json
-[2m20:33:54[22m [34m[watch][39m package.json
-[2m20:33:54[22m [34m[watch][39m package.json
-[2m20:33:54[22m [34m[watch][39m /@fs/D:\web\hp-colors-preset-builder\src\components\PresetBuilderIsland.jsx, /src/styles/global.css
-[2m20:33:54[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
-[2m20:33:54[22m [34m[watch][39m README.md
-[2m20:33:54[22m [34m[watch][39m README.md
-[2m20:33:54[22m [34m[vite][39m Re-optimizing dependencies because vite config has changed
-[2m20:33:54[22m [34m[content][39m Syncing content
-[2m20:33:54[22m [34m[content][39m Synced content
-[2m20:33:54[22m [34m[types][39m Generated [2m227ms[22m
-[2m20:33:54[22m [34m[vite][39m Re-optimizing dependencies because vite config has changed
-[2m20:33:55[22m [34m[200][39m / [2m229ms[22m
-[2m20:33:55[22m [34m[200][39m / [2m230ms[22m
-[2m20:34:01[22m [34m[watch][39m NOTICE.md
-[2m20:34:01[22m [34m[watch][39m NOTICE.md
-[2m20:34:02[22m [34m[200][39m / [2m125ms[22m
-[2m20:34:11[22m [34m[watch][39m NOTICE
-[2m20:34:11[22m [34m[watch][39m NOTICE
-[2m20:34:12[22m [34m[200][39m / [2m140ms[22m
-[2m20:38:00[22m [34m[watch][39m LICENSE
-[2m20:38:00[22m [34m[watch][39m LICENSE
-[2m20:38:00[22m [34m[200][39m / [2m125ms[22m
-[2m20:40:28[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
-[2m20:40:28[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
-[2m20:40:28[22m [34m[200][39m / [2m115ms[22m
-[2m20:40:43[22m [34m[watch][39m /src/styles/global.css
-[2m20:40:43[22m [34m[200][39m / [2m263ms[22m
-[2m20:40:49[22m [34m[watch][39m /src/styles/global.css
-[2m20:40:50[22m [34m[200][39m / [2m238ms[22m
-[2m20:41:51[22m [34m[200][39m / [2m49ms[22m
-[2m20:42:35[22m [34m[200][39m / [2m39ms[22m
-[2m20:42:36[22m [34m[200][39m / [2m36ms[22m
-[2m20:42:36[22m [34m[200][39m / [2m36ms[22m
+[vite] connected.
+[2m08:13:05[22m [34m[types][39m Generated [2m1ms[22m
+[2m08:13:05[22m [34m[vite][39m Re-optimizing dependencies because vite config has changed
+[42m[1m astro [22m[49m [32mv6.3.2[39m [2mready in[22m 1175 [2mms[22m
+[2m┃[22m Local    [36mhttp://127.0.0.1:4321/hp-colors-preset-builder/[39m
+[2m08:13:05[22m [32mwatching for file changes...[39m
+[2m08:13:50[22m [34m[200][39m / [2m196ms[22m
+[2m08:13:50[22m [34m[200][39m /commit-info.json [2m100ms[22m
+[2m08:14:04[22m [34m[200][39m / [2m104ms[22m
+[2m08:14:04[22m [34m[200][39m /commit-info.json [2m127ms[22m
+[2m08:14:51[22m [34m[200][39m / [2m114ms[22m
+[2m08:14:51[22m [34m[200][39m /commit-info.json [2m123ms[22m
+[2m08:15:37[22m [34m[200][39m / [2m111ms[22m
+[2m08:15:37[22m [34m[200][39m /commit-info.json [2m121ms[22m
+[2m08:19:17[22m [34m[200][39m / [2m120ms[22m
+[2m08:19:18[22m [34m[200][39m /commit-info.json [2m99ms[22m
+[2m08:32:08[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m08:32:08[22m [34m[watch][39m src/hpHeroData.js
+[vite] program reload
+[2m08:32:08[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m08:32:08[22m [34m[watch][39m src/hpHeroData.js
+[2m08:32:09[22m [34m[200][39m /commit-info.json [2m208ms[22m
+[vite] program reload
+[2m08:32:09[22m [34m[200][39m /commit-info.json [2m156ms[22m
+[2m08:32:09[22m [34m[200][39m /commit-info.json [2m160ms[22m
+[2m08:32:09[22m [34m[200][39m /commit-info.json [2m159ms[22m
+[2m08:32:10[22m [34m[200][39m /commit-info.json [2m160ms[22m
+[2m08:32:10[22m [34m[200][39m /commit-info.json [2m157ms[22m
+[2m08:35:19[22m [34m[200][39m / [2m123ms[22m
+[2m08:35:20[22m [34m[200][39m /commit-info.json [2m124ms[22m
+[2m08:57:39[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m08:57:39[22m [34m[watch][39m src/hpHeroData.js
+[vite] program reload
+[2m08:57:40[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m08:57:40[22m [34m[watch][39m src/hpHeroData.js
+[2m08:57:40[22m [34m[200][39m /commit-info.json [2m134ms[22m
+[2m08:57:41[22m [34m[200][39m /commit-info.json [2m217ms[22m
+[2m08:57:41[22m [34m[200][39m /commit-info.json [2m116ms[22m
+[2m08:57:41[22m [34m[200][39m /commit-info.json [2m115ms[22m
+[2m08:57:41[22m [34m[200][39m /commit-info.json [2m107ms[22m
+[vite] program reload
+[2m08:57:42[22m [34m[200][39m /commit-info.json [2m113ms[22m
+[2m08:57:48[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m08:57:48[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m08:57:48[22m [34m[200][39m /commit-info.json [2m140ms[22m
+[2m08:57:48[22m [34m[200][39m /commit-info.json [2m146ms[22m
+[2m08:57:49[22m [34m[200][39m /commit-info.json [2m153ms[22m
+[2m08:57:55[22m [34m[watch][39m src/packageBuilder.js
+[2m09:00:50[22m [34m[200][39m / [2m143ms[22m
+[2m09:00:50[22m [34m[200][39m / [2m127ms[22m
+[2m09:00:51[22m [34m[200][39m /commit-info.json [2m123ms[22m
+[2m09:02:59[22m [34m[200][39m / [2m126ms[22m
+[2m09:03:00[22m [34m[200][39m /commit-info.json [2m132ms[22m
+[2m09:03:29[22m [34m[watch][39m /src/styles/global.css
+[2m09:03:43[22m [34m[200][39m / [2m99ms[22m
+[2m09:03:43[22m [34m[200][39m /commit-info.json [2m106ms[22m
+[2m09:03:58[22m [34m[200][39m / [2m189ms[22m
+[2m09:03:58[22m [34m[200][39m /commit-info.json [2m191ms[22m
+[2m09:03:59[22m [34m[200][39m / [2m132ms[22m
+[2m09:03:59[22m [34m[200][39m /commit-info.json [2m134ms[22m
+[2m09:04:00[22m [34m[200][39m / [2m133ms[22m
+[2m09:04:00[22m [34m[200][39m /commit-info.json [2m142ms[22m
+[2m09:04:01[22m [34m[200][39m / [2m139ms[22m
+[2m09:04:01[22m [34m[200][39m /commit-info.json [2m137ms[22m
+[2m09:04:02[22m [34m[200][39m / [2m130ms[22m
+[2m09:04:02[22m [34m[200][39m /commit-info.json [2m133ms[22m
+[2m09:04:27[22m [34m[200][39m / [2m158ms[22m
+[2m09:04:28[22m [34m[200][39m /commit-info.json [2m126ms[22m
+[2m09:04:28[22m [34m[200][39m / [2m122ms[22m
+[2m09:04:29[22m [34m[200][39m /commit-info.json [2m149ms[22m
+[2m09:04:29[22m [34m[200][39m / [2m132ms[22m
+[2m09:04:30[22m [34m[200][39m /commit-info.json [2m153ms[22m
+[2m09:04:30[22m [34m[200][39m / [2m144ms[22m
+[2m09:04:31[22m [34m[200][39m /commit-info.json [2m143ms[22m
+[2m09:04:31[22m [34m[200][39m / [2m126ms[22m
+[2m09:04:32[22m [34m[200][39m /commit-info.json [2m152ms[22m
+[2m09:04:32[22m [34m[200][39m / [2m114ms[22m
+[2m09:04:33[22m [34m[200][39m /commit-info.json [2m126ms[22m
+[2m09:06:09[22m [34m[200][39m / [2m126ms[22m
+[2m09:06:09[22m [34m[200][39m /commit-info.json [2m109ms[22m
+[2m09:13:02[22m [34m[200][39m / [2m229ms[22m
+[2m09:13:02[22m [34m[200][39m / [2m191ms[22m
+[2m09:13:03[22m [34m[200][39m /commit-info.json [2m196ms[22m
+[2m09:13:03[22m [34m[200][39m / [2m117ms[22m
+[2m09:13:03[22m [34m[200][39m /commit-info.json [2m118ms[22m
+[2m09:13:04[22m [34m[200][39m / [2m114ms[22m
+[2m09:13:04[22m [34m[200][39m /commit-info.json [2m119ms[22m
+[2m09:13:06[22m [34m[200][39m / [2m247ms[22m
+[2m09:13:07[22m [34m[200][39m /commit-info.json [2m124ms[22m
+[2m09:13:07[22m [34m[200][39m / [2m111ms[22m
+[2m09:13:07[22m [34m[200][39m /commit-info.json [2m202ms[22m
+[2m09:13:24[22m [34m[200][39m / [2m105ms[22m
+[2m09:13:24[22m [34m[200][39m /commit-info.json [2m114ms[22m
+[2m09:13:40[22m [34m[200][39m / [2m135ms[22m
+[2m09:13:40[22m [34m[200][39m /commit-info.json [2m155ms[22m
+[2m09:13:41[22m [34m[200][39m / [2m141ms[22m
+[2m09:13:41[22m [34m[200][39m /commit-info.json [2m142ms[22m
+[2m09:13:42[22m [34m[200][39m / [2m132ms[22m
+[2m09:13:42[22m [34m[200][39m /commit-info.json [2m126ms[22m
+[2m09:13:43[22m [34m[200][39m / [2m121ms[22m
+[2m09:13:43[22m [34m[200][39m /commit-info.json [2m118ms[22m
+[2m09:13:44[22m [34m[200][39m / [2m111ms[22m
+[2m09:13:44[22m [34m[200][39m /commit-info.json [2m109ms[22m
+[2m09:15:55[22m [34m[200][39m / [2m122ms[22m
+[2m09:17:09[22m [34m[200][39m / [2m108ms[22m
+[2m09:17:09[22m [34m[200][39m /commit-info.json [2m134ms[22m
+[2m09:18:35[22m [34m[200][39m / [2m107ms[22m
+[2m09:18:35[22m [34m[200][39m /commit-info.json [2m127ms[22m
+[2m09:19:21[22m [34m[200][39m / [2m125ms[22m
+[2m09:19:21[22m [34m[200][39m /commit-info.json [2m207ms[22m
+[2m09:19:52[22m [34m[200][39m / [2m153ms[22m
+[2m09:19:53[22m [34m[200][39m /commit-info.json [2m137ms[22m
+[2m09:19:54[22m [34m[200][39m / [2m123ms[22m
+[2m09:19:54[22m [34m[200][39m /commit-info.json [2m176ms[22m
+[2m09:19:55[22m [34m[200][39m / [2m123ms[22m
+[2m09:19:55[22m [34m[200][39m /commit-info.json [2m142ms[22m
+[2m09:19:56[22m [34m[200][39m / [2m165ms[22m
+[2m09:19:57[22m [34m[200][39m /commit-info.json [2m168ms[22m
+[2m09:19:58[22m [34m[200][39m / [2m164ms[22m
+[2m09:19:58[22m [34m[200][39m /commit-info.json [2m171ms[22m
+[2m09:19:59[22m [34m[200][39m / [2m161ms[22m
+[2m09:19:59[22m [34m[200][39m /commit-info.json [2m168ms[22m
+[2m09:20:01[22m [34m[200][39m / [2m162ms[22m
+[2m09:20:01[22m [34m[200][39m /commit-info.json [2m165ms[22m
+[2m09:20:37[22m [34m[watch][39m /src/styles/global.css
+[2m09:21:29[22m [34m[200][39m / [2m105ms[22m
+[2m09:21:29[22m [34m[200][39m /commit-info.json [2m117ms[22m
+[2m09:21:30[22m [34m[200][39m / [2m106ms[22m
+[2m09:21:31[22m [34m[200][39m /commit-info.json [2m115ms[22m
+[2m09:21:32[22m [34m[200][39m / [2m107ms[22m
+[2m09:21:32[22m [34m[200][39m /commit-info.json [2m119ms[22m
+[2m09:21:33[22m [34m[200][39m / [2m101ms[22m
+[2m09:21:33[22m [34m[200][39m /commit-info.json [2m110ms[22m
+[2m09:21:34[22m [34m[200][39m / [2m106ms[22m
+[2m09:21:34[22m [34m[200][39m /commit-info.json [2m113ms[22m
+[2m09:21:35[22m [34m[200][39m / [2m103ms[22m
+[2m09:21:35[22m [34m[200][39m /commit-info.json [2m109ms[22m
+[2m09:21:36[22m [34m[200][39m / [2m100ms[22m
+[2m09:21:36[22m [34m[200][39m /commit-info.json [2m106ms[22m
+[2m09:58:33[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m09:58:33[22m [34m[watch][39m src/hpModVariants.js
+[vite] program reload
+[2m09:58:33[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m09:58:33[22m [34m[watch][39m src/hpModVariants.js
+[vite] program reload
+[2m09:58:34[22m [34m[200][39m /commit-info.json [2m121ms[22m
+[2m09:58:34[22m [34m[200][39m /commit-info.json [2m101ms[22m
+[2m09:58:34[22m [34m[200][39m /commit-info.json [2m106ms[22m
+[2m09:58:34[22m [34m[200][39m /commit-info.json [2m100ms[22m
+[2m09:58:34[22m [34m[200][39m /commit-info.json [2m103ms[22m
+[2m09:58:34[22m [34m[200][39m /commit-info.json [2m104ms[22m
+[2m09:58:34[22m [34m[200][39m /commit-info.json [2m102ms[22m
+[2m09:58:35[22m [34m[200][39m /commit-info.json [2m98ms[22m
+[2m09:58:42[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m09:58:42[22m [34m[watch][39m src/packageBuilder.js
+[2m09:58:42[22m [34m[200][39m /commit-info.json [2m118ms[22m
+[2m09:58:42[22m [34m[200][39m /commit-info.json [2m120ms[22m
+[2m09:58:42[22m [34m[200][39m /commit-info.json [2m113ms[22m
+[2m09:58:43[22m [34m[200][39m /commit-info.json [2m107ms[22m
+[2m09:58:48[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m09:58:48[22m [34m[watch][39m src/buildModalState.js
+[vite] program reload
+[2m09:58:48[22m [34m[200][39m /commit-info.json [2m113ms[22m
+[2m09:58:48[22m [34m[200][39m /commit-info.json [2m109ms[22m
+[2m09:58:48[22m [34m[200][39m /commit-info.json [2m115ms[22m
+[2m09:58:49[22m [34m[200][39m /commit-info.json [2m102ms[22m
+[2m09:58:53[22m [34m[watch][39m src/vpkConverter.js
+[2m09:59:07[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m09:59:07[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m09:59:07[22m [34m[200][39m /commit-info.json [2m113ms[22m
+[2m09:59:07[22m [34m[200][39m /commit-info.json [2m105ms[22m
+[2m09:59:07[22m [34m[200][39m /commit-info.json [2m112ms[22m
+[2m09:59:08[22m [34m[200][39m /commit-info.json [2m101ms[22m
+[2m10:00:16[22m [34m[200][39m / [2m131ms[22m
+[2m10:00:16[22m [34m[200][39m /commit-info.json [2m135ms[22m
+[2m10:04:34[22m [34m[200][39m / [2m130ms[22m
+[2m10:04:35[22m [34m[200][39m /commit-info.json [2m102ms[22m
+[2m10:05:03[22m [34m[200][39m / [2m116ms[22m
+[2m10:05:03[22m [34m[200][39m /commit-info.json [2m109ms[22m
+[2m10:11:36[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m10:11:36[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m10:11:54[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m10:11:54[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m10:11:54[22m [34m[200][39m /commit-info.json [2m122ms[22m
+[2m10:11:54[22m [34m[200][39m /commit-info.json [2m109ms[22m
+[2m10:11:55[22m [34m[200][39m /commit-info.json [2m108ms[22m
+[2m10:11:55[22m [34m[200][39m /commit-info.json [2m98ms[22m
+[2m10:12:03[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m10:12:03[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m10:12:03[22m [34m[200][39m /commit-info.json [2m99ms[22m
+[2m10:12:03[22m [34m[200][39m /commit-info.json [2m101ms[22m
+[2m10:12:04[22m [34m[200][39m /commit-info.json [2m98ms[22m
+[2m10:12:05[22m [34m[200][39m /commit-info.json [2m100ms[22m
+[2m10:12:17[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m10:12:17[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m10:12:17[22m [34m[200][39m /commit-info.json [2m106ms[22m
+[2m10:12:17[22m [34m[200][39m /commit-info.json [2m102ms[22m
+[2m10:12:18[22m [34m[200][39m /commit-info.json [2m101ms[22m
+[2m10:12:19[22m [34m[200][39m /commit-info.json [2m102ms[22m
+[2m10:12:30[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m10:12:30[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m10:12:30[22m [34m[200][39m /commit-info.json [2m102ms[22m
+[2m10:12:30[22m [34m[200][39m /commit-info.json [2m107ms[22m
+[2m10:12:31[22m [34m[200][39m /commit-info.json [2m98ms[22m
+[2m10:12:32[22m [34m[200][39m /commit-info.json [2m100ms[22m
+[2m10:12:46[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m10:12:46[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m10:12:46[22m [34m[200][39m /commit-info.json [2m115ms[22m
+[2m10:12:47[22m [34m[200][39m /commit-info.json [2m102ms[22m
+[2m10:12:47[22m [34m[200][39m /commit-info.json [2m101ms[22m
+[2m10:12:49[22m [34m[200][39m /commit-info.json [2m99ms[22m
+[2m10:13:04[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m10:13:04[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m10:13:05[22m [34m[200][39m /commit-info.json [2m117ms[22m
+[2m10:13:05[22m [34m[200][39m /commit-info.json [2m118ms[22m
+[2m10:13:06[22m [34m[200][39m /commit-info.json [2m114ms[22m
+[2m10:13:07[22m [34m[200][39m /commit-info.json [2m102ms[22m
+[2m10:13:45[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m10:13:45[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m10:13:45[22m [34m[200][39m /commit-info.json [2m119ms[22m
+[2m10:13:45[22m [34m[200][39m /commit-info.json [2m107ms[22m
+[2m10:13:46[22m [34m[200][39m /commit-info.json [2m101ms[22m
+[2m10:13:47[22m [34m[200][39m /commit-info.json [2m99ms[22m
+[2m10:14:23[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m10:14:23[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m10:14:23[22m [34m[200][39m /commit-info.json [2m133ms[22m
+[2m10:14:23[22m [34m[200][39m /commit-info.json [2m123ms[22m
+[2m10:14:24[22m [34m[200][39m /commit-info.json [2m111ms[22m
+[2m10:14:25[22m [34m[200][39m /commit-info.json [2m104ms[22m
+[2m10:14:52[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m10:14:52[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m10:14:53[22m [34m[200][39m /commit-info.json [2m105ms[22m
+[2m10:14:53[22m [34m[200][39m /commit-info.json [2m107ms[22m
+[2m10:14:54[22m [34m[200][39m /commit-info.json [2m114ms[22m
+[2m10:14:55[22m [34m[200][39m /commit-info.json [2m108ms[22m
+[2m10:15:21[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m10:15:21[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m10:15:21[22m [34m[200][39m /commit-info.json [2m121ms[22m
+[2m10:15:22[22m [34m[200][39m /commit-info.json [2m102ms[22m
+[2m10:15:22[22m [34m[200][39m /commit-info.json [2m102ms[22m
+[2m10:15:24[22m [34m[200][39m /commit-info.json [2m111ms[22m
+[2m10:15:41[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m10:15:41[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m10:15:41[22m [34m[200][39m /commit-info.json [2m134ms[22m
+[2m10:15:41[22m [34m[200][39m /commit-info.json [2m151ms[22m
+[2m10:15:42[22m [34m[200][39m /commit-info.json [2m111ms[22m
+[2m10:15:43[22m [34m[200][39m /commit-info.json [2m107ms[22m
+[2m10:16:11[22m [34m[watch][39m /src/components/PresetBuilderIsland.jsx
+[2m10:16:11[22m [34m[watch][39m src/components/PresetBuilderIsland.jsx
+[vite] program reload
+[2m10:16:11[22m [34m[200][39m /commit-info.json [2m131ms[22m
+[2m10:16:11[22m [34m[200][39m /commit-info.json [2m123ms[22m
+[2m10:16:12[22m [34m[200][39m /commit-info.json [2m100ms[22m
+[2m10:16:18[22m [34m[200][39m /commit-info.json [2m108ms[22m
+[2m10:16:37[22m [34m[watch][39m /src/styles/global.css
+[2m10:16:50[22m [34m[watch][39m /src/styles/global.css
+[2m10:17:32[22m [34m[watch][39m /src/styles/global.css
+[2m10:17:40[22m [34m[watch][39m /src/styles/global.css
+[2m10:18:02[22m [34m[watch][39m /src/styles/global.css
+[2m10:18:50[22m [34m[200][39m / [2m110ms[22m
+[2m10:18:51[22m [34m[200][39m /commit-info.json [2m114ms[22m
+[2m10:18:51[22m [34m[200][39m / [2m105ms[22m
+[2m10:18:52[22m [34m[200][39m /commit-info.json [2m116ms[22m
+[2m10:18:52[22m [34m[200][39m / [2m102ms[22m
+[2m10:18:52[22m [34m[200][39m /commit-info.json [2m111ms[22m
+[2m10:19:46[22m [34m[200][39m / [2m104ms[22m
+[2m10:19:46[22m [34m[200][39m /commit-info.json [2m116ms[22m
+[2m10:19:47[22m [34m[200][39m / [2m104ms[22m
+[2m10:19:47[22m [34m[200][39m /commit-info.json [2m116ms[22m
+[2m10:19:48[22m [34m[200][39m / [2m104ms[22m
+[2m10:19:48[22m [34m[200][39m /commit-info.json [2m109ms[22m
+[2m10:19:48[22m [34m[200][39m / [2m103ms[22m
+[2m10:19:49[22m [34m[200][39m /commit-info.json [2m108ms[22m

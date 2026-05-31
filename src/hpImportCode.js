@@ -1,18 +1,18 @@
 import { HP_SCHEMA, coerceHpValue } from "./hpSchema.js";
 import { normalizeHeroIds, normalizeHeroScope } from "./hpHeroData.js";
 
-export const HP_IMPORT_CODE_PREFIX = "[ANITA-v1-hp_colors]:";
-export const HP_IMPORT_CODE_NAMESPACE = "hp_colors";
-export const HP_IMPORT_CODE_VERSION = 97;
-export const HP_IMPORT_CODE_COMPACT_VERSION = 1;
-export const HP_IMPORT_CODE_LEGACY_VERSIONS = new Set([25]);
+const HP_IMPORT_CODE_PREFIX = "[ANITA-v1-hp_colors]:";
+const HP_IMPORT_CODE_NAMESPACE = "hp_colors";
+const HP_IMPORT_CODE_VERSION = 97;
+const HP_IMPORT_CODE_COMPACT_VERSION = 1;
+const HP_IMPORT_CODE_LEGACY_VERSIONS = new Set([25]);
 const MAX_IMPORT_TEXT_CHARS = 32768;
 const MAX_IMPORT_TOKEN_CHARS = 16384;
 const MAX_IMPORT_PAYLOAD_CHARS = 8192;
 const BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const BASE64_LOOKUP = new Map(Array.from(BASE64_CHARS, (ch, idx) => [ch, idx]));
 
-export const HP_PERSIST_ALIASES = Object.freeze({
+const HP_PERSIST_ALIASES = Object.freeze({
   hp_enabled: "e",
   hp_mode: "m",
   hp_low_threshold: "l",

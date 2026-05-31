@@ -8,7 +8,7 @@ export const TARGET_MODE_CHOICES = Object.freeze([
     title: "Minimal mod",
     label: "Minimal",
     summary: "Preset VPK for the lightweight HP Colors runtime.",
-    description: "Use this when you installed the minimal HP Colors mod. It builds only the preset store the minimal runtime reads, without the full Anita UI menu.",
+    description: "Use this when you installed the minimal HP Colors mod. It builds the preset store the minimal runtime reads, including static hero-targeted profile routing without the full Anita UI menu.",
     downloadHref: "https://gamebanana.com/mods/download/603113#FileInfo_1701235"
   }),
   Object.freeze({
@@ -74,5 +74,6 @@ export function isFullTargetMode(targetMode) {
 
 export function getBuildProfilesForTargetMode(profiles, targetMode) {
   const list = Array.isArray(profiles) ? profiles : [];
-  return isFullTargetMode(targetMode) ? list : list.slice(0, 1);
+  normalizeTargetMode(targetMode);
+  return list;
 }

@@ -84,10 +84,10 @@ test("getTargetModeDetails exposes choice copy and download links", () => {
   assert.match(full.downloadHref, /^https:\/\//);
 });
 
-test("getBuildProfilesForTargetMode keeps all full profiles but only the top minimal preset", () => {
+test("getBuildProfilesForTargetMode keeps all profiles for full and minimal targets", () => {
   const profiles = [{ name: "One" }, { name: "Two" }];
 
   assert.deepEqual(getBuildProfilesForTargetMode(profiles, HP_COLORS_MOD_VARIANTS.FULL), profiles);
-  assert.deepEqual(getBuildProfilesForTargetMode(profiles, HP_COLORS_MOD_VARIANTS.MINIMAL), [profiles[0]]);
+  assert.deepEqual(getBuildProfilesForTargetMode(profiles, HP_COLORS_MOD_VARIANTS.MINIMAL), profiles);
   assert.deepEqual(getBuildProfilesForTargetMode([], HP_COLORS_MOD_VARIANTS.MINIMAL), []);
 });

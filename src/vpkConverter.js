@@ -37,18 +37,6 @@ function extractPresetsFromBaseHudXml(baseHudXml) {
   return extractPresetEntryTokens(baseHudXml).map(decodePresetToken);
 }
 
-function extractPresetFromBaseHudXml(baseHudXml) {
-  return extractPresetsFromBaseHudXml(baseHudXml)[0];
-}
-
-export function extractHpColorsPresetFromVpk(vpkBytes) {
-  const files = readVpk(vpkBytes);
-  const baseHud = files.find((file) => file.path === BASE_HUD_OUTPUT_PATH);
-  if (!baseHud) throw new Error("This VPK does not contain the HP Colors base_hud override");
-  const baseHudXml = extractPanoramaLayoutSource(baseHud.bytes);
-  return extractPresetFromBaseHudXml(baseHudXml);
-}
-
 export function convertHpColorsPresetVpk({ vpkBytes, baseHudXml, targetModVariant }) {
   const files = readVpk(vpkBytes);
   const baseHud = files.find((file) => file.path === BASE_HUD_OUTPUT_PATH);

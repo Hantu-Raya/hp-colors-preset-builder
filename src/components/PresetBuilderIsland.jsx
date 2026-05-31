@@ -178,11 +178,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     setInstallValidated(false);
     setTargetModeLoaded(true);
     saveTargetModeState(typeof window !== 'undefined' ? window.localStorage : null, nextMode);
-    if (!isFullTargetMode(nextMode)) {
-      setActiveProfileId((profiles[0] || activeProfile).id);
-      setProfileMenuOpen(false);
-      setHeroMenuOpen(false);
-    }
+    setProfileMenuOpen(false);
+    setHeroMenuOpen(false);
   }
 
   function openTargetModePicker() {
@@ -215,11 +212,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
       saveProfileState(storage, latestProfileSnapshot.current);
     });
   }, [activeProfileId, profiles, profilesLoaded]);
-
-  useEffect(() => {
-    if (!targetModeLoaded || fullTargetMode || !profiles[0] || activeProfileId === profiles[0].id) return;
-    setActiveProfileId(profiles[0].id);
-  }, [activeProfileId, fullTargetMode, profiles, targetModeLoaded]);
 
   useEffect(() => {
     if (!profilesLoaded || typeof window === 'undefined') return;
@@ -321,26 +313,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     try {
       const { parseHpColorsImportProfiles } = await import('../hpImportCode.js');
       const importedProfiles = parseHpColorsImportProfiles(importText, HP_SCHEMA);
-      if (!fullTargetMode) {
-        const imported = importedProfiles[0];
-        const current = profiles.length ? profiles : [createInitialProfile(defaultState)];
-        const first = current[0] || createInitialProfile(defaultState);
-        setProfiles([
-          createProfile({
-            id: first.id,
-            name: imported.name,
-            values: imported.values,
-            heroMode: HP_HERO_SCOPE_OFF,
-            heroes: []
-          }),
-          ...current.slice(1)
-        ]);
-        setActiveProfileId(first.id);
-        setStatus(importedProfiles.length > 1
-          ? 'Imported the first preset for minimal mode. Switch to Full mod to use profile bundles.'
-          : `Imported ${cleanProfileName(imported.name, 0)}.`);
-        return;
-      }
       if (importedProfiles.length <= 1) {
         const imported = importedProfiles[0];
         updateActiveProfile({ name: imported.name, values: imported.values, heroMode: imported.heroMode, heroes: imported.heroes });
@@ -515,70 +487,67 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 <strong>{targetModeDetails.label}</strong>
               </span>
             </button>
-            {fullTargetMode ? (
-              <div className="topbar-profile-controls" aria-label="Preset profiles">
-                <button type="button" className="profile-icon-action" onClick={handleAddProfile} aria-label="Add preset">
-                  <Plus aria-hidden="true" />
+            <div className="topbar-profile-controls" aria-label="Preset profiles">
+              <button type="button" className="profile-icon-action" onClick={handleAddProfile} aria-label="Add preset">
+                <Plus aria-hidden="true" />
+              </button>
+              <button type="button" className="profile-icon-action" onClick={handleDeleteProfile} disabled={profiles.length <= 1} aria-label="Remove preset">
+                <Trash2 aria-hidden="true" />
+              </button>
+              <div className="profile-selector">
+                <button
+                  type="button"
+                  className="profile-selector-trigger"
+                  onClick={() => setProfileMenuOpen((open) => !open)}
+                  aria-expanded={profileMenuOpen}
+                  aria-haspopup="listbox"
+                >
+                  <span className="profile-selector-title">{presetName}</span>
+                  <span className="profile-selector-meta">{activeOverrideCount} override{activeOverrideCount === 1 ? '' : 's'} / {profiles.length}</span>
+                  <ChevronDown aria-hidden="true" />
                 </button>
-                <button type="button" className="profile-icon-action" onClick={handleDeleteProfile} disabled={profiles.length <= 1} aria-label="Remove preset">
-                  <Trash2 aria-hidden="true" />
-                </button>
-                <div className="profile-selector">
-                  <button
-                    type="button"
-                    className="profile-selector-trigger"
-                    onClick={() => setProfileMenuOpen((open) => !open)}
-                    aria-expanded={profileMenuOpen}
-                    aria-haspopup="listbox"
-                  >
-                    <span className="profile-selector-title">{presetName}</span>
-                    <span className="profile-selector-meta">{activeOverrideCount} override{activeOverrideCount === 1 ? '' : 's'} / {profiles.length}</span>
-                    <ChevronDown aria-hidden="true" />
-                  </button>
-                  {profileMenuOpen && (
-                    <div className="profile-selector-menu" role="listbox" aria-label="Preset profiles">
-                      {profiles.map((profile, index) => {
-                        const label = cleanProfileName(profile.name, index);
-                        const overrides = countPresetOverrides(profile.values, defaultState);
-                        return (
-                          <button
-                            key={profile.id}
-                            type="button"
-                            draggable
-                            className={profile.id === activeProfile.id ? 'profile-menu-row is-active' : 'profile-menu-row'}
-                            role="option"
-                            aria-selected={profile.id === activeProfile.id}
-                            onClick={() => handleSelectProfile(profile.id)}
-                            onDragStart={(event) => {
-                              setDragIndex(index);
-                              event.dataTransfer.effectAllowed = 'move';
-                              event.dataTransfer.setData('text/plain', String(index));
-                            }}
-                            onDragOver={(event) => {
-                              event.preventDefault();
-                              event.dataTransfer.dropEffect = 'move';
-                            }}
-                            onDrop={(event) => handleDropProfile(event, index)}
-                            onDragEnd={() => setDragIndex(null)}
-                          >
-                            <GripVertical className="profile-drag-handle" aria-hidden="true" />
-                            <span className="profile-menu-text">
-                              <span className="profile-row-name">{label}</span>
-                              <span className="profile-row-meta">{overrides} override{overrides === 1 ? '' : 's'} / priority {index + 1}</span>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                {profileMenuOpen && (
+                  <div className="profile-selector-menu" role="listbox" aria-label="Preset profiles">
+                    {profiles.map((profile, index) => {
+                      const label = cleanProfileName(profile.name, index);
+                      const overrides = countPresetOverrides(profile.values, defaultState);
+                      return (
+                        <button
+                          key={profile.id}
+                          type="button"
+                          draggable
+                          className={profile.id === activeProfile.id ? 'profile-menu-row is-active' : 'profile-menu-row'}
+                          role="option"
+                          aria-selected={profile.id === activeProfile.id}
+                          onClick={() => handleSelectProfile(profile.id)}
+                          onDragStart={(event) => {
+                            setDragIndex(index);
+                            event.dataTransfer.effectAllowed = 'move';
+                            event.dataTransfer.setData('text/plain', String(index));
+                          }}
+                          onDragOver={(event) => {
+                            event.preventDefault();
+                            event.dataTransfer.dropEffect = 'move';
+                          }}
+                          onDrop={(event) => handleDropProfile(event, index)}
+                          onDragEnd={() => setDragIndex(null)}
+                        >
+                          <GripVertical className="profile-drag-handle" aria-hidden="true" />
+                          <span className="profile-menu-text">
+                            <span className="profile-row-name">{label}</span>
+                            <span className="profile-row-meta">{overrides} override{overrides === 1 ? '' : 's'} / priority {index + 1}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            ) : null}
+            </div>
             <label className="preset-name-control" htmlFor="presetName">
-              <span>{fullTargetMode ? 'Profile' : 'Preset'}</span>
+              <span>Profile</span>
               <input id="presetName" className="builder-input" value={activeProfile.name} onChange={(e) => renameActiveProfile(e.target.value)} />
             </label>
-            {fullTargetMode ? (
             <div className="hero-selector">
               <button
                 type="button"
@@ -646,7 +615,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 </div>
               ) : null}
             </div>
-            ) : null}
             <button type="button" className="build-action" onClick={openBuildWarning}>
               <Download aria-hidden="true" />
               <span>Build VPK</span>
@@ -662,7 +630,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <div>
                 <h2>{getCategoryPathLabel(currentGroup)}</h2>
                 <p className="anita-detail-hint">
-                  {visibleCount} visible controls / {fullTargetMode ? `${profiles.length} profile${profiles.length === 1 ? '' : 's'}` : '1 minimal preset'}
+                  {visibleCount} visible controls / {profiles.length} profile{profiles.length === 1 ? '' : 's'}
                 </p>
               </div>
               <div className="reset-actions">
@@ -699,9 +667,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             <DisclosurePanel title="Import game preset codes" open={importOpen} onOpenChange={setImportOpen}>
               <div className="import-panel-body">
                 <p className="panel-helper">
-                  {fullTargetMode
-                    ? 'Paste COPY ALL from the in-game HP Colors menu, or paste several individual HP Colors codes. Bundles import as separate profiles.'
-                    : 'Paste a HP Colors code to replace the minimal preset. COPY ALL bundles use the first preset only.'}
+                  Paste COPY ALL from the in-game HP Colors menu, or paste several individual HP Colors codes. Bundles import as separate profiles for the selected target.
                 </p>
                 <textarea
                   id="importText"
@@ -986,9 +952,6 @@ function PakFileIcon({ showLabel = false, ...props }) {
 
 function HeroAvatar({ hero }) {
   if (!hero) return <span className="hero-avatar hero-avatar-fallback" aria-hidden="true">?</span>;
-  const colors = Array.isArray(hero.icon?.colors) && hero.icon.colors.length >= 2
-    ? hero.icon.colors
-    : ['#4D556A', '#B9C2D6'];
   if (hero.icon?.src) {
     return (
       <span className="hero-avatar" aria-hidden="true">
@@ -999,10 +962,9 @@ function HeroAvatar({ hero }) {
   return (
     <span
       className="hero-avatar"
-      style={{ background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})` }}
       aria-hidden="true"
     >
-      {hero.icon?.initials || hero.name.slice(0, 2).toUpperCase()}
+      {hero.name.slice(0, 2).toUpperCase()}
     </span>
   );
 }
