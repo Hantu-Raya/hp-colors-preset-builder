@@ -36,6 +36,19 @@ test("parses a valid HP Colors export token into full schema state", () => {
   assert.deepEqual(Object.keys(state), Object.keys(HP_SCHEMA));
 });
 
+test("parses current game preset aliases used by HP Colors exports", () => {
+  const token = "[ANITA-v1-hp_colors]:eyJ2Ijo5NywiYyI6MSwiaG0iOiJvZmYiLCJuYW1lIjoiU3RyZXNzIGdyYWRpZW50IGFsbHkgcHVsc2Uga2lsbCBtYXJrZXIiLCJ2YWx1ZXMiOnsibSI6MSwibCI6NDAsImgiOjgwLCJ0IjpmYWxzZSwic2IiOmZhbHNlLCJwZSI6dHJ1ZSwicHQiOjQ1LCJicCI6MTgwLCJwaSI6MiwicGNlIjp0cnVlLCJwY20iOjEsInBjIjoiI0ZGMzJBOCIsInB0ZSI6dHJ1ZSwicHRzIjoxODAsInBoYiI6ZmFsc2UsImN2Ijp0cnVlLCJzIjoxNzAsImNmIjoxLCJ0bSI6MSwibG52IjpmYWxzZSwicGx2Ijp0cnVlLCJ0bCI6IiNGRkZGRkYiLCJ0aSI6IiNGRkUwNjYiLCJ0aCI6IiM4OEZGQUEiLCJmZSI6dHJ1ZSwiZmNsIjoiIzRERkY4OCIsImZjbSI6IiM0NUQ2RkYiLCJmY2giOiIjRTZGRjVDIiwiZnBlIjp0cnVlLCJmcHQiOjQ1LCJmcGIiOjE4MCwiZnBpIjoyLCJmcGNlIjp0cnVlLCJmcGMiOiIjNDRGRkZGIiwia3plIjp0cnVlLCJrenQiOjMwLCJrenMiOiIjRkYyQTJBIiwia3p3Ijo2fX0";
+  const state = parseHpColorsImportCode(token, HP_SCHEMA);
+
+  assert.equal(state.hp_counter_visible, true);
+  assert.equal(state.hp_counter_size, 170);
+  assert.equal(state.hp_counter_format, 1);
+  assert.equal(state.hp_kill_zone_enabled, true);
+  assert.equal(state.hp_kill_zone_threshold, 30);
+  assert.equal(state.hp_kill_zone_color, "#FF2A2A");
+  assert.equal(state.hp_kill_zone_width, 6);
+});
+
 test("parses raw HPColorsPresetStore entry tokens", () => {
   const state = parseHpColorsImportCode(HP_COLORS_PRESET_ENTRY_TOKEN, HP_SCHEMA);
 

@@ -27,6 +27,7 @@ export const HP_SCHEMA = {
   hp_pulse_text_scale: { type: "slider", label: "Pulsing number size", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: 120, bounds: { min: 72, max: 320, step: 1 }, visibleWhen: { id: "hp_pulse_text_enabled", equals: true } },
   hp_pulse_text_position: { type: "positionpicker", label: "Pulsing number position", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: "20,196", visibleWhen: { id: "hp_pulse_text_enabled", equals: true } },
 
+  hp_counter_visible: { type: "toggle", label: "Show HP number", category: "HEALTH BARS|Number Overlay", defaultValue: true },
   hp_counter_size: { type: "slider", label: "HP number size", category: "HEALTH BARS|Number Overlay", defaultValue: 145, bounds: { min: 72, max: 320, step: 1 } },
   hp_counter_position: { type: "positionpicker", label: "HP number position", category: "HEALTH BARS|Number Overlay", defaultValue: "27,20" },
   hp_counter_format: { type: "cycler", label: "HP number format", category: "HEALTH BARS|Number Overlay", defaultValue: 0, options: ["HP", "%", "Current HP"] },

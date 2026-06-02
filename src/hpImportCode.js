@@ -26,6 +26,7 @@ const HP_PERSIST_ALIASES = Object.freeze({
   hp_color_high: "ch",
   hp_counter_size: "s",
   hp_counter_position: "p",
+  hp_counter_visible: "cv",
   hp_text_color_mode: "tm",
   hp_level_number_visible: "lnv",
   hp_pip_visible: "plv",
@@ -63,8 +64,15 @@ const HP_PERSIST_ALIASES = Object.freeze({
   hp_counter_format: "cf"
 });
 
+const HP_LEGACY_ALIAS_TO_ID = Object.freeze({
+  kzs: "hp_kill_zone_color"
+});
+
 const HP_ALIAS_TO_ID = Object.freeze(
-  Object.fromEntries(Object.entries(HP_PERSIST_ALIASES).map(([id, alias]) => [alias, id]))
+  {
+    ...Object.fromEntries(Object.entries(HP_PERSIST_ALIASES).map(([id, alias]) => [alias, id])),
+    ...HP_LEGACY_ALIAS_TO_ID
+  }
 );
 
 function decodeBase64UrlStrict(input) {

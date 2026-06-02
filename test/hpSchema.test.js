@@ -11,6 +11,7 @@ test("HP schema exposes the supported preset fields", () => {
     "hp_counter_format",
     "hp_counter_position",
     "hp_counter_size",
+    "hp_counter_visible",
     "hp_enabled",
     "hp_friend_color_high",
     "hp_friend_color_low",
@@ -69,6 +70,13 @@ test("HP schema preserves representative metadata", () => {
     label: "HP number position",
     category: "HEALTH BARS|Number Overlay",
     defaultValue: "27,20"
+  });
+
+  assert.deepEqual(HP_SCHEMA.hp_counter_visible, {
+    type: "toggle",
+    label: "Show HP number",
+    category: "HEALTH BARS|Number Overlay",
+    defaultValue: true
   });
 
   assert.deepEqual(HP_SCHEMA.hp_pulse_text_scale.visibleWhen, { id: "hp_pulse_text_enabled", equals: true });
