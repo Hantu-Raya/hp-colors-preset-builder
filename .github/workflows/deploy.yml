@@ -41,3 +41,4 @@ jobs:
         uses: actions/deploy-pages@v5
         with:
           reporting_interval: 30000
+          timeout: 120000
