@@ -1,5 +1,4 @@
-import { HP_SCHEMA, coerceHpValue } from "./hpSchema.js";
-import { normalizeHeroIds, normalizeHeroScope } from "./hpHeroData.js";
+import { normalizeHpPresetPayload, normalizeHpPresetValues } from "./hpPresetPayload.js";
 
 const HP_IMPORT_CODE_PREFIX = "[ANITA-v1-hp_colors]:";
 const HP_IMPORT_CODE_NAMESPACE = "hp_colors";
@@ -12,68 +11,6 @@ const MAX_IMPORT_PAYLOAD_CHARS = 8192;
 const BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const BASE64_LOOKUP = new Map(Array.from(BASE64_CHARS, (ch, idx) => [ch, idx]));
 
-const HP_PERSIST_ALIASES = Object.freeze({
-  hp_enabled: "e",
-  hp_mode: "m",
-  hp_low_threshold: "l",
-  hp_high_threshold: "h",
-  hp_bg_visible: "b",
-  hp_team_colors: "t",
-  hp_info_health_margin_top: "ihmt",
-  hp_healthbar_height: "hbh",
-  hp_color_low: "cl",
-  hp_color_mid: "cm",
-  hp_color_high: "ch",
-  hp_counter_size: "s",
-  hp_counter_position: "p",
-  hp_counter_visible: "cv",
-  hp_text_color_mode: "tm",
-  hp_level_number_visible: "lnv",
-  hp_pip_visible: "plv",
-  hp_ult_color_enabled: "uce",
-  hp_ult_color_custom: "ucc",
-  hp_text_color_low: "tl",
-  hp_text_color_mid: "ti",
-  hp_text_color_high: "th",
-  hp_pulse_bpm: "bp",
-  hp_pulse_intensity: "pi",
-  hp_pulse_enabled: "pe",
-  hp_pulse_text_enabled: "pte",
-  hp_pulse_text_scale: "pts",
-  hp_pulse_text_position: "ptp",
-  hp_pulse_hide_bar: "phb",
-  hp_pulse_color_enabled: "pce",
-  hp_pulse_color: "pc",
-  hp_pulse_color_mode: "pcm",
-  hp_skip_buildings: "sb",
-  hp_pulse_threshold: "pt",
-  hp_friend_enabled: "fe",
-  hp_friend_pulse_enabled: "fpe",
-  hp_friend_pulse_bpm: "fpb",
-  hp_friend_pulse_intensity: "fpi",
-  hp_friend_pulse_threshold: "fpt",
-  hp_friend_color_low: "fcl",
-  hp_friend_color_mid: "fcm",
-  hp_friend_color_high: "fch",
-  hp_friend_pulse_color_enabled: "fpce",
-  hp_friend_pulse_color: "fpc",
-  hp_kill_zone_enabled: "kze",
-  hp_kill_zone_threshold: "kzt",
-  hp_kill_zone_color: "kzc",
-  hp_kill_zone_width: "kzw",
-  hp_counter_format: "cf"
-});
-
-const HP_LEGACY_ALIAS_TO_ID = Object.freeze({
-  kzs: "hp_kill_zone_color"
-});
-
-const HP_ALIAS_TO_ID = Object.freeze(
-  {
-    ...Object.fromEntries(Object.entries(HP_PERSIST_ALIASES).map(([id, alias]) => [alias, id])),
-    ...HP_LEGACY_ALIAS_TO_ID
-  }
-);
 
 function decodeBase64UrlStrict(input) {
   const token = String(input || "");
@@ -134,22 +71,6 @@ function base64UrlFromBinary(binary) {
 function utf8FromBinary(binary) {
   const bytes = Uint8Array.from(String(binary || ""), (ch) => ch.charCodeAt(0));
   return typeof TextDecoder === "function" ? new TextDecoder("utf-8").decode(bytes) : binary;
-}
-
-function expandValues(values, schema) {
-  const expanded = {};
-  for (const [key, value] of Object.entries(values || {})) {
-    if (Object.prototype.hasOwnProperty.call(schema || {}, key)) {
-      expanded[key] = value;
-      continue;
-    }
-    const fullId = HP_ALIAS_TO_ID[key];
-    if (!fullId || !Object.prototype.hasOwnProperty.call(schema || {}, fullId)) {
-      throw new Error(`Unknown alias or field id: ${key}`);
-    }
-    expanded[fullId] = value;
-  }
-  return expanded;
 }
 
 export function extractHpColorsImportToken(text) {
@@ -242,51 +163,9 @@ function assertPayloadVersion(parsed, options = {}) {
   }
 }
 
-function valuesToSchemaState(values, schema) {
-  if (!values || typeof values !== "object" || Array.isArray(values)) {
-    throw new Error("Invalid JSON payload");
-  }
-
-  const expanded = expandValues(values, schema);
-  const result = {};
-  for (const [id, spec] of Object.entries(schema || {})) {
-    const value = Object.prototype.hasOwnProperty.call(expanded, id) ? expanded[id] : spec?.defaultValue;
-    result[id] = coerceHpValue(id, value);
-  }
-  return result;
-}
-
-function parseImportPayloadValues(parsed, schema) {
+function parseImportPayloadValues(parsed) {
   assertPayloadVersion(parsed);
-  return valuesToSchemaState(parsed.values, schema);
-}
-
-function cleanImportedPresetName(name, index) {
-  const value = String(name || "").trim();
-  return value || `Imported preset ${index + 1}`;
-}
-
-function getPayloadHeroes(payload) {
-  if (!payload || typeof payload !== "object") return [];
-  if (Object.prototype.hasOwnProperty.call(payload, "hs")) return normalizeHeroIds(payload.hs);
-  if (Object.prototype.hasOwnProperty.call(payload, "heroes")) return normalizeHeroIds(payload.heroes);
-  return [];
-}
-
-function getPayloadHeroMode(payload, heroes) {
-  if (!payload || typeof payload !== "object") return normalizeHeroScope(null, heroes).heroMode;
-  const rawMode = Object.prototype.hasOwnProperty.call(payload, "hm") ? payload.hm : payload.heroMode;
-  return normalizeHeroScope(rawMode, heroes).heroMode;
-}
-
-function createImportProfile(name, values, schema, index, heroes = [], heroMode = null) {
-  const scope = normalizeHeroScope(heroMode, heroes);
-  return {
-    name: cleanImportedPresetName(name, index),
-    values: valuesToSchemaState(values, schema),
-    heroMode: scope.heroMode,
-    heroes: scope.heroes
-  };
+  return normalizeHpPresetValues(parsed.values, { requireObject: true });
 }
 
 function hasVersionFields(value) {
@@ -295,7 +174,7 @@ function hasVersionFields(value) {
     Object.prototype.hasOwnProperty.call(value, "version");
 }
 
-function parseImportProfileEntry(preset, schema, index, allowInheritedVersion) {
+function parseImportProfileEntry(preset, index, allowInheritedVersion) {
   if (!preset || typeof preset !== "object" || Array.isArray(preset)) {
     throw new Error("Invalid JSON payload");
   }
@@ -304,60 +183,73 @@ function parseImportProfileEntry(preset, schema, index, allowInheritedVersion) {
   } else if (!allowInheritedVersion) {
     throw new Error("Invalid JSON payload");
   }
-  const values = Object.prototype.hasOwnProperty.call(preset, "vs") ? preset.vs : preset.values;
-  const name = Object.prototype.hasOwnProperty.call(preset, "n") ? preset.n : preset.name;
-  const heroes = getPayloadHeroes(preset);
-  return createImportProfile(name, values, schema, index, heroes, getPayloadHeroMode(preset, heroes));
+  return normalizeHpPresetPayload(preset, {
+    index,
+    fallbackName: `Imported preset ${index + 1}`,
+    requireValues: true
+  });
 }
 
-function parseMinimalBundleEntry(entry, schema, index) {
+function parseMinimalBundleEntry(entry, index) {
   if (!Array.isArray(entry) || entry.length < 2 || entry.length > 3) throw new Error("Invalid JSON payload");
-  const scope = entry[2];
-  const heroes = Array.isArray(scope) ? scope : [];
-  const heroMode = Array.isArray(scope) ? "selected" : scope;
-  return createImportProfile(entry[0], entry[1], schema, index, heroes, heroMode);
+  const payload = Array.isArray(entry[2])
+    ? { name: entry[0], values: entry[1], heroMode: "selected", heroes: entry[2] }
+    : { name: entry[0], values: entry[1], heroMode: entry[2], heroes: [] };
+  return normalizeHpPresetPayload(payload, {
+    index,
+    fallbackName: `Imported preset ${index + 1}`,
+    requireValues: true
+  });
 }
 
-function parseImportProfilesFromPayload(parsed, schema, fallbackIndex = 0) {
+function parseImportProfilesFromPayload(parsed, fallbackIndex = 0) {
   if (Object.prototype.hasOwnProperty.call(parsed, "p")) {
     assertPayloadVersion(parsed, { requireCompactVersion: false });
     if (!Array.isArray(parsed.p) || parsed.p.length === 0) throw new Error("Invalid JSON payload");
-    return parsed.p.map((entry, index) => parseMinimalBundleEntry(entry, schema, index));
+    return parsed.p.map((entry, index) => parseMinimalBundleEntry(entry, index));
   }
   assertPayloadVersion(parsed);
   if (Object.prototype.hasOwnProperty.call(parsed, "ps")) {
     if (!Array.isArray(parsed.ps) || parsed.ps.length === 0) throw new Error("Invalid JSON payload");
-    return parsed.ps.map((preset, index) => parseImportProfileEntry(preset, schema, index, true));
+    return parsed.ps.map((preset, index) => parseImportProfileEntry(preset, index, true));
   }
   if (Array.isArray(parsed.presets) && parsed.presets.length > 0) {
-    return parsed.presets.map((preset, index) => parseImportProfileEntry(preset, schema, index, false));
+    return parsed.presets.map((preset, index) => parseImportProfileEntry(preset, index, false));
   }
 
-  const heroes = getPayloadHeroes(parsed);
-  const scope = normalizeHeroScope(getPayloadHeroMode(parsed, heroes), heroes);
-  return [{
-    name: cleanImportedPresetName(parsed.name, fallbackIndex),
-    values: valuesToSchemaState(parsed.values, schema),
-    heroMode: scope.heroMode,
-    heroes: scope.heroes
-  }];
+  return [normalizeHpPresetPayload(parsed, {
+    index: fallbackIndex,
+    fallbackName: `Imported preset ${fallbackIndex + 1}`,
+    requireValues: true
+  })];
 }
 
-export function parseHpColorsImportCode(text, schema = HP_SCHEMA) {
+export function parseHpColorsPresetStorePayload(payload) {
+  try {
+    const profiles = parseImportProfilesFromPayload(payload, 0);
+    if (profiles.length !== 1) throw new Error("Invalid HP Colors preset entry in this VPK");
+    return profiles[0];
+  } catch {
+    throw new Error("Invalid HP Colors preset entry in this VPK");
+  }
+}
+
+
+export function parseHpColorsImportCode(text) {
   const payloadText = decodeImportPayloadText(text);
-  return parseImportPayloadValues(parsePayloadText(payloadText), schema);
+  return parseImportPayloadValues(parsePayloadText(payloadText));
 }
 
-export function parseHpColorsImportProfiles(text, schema = HP_SCHEMA) {
+export function parseHpColorsImportProfiles(text) {
   const body = String(text || "").trim();
   const tokens = extractHpColorsImportTokens(body);
   if (tokens.length > 0) {
     return tokens.flatMap((token, index) => {
       const payloadText = decodeImportPayloadText(token);
-      return parseImportProfilesFromPayload(parsePayloadText(payloadText), schema, index);
+      return parseImportProfilesFromPayload(parsePayloadText(payloadText), index);
     });
   }
 
   const payloadText = decodeImportPayloadText(body);
-  return parseImportProfilesFromPayload(parsePayloadText(payloadText), schema, 0);
+  return parseImportProfilesFromPayload(parsePayloadText(payloadText), 0);
 }

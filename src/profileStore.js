@@ -1,27 +1,48 @@
-import { HP_SCHEMA } from "./hpSchema.js";
-import { sanitizeFormState } from "./hpFormModel.js";
-import { normalizeHeroScope } from "./hpHeroData.js";
+import {
+  DEFAULT_HP_PRESET_NAME,
+  cleanHpPresetName,
+  defaultHpPresetName,
+  normalizeHpPresetPayload
+} from "./hpPresetPayload.js";
 
 export const STORAGE_KEY = "hp_colors_preset_builder_profiles_v1";
-export const DEFAULT_PRESET_NAME = "Web Builder Preset";
+export const DEFAULT_PRESET_NAME = DEFAULT_HP_PRESET_NAME;
 export const FIRST_PROFILE_ID = "profile-1";
 
 function defaultProfileName(index) {
-  return index === 0 ? DEFAULT_PRESET_NAME : `Profile ${index + 1}`;
+  return defaultHpPresetName(index);
 }
 
 export function cleanProfileName(name, index = 0) {
-  return String(name || "").trim() || defaultProfileName(index);
+  return cleanHpPresetName(name, index, defaultProfileName(index));
 }
 
-export function createProfile({ id = FIRST_PROFILE_ID, name = DEFAULT_PRESET_NAME, values = {}, heroes = [], heroMode = null } = {}) {
-  const scope = normalizeHeroScope(heroMode, heroes);
+export function createProfile(input = {}) {
+  const {
+    id = FIRST_PROFILE_ID,
+    name = DEFAULT_PRESET_NAME,
+    values = {},
+    heroes = [],
+    heroMode = null,
+    n,
+    vs,
+    hs,
+    hm
+  } = input || {};
+  const has = (key) => Object.prototype.hasOwnProperty.call(input || {}, key);
+  const normalized = normalizeHpPresetPayload({
+    name: has("n") ? n : name,
+    values: has("vs") ? vs : values,
+    heroMode: has("hm") ? hm : heroMode,
+    heroes: has("hs") ? hs : heroes
+  }, { preserveBlankName: true });
+
   return {
     id: String(id || FIRST_PROFILE_ID),
-    name: String(name || ""),
-    values: sanitizeFormState(HP_SCHEMA, values || {}),
-    heroMode: scope.heroMode,
-    heroes: scope.heroes
+    name: normalized.name,
+    values: normalized.values,
+    heroMode: normalized.heroMode,
+    heroes: normalized.heroes
   };
 }
 
@@ -48,7 +69,7 @@ function normalizeProfiles(rawProfiles, defaultState) {
     return createProfile({
       id,
       name: cleanProfileName(rawProfile?.name, index),
-      values: rawProfile?.values || defaultState,
+      values: rawProfile?.values || rawProfile?.vs || defaultState,
       heroMode: rawProfile?.heroMode || rawProfile?.hm,
       heroes: rawProfile?.heroes || rawProfile?.hs || []
     });
@@ -86,13 +107,13 @@ export function saveProfileState(storage, state) {
     version: 1,
     activeProfileId,
     profiles: profiles.map((profile, index) => {
-      const scope = normalizeHeroScope(profile.heroMode || profile.hm, profile.heroes || profile.hs);
+      const normalized = normalizeHpPresetPayload(profile, { index });
       return {
         id: String(profile.id || `profile-${index + 1}`),
-        name: cleanProfileName(profile.name, index),
-        values: sanitizeFormState(HP_SCHEMA, profile.values || {}),
-        heroMode: scope.heroMode,
-        heroes: scope.heroes
+        name: normalized.name,
+        values: normalized.values,
+        heroMode: normalized.heroMode,
+        heroes: normalized.heroes
       };
     })
   }));
@@ -131,20 +152,9 @@ export function reorderProfiles(profiles, fromIndex, toIndex) {
 }
 
 export function profileToPreset(profile, index = 0) {
-  const scope = normalizeHeroScope(profile?.heroMode || profile?.hm, profile?.heroes || profile?.hs);
-  return {
-    name: cleanProfileName(profile?.name, index),
-    version: 1,
-    values: sanitizeFormState(HP_SCHEMA, profile?.values || {}),
-    heroMode: scope.heroMode,
-    heroes: scope.heroes
-  };
+  return normalizeHpPresetPayload(profile, { index });
 }
 
-export function countPresetOverrides(values, defaultState) {
-  let count = 0;
-  for (const id of Object.keys(HP_SCHEMA)) {
-    if (!Object.is(values?.[id], defaultState[id])) count += 1;
-  }
-  return count;
+export function createProfilePersistenceSnapshot(state) {
+  return { profiles: state?.profiles, activeProfileId: state?.activeProfileId };
 }

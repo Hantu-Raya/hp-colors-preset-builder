@@ -72,8 +72,3 @@ export function isFullTargetMode(targetMode) {
   return normalizeTargetMode(targetMode) === HP_COLORS_MOD_VARIANTS.FULL;
 }
 
-export function getBuildProfilesForTargetMode(profiles, targetMode) {
-  const list = Array.isArray(profiles) ? profiles : [];
-  normalizeTargetMode(targetMode);
-  return list;
-}

@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { HP_SCHEMA } from "../src/hpSchema.js";
-import { createDefaultFormState } from "../src/hpFormModel.js";
+import { HP_FIELD_CATALOG, HP_SCHEMA } from "../src/hpSchema.js";
 import {
   addProfile,
   createProfile,
@@ -30,7 +29,7 @@ function createMemoryStorage(seed = {}) {
 }
 
 test("loadProfileState restores ordered saved profiles and active selection", () => {
-  const defaultState = createDefaultFormState(HP_SCHEMA);
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
   const storage = createMemoryStorage({
     [STORAGE_KEY]: JSON.stringify({
       activeProfileId: "second",
@@ -50,7 +49,7 @@ test("loadProfileState restores ordered saved profiles and active selection", ()
 });
 
 test("profile heroes round trip through storage and preset export", () => {
-  const defaultState = createDefaultFormState(HP_SCHEMA);
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
   const storage = createMemoryStorage();
   const profiles = [
     createProfile({
@@ -72,7 +71,7 @@ test("profile heroes round trip through storage and preset export", () => {
 });
 
 test("missing profile heroes keep hero selection off", () => {
-  const defaultState = createDefaultFormState(HP_SCHEMA);
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
   const profile = createProfile({ id: "first", name: "Global", values: defaultState });
 
   assert.deepEqual(profile.heroes, []);
@@ -81,8 +80,26 @@ test("missing profile heroes keep hero selection off", () => {
   assert.equal(profileToPreset(profile).heroMode, "off");
 });
 
+test("createProfile accepts compact values and hero keys", () => {
+  const profile = createProfile({
+    id: "compact",
+    n: "Compact Lane",
+    vs: { e: false, cl: "#abc" },
+    hm: "selected",
+    hs: ["shiv", "unknown", "hero_bebop"]
+  });
+
+  assert.equal(profile.id, "compact");
+  assert.equal(profile.name, "Compact Lane");
+  assert.equal(profile.values.hp_enabled, false);
+  assert.equal(profile.values.hp_color_low, "#AABBCC");
+  assert.deepEqual(Object.keys(profile.values), Object.keys(HP_SCHEMA));
+  assert.equal(profile.heroMode, "selected");
+  assert.deepEqual(profile.heroes, ["hero_shiv", "hero_bebop"]);
+});
+
 test("profile hero scope modes round trip through storage and preset export", () => {
-  const defaultState = createDefaultFormState(HP_SCHEMA);
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
   const storage = createMemoryStorage();
   const profiles = [
     createProfile({ id: "off", name: "Off", values: defaultState, heroMode: "off", heroes: ["hero_haze"] }),
@@ -101,7 +118,7 @@ test("profile hero scope modes round trip through storage and preset export", ()
 });
 
 test("saveProfileState writes builder-only profile state to local storage", () => {
-  const defaultState = createDefaultFormState(HP_SCHEMA);
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
   const storage = createMemoryStorage();
   const profiles = [
     createProfile({ id: "first", name: "Lane", values: { ...defaultState, hp_color_low: "#111111" } }),
@@ -116,7 +133,7 @@ test("saveProfileState writes builder-only profile state to local storage", () =
 });
 
 test("profile add and remove update count but never remove the final profile", () => {
-  const defaultState = createDefaultFormState(HP_SCHEMA);
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
   const initial = [createProfile({ id: "profile-1", name: "Lane", values: defaultState })];
   const added = addProfile(initial, defaultState);
 
@@ -133,7 +150,7 @@ test("profile add and remove update count but never remove the final profile", (
 });
 
 test("reorderProfiles changes load priority without changing active profile", () => {
-  const defaultState = createDefaultFormState(HP_SCHEMA);
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
   const profiles = [
     createProfile({ id: "first", name: "Lane", values: defaultState }),
     createProfile({ id: "second", name: "Teamfight", values: defaultState }),
@@ -146,7 +163,7 @@ test("reorderProfiles changes load priority without changing active profile", ()
 });
 
 test("profileToPreset preserves ordered build JSON shape", () => {
-  const defaultState = createDefaultFormState(HP_SCHEMA);
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
   const profiles = [
     createProfile({ id: "second", name: "Teamfight", values: { ...defaultState, hp_color_low: "#222222" } }),
     createProfile({ id: "first", name: "Lane", values: { ...defaultState, hp_color_low: "#111111" } })
@@ -160,4 +177,49 @@ test("profileToPreset preserves ordered build JSON shape", () => {
       { name: "Lane", version: 1, low: "#111111" }
     ]
   );
+});
+
+test("profileToPreset preserves healthbar layer colors", () => {
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
+  const preset = profileToPreset(createProfile({
+    id: "layers",
+    name: "Layers",
+    values: {
+      ...defaultState,
+      hp_heal_color: "#66ff88",
+      hp_delta_color: "#ffee66",
+      hp_friend_heal_color: "#55ee99",
+      hp_friend_delta_color: "#776655"
+    }
+  }));
+
+  assert.equal(preset.values.hp_heal_color, "#66FF88");
+  assert.equal(preset.values.hp_delta_color, "#FFEE66");
+  assert.equal(preset.values.hp_friend_heal_color, "#55EE99");
+  assert.equal(preset.values.hp_friend_delta_color, "#776655");
+});
+
+test("profileToPreset expands compact aliases through the public preset shape", () => {
+  const preset = profileToPreset({
+    name: "Compact Preset",
+    values: { e: false, cl: "#abc" },
+    heroMode: "selected",
+    heroes: ["shiv", "unknown", "hero_bebop"]
+  });
+
+  assert.equal(preset.name, "Compact Preset");
+  assert.equal(preset.version, 1);
+  assert.equal(preset.values.hp_enabled, false);
+  assert.equal(preset.values.hp_color_low, "#AABBCC");
+  assert.deepEqual(Object.keys(preset.values), Object.keys(HP_SCHEMA));
+  assert.equal(preset.heroMode, "selected");
+  assert.deepEqual(preset.heroes, ["hero_shiv", "hero_bebop"]);
+});
+
+test("profile blank names stay editable but preset export falls back", () => {
+  const profile = createProfile({ name: "" });
+  const preset = profileToPreset(profile, 0);
+
+  assert.equal(profile.name, "");
+  assert.equal(preset.name, "Web Builder Preset");
 });

@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'preact/hooks';
 import { Minus, Plus, RotateCcw } from 'lucide-preact';
-import { normalizeHexColor, parsePositionValue, formatPositionValue, clampNumber } from './schema-control-utils.js';
+import { normalizeHexColor, parsePositionValue, formatPositionValue, clampNumber, isDefaultValue } from './schema-control-utils.js';
 
 function StepButton({ direction, label, onClick }) {
   const Icon = direction === 'up' ? Plus : Minus;
@@ -224,7 +224,8 @@ export function SchemaField({ field, value, onChange }) {
   else if (field.type === 'positionpicker') control = <PositionControl field={field} value={value} onChange={onChange} />;
   else control = <span>Unsupported</span>;
 
-  const isModified = String(value) !== String(field.defaultValue);
+  const resetValue = field.type === 'colorpicker' ? normalizeHexColor(field.defaultValue, field.defaultValue || '#FFFFFF') : field.defaultValue;
+  const isModified = !isDefaultValue(value, resetValue);
 
   return (
     <div className="schema-field-row" data-field-type={field.type}>
@@ -237,7 +238,7 @@ export function SchemaField({ field, value, onChange }) {
           type="button"
           className="field-reset-button"
           disabled={!isModified}
-          onClick={() => onChange(field.id, field.defaultValue)}
+          onClick={() => onChange(field.id, resetValue)}
           aria-label={`Reset ${field.label}`}
           title={`Reset ${field.label}`}
         >

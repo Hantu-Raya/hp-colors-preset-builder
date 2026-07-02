@@ -1,50 +1,19 @@
-import { HP_SCHEMA } from "./hpSchema.js";
-import { BASE_HUD_SOURCE_PATH, DEFAULT_HP_COLORS_MOD_VARIANT, buildHpColorsPackage } from "./packageBuilder.js";
-import { parseHpColorsImportCode } from "./hpImportCode.js";
-import { normalizeHeroScope } from "./hpHeroData.js";
-import { base64UrlDecode } from "./presetStoreXml.js";
-import { extractPanoramaLayoutSource } from "./source2ResourceReader.js";
-import { readVpk } from "./vpkReader.js";
-
-const BASE_HUD_OUTPUT_PATH = "panorama/layout/base_hud.vxml_c";
-
-function extractPresetEntryTokens(baseHudXml) {
-  const matches = String(baseHudXml).matchAll(/<Label\b[^>]*\bclass="[^"]*\bhp_colors_preset_entry\b[^"]*"[^>]*\btext="([^"]+)"/g);
-  const tokens = [...matches].map((match) => match[1]).filter(Boolean);
-  if (!tokens.length) throw new Error("No HP Colors preset entry found in this VPK");
-  return tokens;
-}
-
-function decodePresetToken(token) {
-  let parsed;
-  try {
-    parsed = JSON.parse(base64UrlDecode(token));
-  } catch {
-    throw new Error("Invalid HP Colors preset entry in this VPK");
-  }
-  const values = parseHpColorsImportCode(token, HP_SCHEMA);
-  const scope = normalizeHeroScope(parsed?.heroMode || parsed?.hm, parsed?.heroes || parsed?.hs);
-  return {
-    name: String(parsed?.name || "Converted Preset"),
-    version: 1,
-    values,
-    heroMode: scope.heroMode,
-    heroes: scope.heroes
-  };
-}
-
-function extractPresetsFromBaseHudXml(baseHudXml) {
-  return extractPresetEntryTokens(baseHudXml).map(decodePresetToken);
-}
+import { DEFAULT_HP_COLORS_MOD_VARIANT, buildHpColorsPackage } from "./packageBuilder.js";
+import { parseHpColorsPresetStorePayload } from "./hpImportCode.js";
+import { HP_COLORS_PACKAGE_ARTIFACTS } from "./packageArtifacts.js";
+import { readPresetStoreFromBaseHudXml } from "./presetStoreXml.js";
+import { extractSource2Resource } from "./source2ResourceCodec.js";
+import { findVpkArchiveFile, readVpkArchive } from "./vpkArchive.js";
 
 export function convertHpColorsPresetVpk({ vpkBytes, baseHudXml, targetModVariant }) {
-  const files = readVpk(vpkBytes);
-  const baseHud = files.find((file) => file.path === BASE_HUD_OUTPUT_PATH);
+  const baseHudArtifact = HP_COLORS_PACKAGE_ARTIFACTS.baseHud;
+  const archive = readVpkArchive(vpkBytes);
+  const baseHud = findVpkArchiveFile(archive, baseHudArtifact.archivePath);
   if (!baseHud) throw new Error("This VPK does not contain the HP Colors base_hud override");
-  const sourceBaseHudXml = extractPanoramaLayoutSource(baseHud.bytes);
-  const presets = extractPresetsFromBaseHudXml(sourceBaseHudXml);
+  const sourceBaseHudXml = extractSource2Resource({ bytes: baseHud.bytes, codec: baseHudArtifact.codec });
+  const presets = readPresetStoreFromBaseHudXml(sourceBaseHudXml).map(parseHpColorsPresetStorePayload);
   return buildHpColorsPackage({
-    sourceTexts: { [BASE_HUD_SOURCE_PATH]: baseHudXml },
+    sourceTexts: { [baseHudArtifact.sourcePath]: baseHudXml },
     presets,
     modVariant: targetModVariant || DEFAULT_HP_COLORS_MOD_VARIANT
   });

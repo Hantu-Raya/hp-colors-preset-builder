@@ -4,7 +4,6 @@ import test from "node:test";
 import { HP_COLORS_MOD_VARIANTS } from "../src/hpModVariants.js";
 import {
   TARGET_MODE_STORAGE_KEY,
-  getBuildProfilesForTargetMode,
   getTargetModeDetails,
   loadTargetModeState,
   normalizeTargetMode,
@@ -84,10 +83,3 @@ test("getTargetModeDetails exposes choice copy and download links", () => {
   assert.match(full.downloadHref, /^https:\/\//);
 });
 
-test("getBuildProfilesForTargetMode keeps all profiles for full and minimal targets", () => {
-  const profiles = [{ name: "One" }, { name: "Two" }];
-
-  assert.deepEqual(getBuildProfilesForTargetMode(profiles, HP_COLORS_MOD_VARIANTS.FULL), profiles);
-  assert.deepEqual(getBuildProfilesForTargetMode(profiles, HP_COLORS_MOD_VARIANTS.MINIMAL), profiles);
-  assert.deepEqual(getBuildProfilesForTargetMode([], HP_COLORS_MOD_VARIANTS.MINIMAL), []);
-});

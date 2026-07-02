@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { clampNumber, formatPositionValue, isDefaultValue, normalizeHexColor, parsePositionValue } from '../src/components/schema-control-utils.js';
+import { HP_FIELD_CATALOG, HP_SCHEMA } from '../src/hpSchema.js';
 
 test('normalizeHexColor returns uppercase six-digit hex colors', () => {
   assert.equal(normalizeHexColor('#e16161', '#FFFFFF'), '#E16161');
@@ -34,7 +35,11 @@ test('clampNumber respects min, max, and fallback', () => {
   assert.equal(clampNumber('bad', 0, 100, 25), 25);
 });
 
-test('isDefaultValue compares values by string form', () => {
+test('isDefaultValue compares values by normalized default semantics', () => {
   assert.equal(isDefaultValue(25, '25'), true);
-  assert.equal(isDefaultValue('#E16161', '#e16161'), false);
+  assert.equal(isDefaultValue('#E16161', '#e16161'), true);
+  assert.equal(isDefaultValue(
+    HP_FIELD_CATALOG.createDefaultState().hp_heal_color,
+    HP_SCHEMA.hp_heal_color.defaultValue
+  ), true);
 });

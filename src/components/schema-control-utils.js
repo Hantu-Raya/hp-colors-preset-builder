@@ -38,5 +38,8 @@ export function clampNumber(value, min, max, fallback) {
 }
 
 export function isDefaultValue(value, defaultValue) {
+  const normalizedValue = normalizeHexColor(value, null);
+  const normalizedDefault = normalizeHexColor(defaultValue, null);
+  if (normalizedValue && normalizedDefault) return normalizedValue === normalizedDefault;
   return String(value) === String(defaultValue);
 }

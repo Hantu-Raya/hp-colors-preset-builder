@@ -1,5 +1,5 @@
 import { useMemo } from 'preact/hooks';
-import { getCategoryKey, isFieldVisible } from '../hpFormModel.js';
+import { HP_FIELD_CATALOG } from '../hpSchema.js';
 
 function buildTreeStats(groups, state, defaultState) {
   const statsByKey = new Map();
@@ -8,7 +8,7 @@ function buildTreeStats(groups, state, defaultState) {
     let visibleCount = 0;
     for (const field of group.fields || []) {
       if (String(state?.[field.id]) !== String(defaultState?.[field.id])) isModified = true;
-      if (isFieldVisible(field, state)) visibleCount += 1;
+      if (HP_FIELD_CATALOG.isFieldVisible(field, state)) visibleCount += 1;
     }
     for (const child of group.children || []) {
       const childStats = walk(child);
@@ -16,7 +16,7 @@ function buildTreeStats(groups, state, defaultState) {
       visibleCount += childStats.visibleCount;
     }
     const stats = { isModified, visibleCount };
-    statsByKey.set(getCategoryKey(group), stats);
+    statsByKey.set(HP_FIELD_CATALOG.getCategoryKey(group), stats);
     return stats;
   };
   for (const group of groups || []) walk(group);
@@ -36,7 +36,7 @@ export function SchemaTree({ groups, activeKey, state, defaultState = {}, onSele
         <div className="anita-tree-list">
           {groups.map((group) => (
             <TreeItem
-              key={getCategoryKey(group)}
+              key={HP_FIELD_CATALOG.getCategoryKey(group)}
               group={group}
               activeKey={activeKey}
               state={state}
@@ -52,7 +52,7 @@ export function SchemaTree({ groups, activeKey, state, defaultState = {}, onSele
 }
 
 function TreeItem({ group, activeKey, statsByKey, onSelect, depth }) {
-  const key = getCategoryKey(group);
+  const key = HP_FIELD_CATALOG.getCategoryKey(group);
   const isActive = key === activeKey;
   const stats = statsByKey.get(key) || { isModified: false, visibleCount: 0 };
 
@@ -76,7 +76,7 @@ function TreeItem({ group, activeKey, statsByKey, onSelect, depth }) {
         <div className="anita-tree-children">
           {group.children.map((child) => (
             <TreeItem
-              key={getCategoryKey(child)}
+              key={HP_FIELD_CATALOG.getCategoryKey(child)}
               group={child}
               activeKey={activeKey}
               statsByKey={statsByKey}

@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { base64UrlDecode, base64UrlEncode, injectPresetStoreIntoBaseHudXml } from "../src/presetStoreXml.js";
+import {
+  encodePresetStoreEntry,
+  readPresetStoreFromBaseHudXml,
+  writePresetStoreToBaseHudXml
+} from "../src/presetStoreXml.js";
 
-test("injectPresetStoreIntoBaseHudXml adds encoded preset labels after Anita anchor", () => {
+test("writePresetStoreToBaseHudXml adds semantic preset labels after Anita anchor", () => {
   const xml = [
     "<root>",
     '  <Panel id="AnitaUI_Anchor" hittest="false" />',
@@ -15,55 +19,83 @@ test("injectPresetStoreIntoBaseHudXml adds encoded preset labels after Anita anc
     values: { hp_color_low: "#FF00FF" }
   };
 
-  const patched = injectPresetStoreIntoBaseHudXml(xml, [preset]);
+  const patched = writePresetStoreToBaseHudXml(xml, [preset]);
 
   assert.match(patched, /HPColorsPresetStore/);
   assert.match(patched, /HPColorsPreset_001/);
   assert.match(patched, /hp_colors_preset_entry/);
-
-  const encoded = patched.match(/text="([^"]+)"/)[1];
-  assert.deepEqual(JSON.parse(base64UrlDecode(encoded)), preset);
+  assert.deepEqual(readPresetStoreFromBaseHudXml(patched), [preset]);
 });
 
-test("injectPresetStoreIntoBaseHudXml preserves multiple preset labels", () => {
+test("writePresetStoreToBaseHudXml preserves multiple preset labels", () => {
   const xml = [
     "<root>",
     '  <Panel id="AnitaUI_Anchor" hittest="false" />',
     "</root>"
   ].join("\n");
 
-  const patched = injectPresetStoreIntoBaseHudXml(xml, [
+  const patched = writePresetStoreToBaseHudXml(xml, [
     { name: "One", version: 1, values: { hp_color_low: "#111111" } },
     { name: "Two", version: 1, values: { hp_color_low: "#222222" } }
   ]);
-  const decoded = [...patched.matchAll(/text="([^"]+)"/g)]
-    .map((match) => JSON.parse(base64UrlDecode(match[1])));
+  const decoded = readPresetStoreFromBaseHudXml(patched);
 
   assert.match(patched, /HPColorsPreset_001/);
   assert.match(patched, /HPColorsPreset_002/);
   assert.deepEqual(decoded.map((preset) => preset.name), ["One", "Two"]);
 });
 
-test("injectPresetStoreIntoBaseHudXml preserves preset heroes", () => {
+test("writePresetStoreToBaseHudXml replaces an existing store", () => {
   const xml = [
     "<root>",
     '  <Panel id="AnitaUI_Anchor" hittest="false" />',
+    '\t\t<Panel id="HPColorsPresetStore" hittest="false" style="visibility: collapse; width: 0px; height: 0px;">',
+    `\t\t\t<Label id="HPColorsPreset_001" class="hp_colors_preset_entry" text="${encodePresetStoreEntry({ name: "Old", version: 1, values: { hp_color_low: "#111111" } })}" />`,
+    "\t\t</Panel>",
     "</root>"
   ].join("\n");
-  const preset = {
-    name: "Shiv",
-    version: 1,
-    values: { hp_color_low: "#FF00FF" },
-    heroes: ["hero_shiv", "hero_bebop"]
-  };
 
-  const patched = injectPresetStoreIntoBaseHudXml(xml, [preset]);
-  const encoded = patched.match(/text="([^"]+)"/)[1];
+  const patched = writePresetStoreToBaseHudXml(xml, [
+    { name: "New", version: 1, values: { hp_color_low: "#222222" } }
+  ]);
+  const decoded = readPresetStoreFromBaseHudXml(patched);
 
-  assert.deepEqual(JSON.parse(base64UrlDecode(encoded)).heroes, ["hero_shiv", "hero_bebop"]);
+  assert.deepEqual(decoded.map((preset) => preset.name), ["New"]);
 });
 
-test("base64UrlEncode round-trips unicode-free JSON text", () => {
-  const source = JSON.stringify({ name: "Magenta", values: { hp_color_low: "#FF00FF" } });
-  assert.equal(base64UrlDecode(base64UrlEncode(source)), source);
+test("readPresetStoreFromBaseHudXml reads labels when text appears before class", () => {
+  const preset = {
+    name: "Text First",
+    version: 1,
+    values: { hp_color_low: "#FF00FF" }
+  };
+  const xml = [
+    "<root>",
+    '\t\t<Panel id="HPColorsPresetStore" hittest="false">',
+    `\t\t\t<Label id="HPColorsPreset_001" text="${encodePresetStoreEntry(preset)}" class="foo hp_colors_preset_entry bar" />`,
+    "\t\t</Panel>",
+    "</root>"
+  ].join("\n");
+
+  assert.deepEqual(readPresetStoreFromBaseHudXml(xml), [preset]);
+});
+
+test("readPresetStoreFromBaseHudXml throws when no store entries exist", () => {
+  assert.throws(
+    () => readPresetStoreFromBaseHudXml("<root></root>"),
+    { message: "No HP Colors preset entry found in this VPK" }
+  );
+});
+
+test("readPresetStoreFromBaseHudXml throws the VPK invalid-entry error for malformed text", () => {
+  const xml = [
+    "<root>",
+    '\t<Label id="HPColorsPreset_001" class="hp_colors_preset_entry" text="not-valid-json" />',
+    "</root>"
+  ].join("\n");
+
+  assert.throws(
+    () => readPresetStoreFromBaseHudXml(xml),
+    { message: "Invalid HP Colors preset entry in this VPK" }
+  );
 });

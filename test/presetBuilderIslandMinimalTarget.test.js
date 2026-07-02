@@ -18,3 +18,15 @@ test("minimal target no longer tells users that bundles use only the first prese
   assert.doesNotMatch(source, /COPY ALL bundles use the first preset only/i);
   assert.doesNotMatch(source, /1 minimal preset/i);
 });
+
+test("island delegates async preset workflows to presetBuilderWorkflow", async () => {
+  const source = await readFile(islandUrl, "utf8");
+
+  assert.match(source, /presetBuilderWorkflow\.js/);
+  assert.equal(source.includes("saveTargetModeState"), false);
+  assert.equal(source.includes("await import('../hpImportCode.js')"), false);
+  assert.equal(source.includes("await import('../packageBuilder.js')"), false);
+  assert.equal(source.includes("await import('../vpkConverter.js')"), false);
+  assert.equal(source.includes("buildConvertedVpkFileName"), false);
+  assert.equal(source.includes("downloadBytes"), false);
+});

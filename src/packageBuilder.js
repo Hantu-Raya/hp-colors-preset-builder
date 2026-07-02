@@ -1,45 +1,24 @@
-import { HP_SCHEMA } from "./hpSchema.js";
-import { createDefaultFormState, sanitizeFormState } from "./hpFormModel.js";
-import { normalizeHeroScope } from "./hpHeroData.js";
+import { normalizeHpPresetPayload } from "./hpPresetPayload.js";
 import { DEFAULT_HP_COLORS_MOD_VARIANT, HP_COLORS_MOD_VARIANTS } from "./hpModVariants.js";
-import { injectPresetStoreIntoBaseHudXml } from "./presetStoreXml.js";
-import { compilePanoramaLayoutResource, compileTextResource } from "./source2ResourceWriter.js";
+import {
+  HP_COLORS_PACKAGE_ARTIFACTS,
+  readHpColorsArtifactSourceText
+} from "./packageArtifacts.js";
+import { writePresetStoreToBaseHudXml } from "./presetStoreXml.js";
+import { compileSource2Resource } from "./source2ResourceCodec.js";
+import { createVpkArchive, writeVpkArchive } from "./vpkArchive.js";
 
-export const BASE_HUD_SOURCE_PATH = "public/templates/hp_colors/panorama/layout/base_hud.xml";
 export { DEFAULT_HP_COLORS_MOD_VARIANT, HP_COLORS_MOD_VARIANTS };
 
-const MINIMAL_MOD_INCLUDE_RE = /^[\t ]*<include\s+src="s2r:\/\/panorama\/(?:styles\/anita_ui\.vcss_c|scripts\/(?:anita_persist_loader|hp_registrar)\.vjs_c)"\s*\/>\r?\n?/gm;
+const MINIMAL_MOD_STYLE_INCLUDE_RE = /^[\t ]*<include\s+src="s2r:\/\/panorama\/styles\/anita_ui\.vcss_c"\s*\/>\r?\n?/gm;
+const CORE_SCRIPT_BLOCK = [
+  "\t<scripts>",
+  '\t\t<include src="s2r://panorama/scripts/anita_ui_core.vjs_c" />',
+  "\t</scripts>"
+].join("\n");
 
-function normalizePreset(preset, index = 0) {
-  const fallbackName = index === 0 ? "Web Builder Preset" : `Profile ${index + 1}`;
-  const rawName = typeof preset?.name === "string" ? preset.name.trim() : "";
-  const values = preset?.values && typeof preset.values === "object" && !Array.isArray(preset.values)
-    ? preset.values
-    : createDefaultFormState(HP_SCHEMA);
-  const scope = normalizeHeroScope(preset?.heroMode || preset?.hm, preset?.heroes || preset?.hs);
-  return {
-    name: rawName || fallbackName,
-    version: 1,
-    values: sanitizeFormState(HP_SCHEMA, values),
-    heroMode: scope.heroMode,
-    heroes: scope.heroes
-  };
-}
-
-function toOutputPath(sourcePath) {
-  return String(sourcePath)
-    .replace(/^public\/templates\/hp_colors\//, "")
-    .replace(/^templates\/hp_colors\//, "")
-    .replace(/\.js$/i, ".vjs_c")
-    .replace(/\.css$/i, ".vcss_c")
-    .replace(/\.xml$/i, ".vxml_c");
-}
-
-function compileSourceFile(sourcePath, sourceText) {
-  if (/\.xml$/i.test(sourcePath)) {
-    return compilePanoramaLayoutResource(sourceText);
-  }
-  return compileTextResource(sourceText);
+function keepCoreScriptOnly(baseHudXml) {
+  return String(baseHudXml).replace(/<scripts>[\s\S]*?<\/scripts>/, CORE_SCRIPT_BLOCK);
 }
 
 function normalizeModVariant(modVariant) {
@@ -50,44 +29,72 @@ function normalizeModVariant(modVariant) {
 }
 
 function prepareBaseHudXml(baseHudXml, modVariant) {
+  const scriptNormalizedXml = keepCoreScriptOnly(baseHudXml);
   if (modVariant === HP_COLORS_MOD_VARIANTS.MINIMAL) {
-    return String(baseHudXml).replace(MINIMAL_MOD_INCLUDE_RE, "");
+    return scriptNormalizedXml.replace(MINIMAL_MOD_STYLE_INCLUDE_RE, "");
   }
-  return baseHudXml;
+  return scriptNormalizedXml;
 }
 
-export function buildHpColorsPackage({
+function normalizePackagePresets({ preset, presets }) {
+  const sourcePresets = Array.isArray(presets) && presets.length > 0 ? presets : [preset || {}];
+  return sourcePresets.map((item, index) => normalizeHpPresetPayload(item, { index }));
+}
+
+export function createHpColorsPackagePlan({
   sourceTexts,
   preset = null,
   presets = null,
   modVariant = DEFAULT_HP_COLORS_MOD_VARIANT
 }) {
   const activeModVariant = normalizeModVariant(modVariant);
-  const defaultPreset = { name: "Web Builder Preset", version: 1, values: createDefaultFormState(HP_SCHEMA), heroMode: "off", heroes: [] };
-  const sourcePresets = Array.isArray(presets) && presets.length > 0
-    ? presets
-    : [preset || defaultPreset];
-  const activePresets = sourcePresets.map((item, index) => normalizePreset(item, index));
-  const baseHudXml = sourceTexts && (
-    sourceTexts[BASE_HUD_SOURCE_PATH] ||
-    sourceTexts["templates/hp_colors/panorama/layout/base_hud.xml"]
-  );
-  if (!baseHudXml) {
-    throw new Error(`Missing source text: ${BASE_HUD_SOURCE_PATH}`);
-  }
-
+  const activePresets = normalizePackagePresets({ preset, presets });
+  const baseHudArtifact = HP_COLORS_PACKAGE_ARTIFACTS.baseHud;
+  const baseHudXml = readHpColorsArtifactSourceText(sourceTexts, baseHudArtifact);
   const modSpecificBaseHudXml = prepareBaseHudXml(baseHudXml, activeModVariant);
-  const patchedBaseHudXml = injectPresetStoreIntoBaseHudXml(modSpecificBaseHudXml, activePresets);
-  const files = [{
-    path: toOutputPath(BASE_HUD_SOURCE_PATH),
-    bytes: compileSourceFile(BASE_HUD_SOURCE_PATH, patchedBaseHudXml)
-  }];
+  const patchedBaseHudXml = writePresetStoreToBaseHudXml(modSpecificBaseHudXml, activePresets);
 
   return {
     preset: activePresets[0],
     presets: activePresets,
     modVariant: activeModVariant,
-    baseHudXml: patchedBaseHudXml,
-    files
+    artifacts: [{
+      id: baseHudArtifact.id,
+      sourcePath: baseHudArtifact.sourcePath,
+      archivePath: baseHudArtifact.archivePath,
+      codec: baseHudArtifact.codec,
+      sourceText: patchedBaseHudXml
+    }]
   };
+}
+
+export function buildHpColorsPackageFromPlan(plan) {
+  const files = (plan?.artifacts || []).map((artifact) => ({
+    path: artifact.archivePath,
+    bytes: compileSource2Resource({ sourceText: artifact.sourceText, codec: artifact.codec })
+  }));
+  const vpkBytes = writeVpkArchive(createVpkArchive(files));
+
+  return {
+    preset: plan.preset,
+    presets: plan.presets,
+    modVariant: plan.modVariant,
+    manifest: {
+      files: files.map((file, index) => {
+        const artifact = plan.artifacts[index];
+        return {
+          id: artifact.id,
+          sourcePath: artifact.sourcePath,
+          archivePath: artifact.archivePath,
+          codec: artifact.codec,
+          byteLength: file.bytes.byteLength
+        };
+      })
+    },
+    vpkBytes
+  };
+}
+
+export function buildHpColorsPackage(input) {
+  return buildHpColorsPackageFromPlan(createHpColorsPackagePlan(input));
 }

@@ -16,67 +16,34 @@ import {
   Trash2,
   Upload
 } from 'lucide-preact';
-import { HP_SCHEMA, coerceHpValue } from '../hpSchema.js';
-import { createDefaultFormState, splitCategoryGroups, getCategoryKey, getCategoryPathLabel, isFieldVisible } from '../hpFormModel.js';
+import { HP_FIELD_CATALOG } from '../hpSchema.js';
 import {
   getHpHeroById,
   HP_HEROES,
   HP_HERO_SCOPE_ALL,
-  HP_HERO_SCOPE_OFF,
-  HP_HERO_SCOPE_SELECTED,
-  normalizeHeroIds,
-  normalizeHeroScopeMode
+  HP_HERO_SCOPE_OFF
 } from '../hpHeroData.js';
-import { DEFAULT_HP_COLORS_MOD_VARIANT, HP_COLORS_MOD_VARIANTS } from '../hpModVariants.js';
-import { downloadBytes } from '../download.js';
-import { buildConvertedVpkFileName, buildPresetVpkFileName } from '../presetVpkFileName.js';
+import { HP_COLORS_MOD_VARIANTS } from '../hpModVariants.js';
 import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitCommitInfoRefresh.js';
+import { TARGET_MODE_CHOICES } from '../targetModeStore.js';
+import { cleanProfileName, createProfilePersistenceSnapshot, saveProfileState } from '../profileStore.js';
 import {
-  canConfirmBuild,
-  getBuildVariantWarning,
-  getNextInstallValidationState
-} from '../buildModalState.js';
+  createPresetBuilderSession,
+  loadPresetBuilderSession,
+  reducePresetBuilderSession,
+  selectPresetBuilderSession
+} from '../presetBuilderSession.js';
 import {
-  TARGET_MODE_CHOICES,
-  getBuildProfilesForTargetMode,
-  getTargetModeDetails,
-  isFullTargetMode,
-  loadTargetModeState,
-  saveTargetModeState
-} from '../targetModeStore.js';
-import { addProfile, cleanProfileName, countPresetOverrides, createInitialProfile, createProfile, FIRST_PROFILE_ID, profileToPreset, removeProfile, reorderProfiles, loadProfileState, saveProfileState, STORAGE_KEY as PROFILE_STORAGE_KEY } from '../profileStore.js';
+  commitPresetBuilderTargetMode,
+  createBaseHudXmlLoader,
+  runPresetBuildWorkflow,
+  runPresetConvertWorkflow,
+  runPresetImportWorkflow
+} from '../presetBuilderWorkflow.js';
 import { SchemaField } from './schema-field.jsx';
 import { SchemaTree } from './schema-tree.jsx';
 
-const DEFAULT_PRESET_NAME = 'Web Builder Preset';
 
-let baseHudXmlPromise = null;
-
-function loadBaseHudXml() {
-  if (!baseHudXmlPromise) {
-    const templateUrl = `${import.meta.env.BASE_URL}templates/hp_colors/panorama/layout/base_hud.xml`;
-    baseHudXmlPromise = fetch(templateUrl).then((response) => {
-      if (!response.ok) throw new Error(`Failed to load base_hud.xml (${response.status})`);
-      return response.text();
-    }).catch((error) => {
-      baseHudXmlPromise = null;
-      throw error;
-    });
-  }
-  return baseHudXmlPromise;
-}
-
-function getVisibleFields(group, state) {
-  return (group?.fields || []).filter((field) => isFieldVisible(field, state));
-}
-
-function nextImportedProfileId(usedIds) {
-  let index = 1;
-  while (usedIds.has(`profile-${index}`)) index += 1;
-  const id = `profile-${index}`;
-  usedIds.add(id);
-  return id;
-}
 
 function scheduleIdleWork(callback) {
   if (typeof window === 'undefined') return () => {};
@@ -88,121 +55,96 @@ function scheduleIdleWork(callback) {
   return () => window.clearTimeout(id);
 }
 
-function formatHeroSelection(heroMode, heroIds) {
-  const selected = normalizeHeroIds(heroIds);
-  const mode = normalizeHeroScopeMode(heroMode, selected);
-  if (mode === HP_HERO_SCOPE_OFF) return 'Hero select off';
-  if (mode === HP_HERO_SCOPE_ALL) return 'All heroes';
-  if (selected.length === 1) return getHpHeroById(selected[0])?.name || selected[0];
-  return `${selected.length} heroes`;
-}
 
 export default function PresetBuilderIsland({ gitCommitInfo = null }) {
-  const defaultState = useMemo(() => createDefaultFormState(HP_SCHEMA), []);
+  const defaultState = useMemo(() => HP_FIELD_CATALOG.createDefaultState(), []);
   const [freshGitCommitInfo, setFreshGitCommitInfo] = useState(gitCommitInfo);
-  const [importText, setImportText] = useState('');
-  const [status, setStatus] = useState('Status: Ready');
-  const [profiles, setProfiles] = useState(() => [createInitialProfile(defaultState)]);
-  const [activeProfileId, setActiveProfileId] = useState(FIRST_PROFILE_ID);
-  const [profilesLoaded, setProfilesLoaded] = useState(false);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [heroMenuOpen, setHeroMenuOpen] = useState(false);
-  const [dragIndex, setDragIndex] = useState(null);
-  const [importOpen, setImportOpen] = useState(false);
-  const [convertOpen, setConvertOpen] = useState(false);
-  const [convertFile, setConvertFile] = useState(null);
-  const [convertStatus, setConvertStatus] = useState('');
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [warningOpen, setWarningOpen] = useState(false);
-  const [installValidated, setInstallValidated] = useState(false);
-  const [targetMode, setTargetMode] = useState(DEFAULT_HP_COLORS_MOD_VARIANT);
-  const [targetModeLoaded, setTargetModeLoaded] = useState(false);
-  const [modePickerOpen, setModePickerOpen] = useState(false);
-  const [modePickerRequired, setModePickerRequired] = useState(false);
-  const [modePickerUpgrade, setModePickerUpgrade] = useState(false);
-  const latestProfileSnapshot = useRef({ profiles, activeProfileId });
-  const groups = useMemo(() => splitCategoryGroups(HP_SCHEMA), []);
-
-  const flatGroups = useMemo(() => {
-    const out = [];
-    const walk = (group) => { out.push(group); (group.children || []).forEach(walk); };
-    groups.forEach(walk);
-    return out;
-  }, [groups]);
-
-  const firstLeafKey = useMemo(() => getCategoryKey(flatGroups.find((group) => !group.children?.length) || flatGroups[0]), [flatGroups]);
-  const [activeKey, setActiveKey] = useState(() => firstLeafKey);
-
-  const activeProfile = profiles.find((profile) => profile.id === activeProfileId) || profiles[0] || createInitialProfile(defaultState);
-  const activeProfileIndex = Math.max(0, profiles.findIndex((profile) => profile.id === activeProfile.id));
-  const presetName = cleanProfileName(activeProfile.name, activeProfileIndex);
-  const state = activeProfile.values;
-  const activeHeroMode = normalizeHeroScopeMode(activeProfile.heroMode || activeProfile.hm, activeProfile.heroes || activeProfile.hs);
-  const selectedHeroIds = activeHeroMode === HP_HERO_SCOPE_SELECTED ? normalizeHeroIds(activeProfile.heroes) : [];
-  const selectedHeroSet = useMemo(() => new Set(selectedHeroIds), [selectedHeroIds]);
-  const heroSelectionLabel = formatHeroSelection(activeHeroMode, selectedHeroIds);
-  const currentGroup = flatGroups.find((group) => getCategoryKey(group) === activeKey) || flatGroups[0];
-  const visibleFields = useMemo(() => getVisibleFields(currentGroup, state), [currentGroup, state]);
-  const visibleCount = visibleFields.length;
-  const activeOverrideCount = countPresetOverrides(state, defaultState);
-  const targetModeDetails = getTargetModeDetails(targetMode);
-  const fullTargetMode = isFullTargetMode(targetMode);
-  const buildProfilePresets = useMemo(
-    () => getBuildProfilesForTargetMode(profiles.map(profileToPreset), targetMode),
-    [profiles, targetMode]
+  const [session, setSession] = useState(() => createPresetBuilderSession(defaultState));
+  const latestProfileSnapshot = useRef(createProfilePersistenceSnapshot(session));
+  const groups = useMemo(() => HP_FIELD_CATALOG.splitCategoryGroups(), []);
+  const initialSelection = useMemo(
+    () => selectPresetBuilderSession(session, defaultState, groups, null),
+    [defaultState, groups, session]
   );
-  const preview = useMemo(
-    () => (previewOpen ? JSON.stringify({ targetMode, presets: buildProfilePresets }, null, 2) : ''),
-    [buildProfilePresets, previewOpen, targetMode]
+  const [activeKey, setActiveKey] = useState(() => initialSelection.firstLeafKey);
+  const selectedSession = useMemo(
+    () => selectPresetBuilderSession(session, defaultState, groups, activeKey),
+    [activeKey, defaultState, groups, session]
   );
-  const canConfirmBuildVariant = canConfirmBuild({ installValidated, buildVariant: targetMode });
-  const presetVpkFileName = buildPresetVpkFileName(presetName || DEFAULT_PRESET_NAME);
+  const {
+    activeProfile,
+    activeProfileIndex,
+    presetName,
+    state,
+    activeHeroMode,
+    selectedHeroIds,
+    selectedHeroSet,
+    heroSelectionLabel,
+    currentGroup,
+    visibleFields,
+    visibleCount,
+    activeOverrideCount,
+    targetModeDetails,
+    fullTargetMode,
+    buildProfilePresets,
+    preview,
+    canConfirmBuildVariant,
+    presetVpkFileName,
+    buildVariantWarning
+  } = selectedSession;
   const activeGitCommitInfo = freshGitCommitInfo || gitCommitInfo;
-  const topPresetName = cleanProfileName(profiles[0]?.name, 0);
-  const buildVariantWarning = getBuildVariantWarning({
-    buildVariant: targetMode,
-    profileCount: buildProfilePresets.length,
-    firstPresetName: topPresetName
-  });
+  const {
+    importText,
+    status,
+    profiles,
+    activeProfileId,
+    profilesLoaded,
+    profileMenuOpen,
+    heroMenuOpen,
+    dragIndex,
+    importOpen,
+    convertOpen,
+    convertFile,
+    convertStatus,
+    previewOpen,
+    warningOpen,
+    installValidated,
+    targetMode,
+    targetModeLoaded,
+    modePickerOpen,
+    modePickerRequired,
+    modePickerUpgrade
+  } = session;
+
+  const loadBaseHudXml = useMemo(
+    () => createBaseHudXmlLoader({ baseUrl: import.meta.env.BASE_URL }),
+    []
+  );
+
+  const dispatchSessionIntent = useCallback((intent, context) => {
+    setSession((prev) => reducePresetBuilderSession(prev, intent, context));
+  }, []);
 
   const openBuildWarning = useCallback(() => {
-    setInstallValidated(false);
-    setWarningOpen(true);
+    setSession((prev) => reducePresetBuilderSession(prev, { type: 'OPEN_BUILD_WARNING' }));
   }, []);
 
   function commitTargetMode(nextMode) {
-    setTargetMode(nextMode);
-    setModePickerOpen(false);
-    setModePickerRequired(false);
-    setModePickerUpgrade(false);
-    setInstallValidated(false);
-    setTargetModeLoaded(true);
-    saveTargetModeState(typeof window !== 'undefined' ? window.localStorage : null, nextMode);
-    setProfileMenuOpen(false);
-    setHeroMenuOpen(false);
+    const storage = typeof window !== 'undefined' ? window.localStorage : null;
+    setSession((prev) => commitPresetBuilderTargetMode({ session: prev, targetMode: nextMode, storage }));
   }
 
   function openTargetModePicker() {
-    setModePickerRequired(false);
-    setModePickerOpen(true);
+    setSession((prev) => reducePresetBuilderSession(prev, { type: 'OPEN_TARGET_MODE_PICKER' }));
   }
 
   useEffect(() => {
-    latestProfileSnapshot.current = { profiles, activeProfileId };
-  }, [activeProfileId, profiles]);
+    latestProfileSnapshot.current = createProfilePersistenceSnapshot(session);
+  }, [session]);
 
   useEffect(() => {
     const storage = typeof window !== 'undefined' ? window.localStorage : null;
-    const loaded = loadProfileState(storage, defaultState);
-    const loadedTargetMode = loadTargetModeState(storage, { profileStorageKey: PROFILE_STORAGE_KEY });
-    setProfiles(loaded.profiles);
-    setActiveProfileId(loaded.activeProfileId);
-    setTargetMode(loadedTargetMode.targetMode);
-    setModePickerOpen(loadedTargetMode.shouldShowPicker);
-    setModePickerRequired(loadedTargetMode.shouldShowPicker);
-    setModePickerUpgrade(loadedTargetMode.isUpgradePrompt);
-    setTargetModeLoaded(true);
-    setProfilesLoaded(true);
+    setSession(loadPresetBuilderSession(storage, defaultState));
   }, [defaultState]);
 
   useEffect(() => {
@@ -211,7 +153,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
       const storage = typeof window !== 'undefined' ? window.localStorage : null;
       saveProfileState(storage, latestProfileSnapshot.current);
     });
-  }, [activeProfileId, profiles, profilesLoaded]);
+  }, [profilesLoaded, session]);
 
   useEffect(() => {
     if (!profilesLoaded || typeof window === 'undefined') return;
@@ -254,189 +196,84 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     return () => window.removeEventListener('keydown', handleShortcut);
   }, []);
 
-  function updateActiveProfile(updater) {
-    setProfiles((prev) => {
-      const targetId = prev.some((profile) => profile.id === activeProfileId) ? activeProfileId : prev[0]?.id;
-      return prev.map((profile) => {
-        if (profile.id !== targetId) return profile;
-        const patch = typeof updater === 'function' ? updater(profile) : updater;
-        return { ...profile, ...patch };
-      });
-    });
-  }
-
   function updateField(id, value) {
-    updateActiveProfile((profile) => ({
-      values: { ...profile.values, [id]: coerceHpValue(id, value) }
-    }));
+    setSession((prev) => reducePresetBuilderSession(prev, { type: 'UPDATE_FIELD', id, value }));
   }
 
   function renameActiveProfile(name) {
-    updateActiveProfile({ name });
+    setSession((prev) => reducePresetBuilderSession(prev, { type: 'RENAME_ACTIVE_PROFILE', name }));
   }
 
   function handleHeroToggle(heroId) {
-    const normalized = normalizeHeroIds([heroId])[0];
-    if (!normalized) return;
-    updateActiveProfile((profile) => {
-      const currentMode = normalizeHeroScopeMode(profile.heroMode || profile.hm, profile.heroes || profile.hs);
-      const current = currentMode === HP_HERO_SCOPE_SELECTED ? normalizeHeroIds(profile.heroes) : [];
-      const currentSet = new Set(current);
-      if (currentSet.has(normalized)) {
-        currentSet.delete(normalized);
-      } else {
-        currentSet.add(normalized);
-      }
-      const heroes = HP_HEROES.map((hero) => hero.id).filter((id) => currentSet.has(id));
-      return {
-        heroMode: heroes.length ? HP_HERO_SCOPE_SELECTED : HP_HERO_SCOPE_OFF,
-        heroes
-      };
-    });
+    setSession((prev) => reducePresetBuilderSession(prev, { type: 'TOGGLE_HERO', heroId }));
   }
 
   function handleClearHeroes() {
-    updateActiveProfile({ heroMode: HP_HERO_SCOPE_ALL, heroes: [] });
+    setSession((prev) => reducePresetBuilderSession(prev, { type: 'CLEAR_HEROES' }));
   }
 
   function handleDisableHeroSelection() {
-    updateActiveProfile({ heroMode: HP_HERO_SCOPE_OFF, heroes: [] });
+    setSession((prev) => reducePresetBuilderSession(prev, { type: 'DISABLE_HERO_SELECTION' }));
   }
 
   function handleSelectGroup(group) {
     let cursor = group;
     while (cursor?.children?.length) cursor = cursor.children[0];
-    setActiveKey(getCategoryKey(cursor || group));
+    setActiveKey(HP_FIELD_CATALOG.getCategoryKey(cursor || group));
   }
 
-  async function handleImport() {
-    try {
-      const { parseHpColorsImportProfiles } = await import('../hpImportCode.js');
-      const importedProfiles = parseHpColorsImportProfiles(importText, HP_SCHEMA);
-      if (importedProfiles.length <= 1) {
-        const imported = importedProfiles[0];
-        updateActiveProfile({ name: imported.name, values: imported.values, heroMode: imported.heroMode, heroes: imported.heroes });
-        setStatus(`Imported ${cleanProfileName(imported.name, activeProfileIndex)}.`);
-        return;
-      }
-
-      const usedIds = new Set(profiles.map((profile) => String(profile.id || '')));
-      const appendedProfiles = importedProfiles.map((profile, index) => createProfile({
-        id: nextImportedProfileId(usedIds),
-        name: cleanProfileName(profile.name, profiles.length + index),
-        values: profile.values,
-        heroMode: profile.heroMode,
-        heroes: profile.heroes
-      }));
-      setProfiles([...profiles, ...appendedProfiles]);
-      setActiveProfileId(appendedProfiles[0].id);
-      setProfileMenuOpen(true);
-      setStatus(`Imported ${appendedProfiles.length} profiles from preset codes.`);
-    } catch (error) {
-      setStatus(error?.message || String(error));
-    }
-  }
+  const handleImport = useCallback(() => runPresetImportWorkflow({
+    importText,
+    defaultState,
+    groups,
+    activeKey,
+    dispatch: dispatchSessionIntent
+  }), [activeKey, defaultState, dispatchSessionIntent, groups, importText]);
 
   function handleResetPage() {
-    updateActiveProfile((profile) => {
-      const next = { ...profile.values };
-      for (const field of currentGroup?.fields || []) {
-        next[field.id] = defaultState[field.id];
-      }
-      return { values: next };
-    });
+    setSession((prev) => reducePresetBuilderSession(prev, {
+      type: 'RESET_FIELDS',
+      fieldIds: (currentGroup?.fields || []).map((field) => field.id),
+      defaultState
+    }));
   }
 
   function handleResetAll() {
-    updateActiveProfile({ values: { ...defaultState } });
+    setSession((prev) => reducePresetBuilderSession(prev, { type: 'RESET_ALL_FIELDS', defaultState }));
   }
 
   function handleAddProfile() {
-    const next = addProfile(profiles, defaultState);
-    const added = next.profiles[next.profiles.length - 1];
-    setProfiles(next.profiles);
-    setActiveProfileId(next.activeProfileId);
-    setProfileMenuOpen(true);
-    setStatus(`Added ${cleanProfileName(added.name, next.profiles.length - 1)}.`);
+    setSession((prev) => reducePresetBuilderSession(prev, { type: 'ADD_PROFILE', defaultState }));
   }
 
   function handleDeleteProfile() {
-    if (profiles.length <= 1) return;
-    const next = removeProfile(profiles, activeProfileId);
-    setProfiles(next.profiles);
-    setActiveProfileId(next.activeProfileId);
-    setStatus(`Removed ${presetName}.`);
+    setSession((prev) => reducePresetBuilderSession(prev, { type: 'DELETE_ACTIVE_PROFILE' }, { presetName }));
   }
 
   function handleSelectProfile(profileId) {
-    setActiveProfileId(profileId);
-    setProfileMenuOpen(false);
+    setSession((prev) => reducePresetBuilderSession(prev, { type: 'SELECT_PROFILE', profileId }));
   }
 
   function handleDropProfile(event, toIndex) {
     event.preventDefault();
     const rawIndex = event.dataTransfer.getData('text/plain');
     const fromIndex = rawIndex === '' ? dragIndex : Number(rawIndex);
-    setProfiles((prev) => reorderProfiles(prev, fromIndex, toIndex));
-    setDragIndex(null);
-    setStatus('Reordered profiles. First profile has highest load priority.');
+    setSession((prev) => reducePresetBuilderSession(prev, { type: 'DROP_PROFILE', fromIndex, toIndex }));
   }
 
-  async function performBuild(modVariant) {
-    const activeModVariant = modVariant || targetMode;
-    const activePresetName = String(presetName || DEFAULT_PRESET_NAME).trim() || DEFAULT_PRESET_NAME;
-    const activePresetVpkFileName = buildPresetVpkFileName(activePresetName);
-    setStatus(`Building ${activePresetVpkFileName}...`);
-    try {
-      const [{ BASE_HUD_SOURCE_PATH, buildHpColorsPackage }, { writeVpk }] = await Promise.all([
-        import('../packageBuilder.js'),
-        import('../vpkWriter.js')
-      ]);
-      const baseHudXml = await loadBaseHudXml();
-      const buildPresets = getBuildProfilesForTargetMode(profiles.map(profileToPreset), activeModVariant);
-      const { files } = buildHpColorsPackage({
-        sourceTexts: { [BASE_HUD_SOURCE_PATH]: baseHudXml },
-        presets: buildPresets,
-        modVariant: activeModVariant
-      });
-      const pak = writeVpk(files);
-      downloadBytes(activePresetVpkFileName, pak);
-      const modLabel = activeModVariant === HP_COLORS_MOD_VARIANTS.MINIMAL ? 'minimal mod' : 'full mod';
-      setStatus(`Built ${activePresetVpkFileName} for ${modLabel} (${pak.byteLength.toLocaleString()} bytes, ${buildPresets.length} profile${buildPresets.length === 1 ? '' : 's'}).`);
-    } catch (error) {
-      setStatus(error?.message || String(error));
-    }
-  }
+  const performBuild = useCallback((modVariant) => runPresetBuildWorkflow({
+    selection: selectedSession,
+    targetMode: modVariant || targetMode,
+    loadBaseHudXml,
+    dispatch: dispatchSessionIntent
+  }), [dispatchSessionIntent, loadBaseHudXml, selectedSession, targetMode]);
 
-  async function performConvert(targetModVariant) {
-    if (!convertFile) {
-      setConvertStatus('Select a generated HP Colors preset VPK first.');
-      return;
-    }
-    const targetLabel = targetModVariant === HP_COLORS_MOD_VARIANTS.MINIMAL ? 'minimal mod' : 'full mod';
-    setConvertStatus(`Converting ${convertFile.name} to ${targetLabel}...`);
-    try {
-      const [{ convertHpColorsPresetVpk }, { writeVpk }] = await Promise.all([
-        import('../vpkConverter.js'),
-        import('../vpkWriter.js')
-      ]);
-      const baseHudXml = await loadBaseHudXml();
-      const converted = convertHpColorsPresetVpk({
-        vpkBytes: new Uint8Array(await convertFile.arrayBuffer()),
-        baseHudXml,
-        targetModVariant
-      });
-      const pak = writeVpk(converted.files);
-      const outputName = buildConvertedVpkFileName(convertFile.name);
-      downloadBytes(outputName, pak);
-      setConvertStatus(`Converted ${outputName} for the ${targetLabel}.`);
-      setStatus(`Converted ${outputName} for the ${targetLabel}.`);
-    } catch (error) {
-      const message = error?.message || String(error);
-      setConvertStatus(message);
-      setStatus(message);
-    }
-  }
+  const performConvert = useCallback((targetModVariant) => runPresetConvertWorkflow({
+    convertFile,
+    targetModVariant,
+    loadBaseHudXml,
+    dispatch: dispatchSessionIntent
+  }), [convertFile, dispatchSessionIntent, loadBaseHudXml]);
 
   return (
     <div className="panorama-page">
@@ -498,7 +335,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 <button
                   type="button"
                   className="profile-selector-trigger"
-                  onClick={() => setProfileMenuOpen((open) => !open)}
+                  onClick={() => setSession((prev) => ({ ...prev, profileMenuOpen: !prev.profileMenuOpen }))}
                   aria-expanded={profileMenuOpen}
                   aria-haspopup="listbox"
                 >
@@ -510,7 +347,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                   <div className="profile-selector-menu" role="listbox" aria-label="Preset profiles">
                     {profiles.map((profile, index) => {
                       const label = cleanProfileName(profile.name, index);
-                      const overrides = countPresetOverrides(profile.values, defaultState);
+                      const overrides = HP_FIELD_CATALOG.countOverrides(profile.values, defaultState);
                       return (
                         <button
                           key={profile.id}
@@ -521,7 +358,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                           aria-selected={profile.id === activeProfile.id}
                           onClick={() => handleSelectProfile(profile.id)}
                           onDragStart={(event) => {
-                            setDragIndex(index);
+                            setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_DRAG_INDEX', dragIndex: index }));
                             event.dataTransfer.effectAllowed = 'move';
                             event.dataTransfer.setData('text/plain', String(index));
                           }}
@@ -530,7 +367,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                             event.dataTransfer.dropEffect = 'move';
                           }}
                           onDrop={(event) => handleDropProfile(event, index)}
-                          onDragEnd={() => setDragIndex(null)}
+                          onDragEnd={() => setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_DRAG_INDEX', dragIndex: null }))}
                         >
                           <GripVertical className="profile-drag-handle" aria-hidden="true" />
                           <span className="profile-menu-text">
@@ -552,7 +389,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <button
                 type="button"
                 className="hero-selector-trigger"
-                onClick={() => setHeroMenuOpen((open) => !open)}
+                onClick={() => setSession((prev) => ({ ...prev, heroMenuOpen: !prev.heroMenuOpen }))}
                 aria-expanded={heroMenuOpen}
                 aria-haspopup="listbox"
               >
@@ -628,7 +465,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
           <section className="anita-detail-panel">
             <div className="anita-detail-header-row">
               <div>
-                <h2>{getCategoryPathLabel(currentGroup)}</h2>
+                <h2>{HP_FIELD_CATALOG.getCategoryPathLabel(currentGroup)}</h2>
                 <p className="anita-detail-hint">
                   {visibleCount} visible controls / {profiles.length} profile{profiles.length === 1 ? '' : 's'}
                 </p>
@@ -664,7 +501,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <span className="panorama-kicker">Tools</span>
               <strong>Preset utility</strong>
             </div>
-            <DisclosurePanel title="Import game preset codes" open={importOpen} onOpenChange={setImportOpen}>
+            <DisclosurePanel title="Import game preset codes" open={importOpen} onOpenChange={(open) => setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_IMPORT_OPEN', open }))}>
               <div className="import-panel-body">
                 <p className="panel-helper">
                   Paste COPY ALL from the in-game HP Colors menu, or paste several individual HP Colors codes. Bundles import as separate profiles for the selected target.
@@ -674,7 +511,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                   className="builder-textarea"
                   rows={5}
                   value={importText}
-                  onChange={(e) => setImportText(e.target.value)}
+                  onChange={(e) => setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_IMPORT_TEXT', text: e.target.value }))}
                   placeholder="Paste COPY ALL or HP Colors import codes here"
                 />
                 <div className="rail-actions">
@@ -686,7 +523,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
             </DisclosurePanel>
 
-            <DisclosurePanel title="Convert VPK" open={convertOpen} onOpenChange={setConvertOpen}>
+            <DisclosurePanel title="Convert VPK" open={convertOpen} onOpenChange={(open) => setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_CONVERT_OPEN', open }))}>
               <div className="convert-panel-body">
                 <label className="builder-file-control">
                   <span>Preset VPK</span>
@@ -695,8 +532,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     accept=".vpk"
                     onChange={(event) => {
                       const nextFile = event.target.files?.[0] || null;
-                      setConvertFile(nextFile);
-                      setConvertStatus(nextFile ? `Ready: ${nextFile.name}` : '');
+                      setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_CONVERT_FILE', file: nextFile }));
+                      setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_CONVERT_STATUS', status: nextFile ? `Ready: ${nextFile.name}` : '' }));
                     }}
                   />
                 </label>
@@ -729,7 +566,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
             </DisclosurePanel>
 
-            <DisclosurePanel title="JSON preview" open={previewOpen} onOpenChange={setPreviewOpen}>
+            <DisclosurePanel title="JSON preview" open={previewOpen} onOpenChange={(open) => setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_PREVIEW_OPEN', open }))}>
               <div className="preview-box"><pre>{preview}</pre></div>
             </DisclosurePanel>
 
@@ -744,7 +581,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
       {modePickerOpen && targetModeLoaded ? (
         <div className="build-warning-modal target-mode-modal" role="dialog" aria-modal="true" aria-labelledby="targetModeTitle">
           {!modePickerRequired ? (
-            <button type="button" className="build-warning-backdrop" onClick={() => setModePickerOpen(false)} aria-label="Cancel" />
+            <button type="button" className="build-warning-backdrop" onClick={() => setSession((prev) => ({ ...prev, modePickerOpen: false }))} aria-label="Cancel" />
           ) : (
             <div className="build-warning-backdrop" aria-hidden="true" />
           )}
@@ -780,7 +617,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             </div>
             {!modePickerRequired ? (
               <div className="build-warning-actions">
-                <button type="button" className="secondary-action" onClick={() => setModePickerOpen(false)}>Cancel</button>
+                <button type="button" className="secondary-action" onClick={() => setSession((prev) => ({ ...prev, modePickerOpen: false }))}>Cancel</button>
               </div>
             ) : null}
           </div>
@@ -789,7 +626,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
       {warningOpen && (
         <div className="build-warning-modal" role="dialog" aria-modal="true" aria-labelledby="buildWarningTitle">
-          <button type="button" className="build-warning-backdrop" onClick={() => setWarningOpen(false)} aria-label="Cancel" />
+          <button type="button" className="build-warning-backdrop" onClick={() => setSession((prev) => reducePresetBuilderSession(prev, { type: 'CLOSE_BUILD_WARNING' }))} aria-label="Cancel" />
           <div className="build-warning-panel">
             <div className="build-warning-badge">Build target</div>
             <h3 id="buildWarningTitle">Confirm {targetModeDetails.label} preset VPK</h3>
@@ -827,7 +664,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
               <div className="target-mode-summary-actions">
                 <button type="button" className="secondary-action" onClick={() => {
-                  setWarningOpen(false);
+                  setSession((prev) => reducePresetBuilderSession(prev, { type: 'CLOSE_BUILD_WARNING' }));
                   openTargetModePicker();
                 }}>
                   <Layers3 aria-hidden="true" />
@@ -844,8 +681,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 type="button"
                 className="secondary-action build-validation-action"
                 onClick={() => {
-                  const next = getNextInstallValidationState({ installValidated, buildVariant: targetMode });
-                  setInstallValidated(next.installValidated);
+                  setSession((prev) => reducePresetBuilderSession(prev, { type: 'TOGGLE_INSTALL_VALIDATION' }));
                 }}
               >
                 <ShieldCheck aria-hidden="true" />
@@ -864,14 +700,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
             ) : null}
             <div className="build-warning-actions">
-              <button type="button" className="secondary-action" onClick={() => setWarningOpen(false)}>Cancel</button>
+              <button type="button" className="secondary-action" onClick={() => setSession((prev) => reducePresetBuilderSession(prev, { type: 'CLOSE_BUILD_WARNING' }))}>Cancel</button>
               <button
                 type="button"
                 className="primary-action build-confirm-action"
                 disabled={!canConfirmBuildVariant}
                 onClick={async () => {
                   if (!canConfirmBuildVariant) return;
-                  setWarningOpen(false);
+                  setSession((prev) => reducePresetBuilderSession(prev, { type: 'CLOSE_BUILD_WARNING' }));
                   await performBuild(targetMode);
                 }}
               >

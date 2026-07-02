@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { HP_SCHEMA } from "../src/hpSchema.js";
-import { extractHpColorsImportToken, parseHpColorsImportCode, parseHpColorsImportProfiles } from "../src/hpImportCode.js";
+import { extractHpColorsImportToken, parseHpColorsImportCode, parseHpColorsImportProfiles, parseHpColorsPresetStorePayload } from "../src/hpImportCode.js";
 
-function base64UrlEncode(text) {
+function encodeImportPayloadText(text) {
   return Buffer.from(text, "utf8")
     .toString("base64")
     .replace(/\+/g, "-")
@@ -13,7 +13,7 @@ function base64UrlEncode(text) {
 }
 
 function buildToken(payload) {
-  return `[ANITA-v1-hp_colors]:${base64UrlEncode(JSON.stringify(payload))}`;
+  return `[ANITA-v1-hp_colors]:${encodeImportPayloadText(JSON.stringify(payload))}`;
 }
 
 const HP_COLORS_PRESET_ENTRY_TOKEN = "eyJuYW1lIjoiV2ViIEJ1aWxkZXIgUHJlc2V0IiwidmVyc2lvbiI6MSwidmFsdWVzIjp7ImhwX2VuYWJsZWQiOnRydWUsImhwX2JnX3Zpc2libGUiOnRydWUsImhwX21vZGUiOjAsImhwX2xvd190aHJlc2hvbGQiOjI1LCJocF9oaWdoX3RocmVzaG9sZCI6NjUsImhwX3RlYW1fY29sb3JzIjp0cnVlLCJocF9za2lwX2J1aWxkaW5ncyI6dHJ1ZSwiaHBfaW5mb19oZWFsdGhfbWFyZ2luX3RvcCI6MjMsImhwX2hlYWx0aGJhcl9oZWlnaHQiOjEzMCwiaHBfdWx0X2NvbG9yX2VuYWJsZWQiOnRydWUsImhwX3VsdF9jb2xvcl9jdXN0b20iOiIjRTE2MTYxIiwiaHBfY29sb3JfbG93IjoiI0UxNjE2MSIsImhwX2NvbG9yX21pZCI6IiNGRjdCMDAiLCJocF9jb2xvcl9oaWdoIjoiIzAwRkYwMCIsImhwX3B1bHNlX2VuYWJsZWQiOnRydWUsImhwX3B1bHNlX3RocmVzaG9sZCI6MjUsImhwX3B1bHNlX2JwbSI6NzUsImhwX3B1bHNlX2ludGVuc2l0eSI6MSwiaHBfcHVsc2VfaGlkZV9iYXIiOmZhbHNlLCJocF9wdWxzZV90ZXh0X2VuYWJsZWQiOmZhbHNlLCJocF9wdWxzZV90ZXh0X3NjYWxlIjoxMjAsImhwX3B1bHNlX3RleHRfcG9zaXRpb24iOiIyMCwxOTYiLCJocF9jb3VudGVyX3NpemUiOjE4NywiaHBfY291bnRlcl9wb3NpdGlvbiI6IjQzLC05IiwiaHBfY291bnRlcl9mb3JtYXQiOjAsImhwX3RleHRfY29sb3JfbW9kZSI6MSwiaHBfbGV2ZWxfbnVtYmVyX3Zpc2libGUiOnRydWUsImhwX3BpcF92aXNpYmxlIjp0cnVlLCJocF90ZXh0X2NvbG9yX2xvdyI6IiNGRkIwQjAiLCJocF90ZXh0X2NvbG9yX21pZCI6IiNGRkZGRkYiLCJocF90ZXh0X2NvbG9yX2hpZ2giOiIjRkZGRkZGIiwiaHBfZnJpZW5kX2VuYWJsZWQiOmZhbHNlLCJocF9mcmllbmRfY29sb3JfbG93IjoiI0UxNjE2MSIsImhwX2ZyaWVuZF9jb2xvcl9taWQiOiIjRkY3QjAwIiwiaHBfZnJpZW5kX2NvbG9yX2hpZ2giOiIjMDBGRjAwIiwiaHBfZnJpZW5kX3B1bHNlX2VuYWJsZWQiOmZhbHNlLCJocF9mcmllbmRfcHVsc2VfdGhyZXNob2xkIjoyNSwiaHBfZnJpZW5kX3B1bHNlX2JwbSI6NzUsImhwX2ZyaWVuZF9wdWxzZV9pbnRlbnNpdHkiOjEsImhwX2ZyaWVuZF9wdWxzZV9jb2xvcl9lbmFibGVkIjpmYWxzZSwiaHBfZnJpZW5kX3B1bHNlX2NvbG9yIjoiI0ZGMjIyMiIsImhwX2tpbGxfem9uZV9lbmFibGVkIjpmYWxzZSwiaHBfa2lsbF96b25lX3RocmVzaG9sZCI6MjUsImhwX2tpbGxfem9uZV9jb2xvciI6IiNGRjIyMjIiLCJocF9raWxsX3pvbmVfd2lkdGgiOjMxfX0";
@@ -24,7 +24,7 @@ test("extracts the HP Colors token from pasted game code", () => {
 });
 
 test("parses a valid HP Colors export token into full schema state", () => {
-  const state = parseHpColorsImportCode(buildToken({ v: 97, c: 1, values: { e: false, cl: "#112233", p: "12,34", pce: true, pcm: 1, pc: "#123456" } }), HP_SCHEMA);
+  const state = parseHpColorsImportCode(buildToken({ v: 97, c: 1, values: { e: false, cl: "#112233", p: "12,34", pce: true, pcm: 1, pc: "#123456" } }));
 
   assert.equal(state.hp_enabled, false);
   assert.equal(state.hp_color_low, "#112233");
@@ -49,8 +49,56 @@ test("parses current game preset aliases used by HP Colors exports", () => {
   assert.equal(state.hp_kill_zone_width, 6);
 });
 
+test("parses new healthbar layer compact aliases", () => {
+  const state = parseHpColorsImportCode(buildToken({
+    v: 97,
+    c: 1,
+    values: {
+      cv: false,
+      ehc: "#66ff88",
+      edc: "#ffee66",
+      ebsc: "#ffffff",
+      fbsc: "#acca91",
+      fhc: "#55ee99",
+      fdc: "#776655"
+    }
+  }));
+
+  assert.equal(state.hp_counter_visible, false);
+  assert.equal(state.hp_heal_color, "#66FF88");
+  assert.equal(state.hp_delta_color, "#FFEE66");
+  assert.equal(state.hp_bullet_shield_color, "#FFFFFF");
+  assert.equal(state.hp_friend_bullet_shield_color, "#ACCA91");
+  assert.equal(state.hp_friend_heal_color, "#55EE99");
+  assert.equal(state.hp_friend_delta_color, "#776655");
+});
+
+test("parses new healthbar layer full field ids", () => {
+  const state = parseHpColorsImportCode(buildToken({
+    v: 97,
+    c: 1,
+    values: {
+      hp_counter_visible: false,
+      hp_heal_color: "#66ff88",
+      hp_delta_color: "#ffee66",
+      hp_bullet_shield_color: "#ffffff",
+      hp_friend_bullet_shield_color: "#acca91",
+      hp_friend_heal_color: "#55ee99",
+      hp_friend_delta_color: "#776655"
+    }
+  }));
+
+  assert.equal(state.hp_counter_visible, false);
+  assert.equal(state.hp_heal_color, "#66FF88");
+  assert.equal(state.hp_delta_color, "#FFEE66");
+  assert.equal(state.hp_bullet_shield_color, "#FFFFFF");
+  assert.equal(state.hp_friend_bullet_shield_color, "#ACCA91");
+  assert.equal(state.hp_friend_heal_color, "#55EE99");
+  assert.equal(state.hp_friend_delta_color, "#776655");
+});
+
 test("parses raw HPColorsPresetStore entry tokens", () => {
-  const state = parseHpColorsImportCode(HP_COLORS_PRESET_ENTRY_TOKEN, HP_SCHEMA);
+  const state = parseHpColorsImportCode(HP_COLORS_PRESET_ENTRY_TOKEN);
 
   assert.equal(state.hp_enabled, true);
   assert.equal(state.hp_mode, 0);
@@ -63,6 +111,45 @@ test("parses raw HPColorsPresetStore entry tokens", () => {
   assert.deepEqual(Object.keys(state), Object.keys(HP_SCHEMA));
 });
 
+test("parses preset-store payload objects into one normalized profile", () => {
+  const profile = parseHpColorsPresetStorePayload({
+    name: "Shiv Lane",
+    version: 1,
+    values: {
+      hp_enabled: false,
+      hp_color_low: "#abc"
+    },
+    heroes: ["shiv", "unknown", "hero_bebop"]
+  });
+
+  assert.equal(profile.name, "Shiv Lane");
+  assert.equal(profile.values.hp_enabled, false);
+  assert.equal(profile.values.hp_color_low, "#AABBCC");
+  assert.deepEqual(Object.keys(profile.values), Object.keys(HP_SCHEMA));
+  assert.equal(profile.heroMode, "selected");
+  assert.deepEqual(profile.heroes, ["hero_shiv", "hero_bebop"]);
+});
+
+test("parses preset-store payload objects with compact value aliases", () => {
+  const profile = parseHpColorsPresetStorePayload({
+    name: "Compact Store",
+    version: 1,
+    values: {
+      e: false,
+      cl: "#abc"
+    },
+    heroMode: "selected",
+    heroes: ["shiv", "unknown", "hero_bebop"]
+  });
+
+  assert.equal(profile.name, "Compact Store");
+  assert.equal(profile.values.hp_enabled, false);
+  assert.equal(profile.values.hp_color_low, "#AABBCC");
+  assert.deepEqual(Object.keys(profile.values), Object.keys(HP_SCHEMA));
+  assert.equal(profile.heroMode, "selected");
+  assert.deepEqual(profile.heroes, ["hero_shiv", "hero_bebop"]);
+});
+
 test("parses a bundled HP Colors token into multiple preset profiles", () => {
   const profiles = parseHpColorsImportProfiles(buildToken({
     v: 97,
@@ -73,7 +160,7 @@ test("parses a bundled HP Colors token into multiple preset profiles", () => {
       { name: "razzor", version: 1, values: { m: 1, ch: "#445566" } },
       { name: "Current live settings", version: 1, values: { p: "12,34", pce: true } }
     ]
-  }), HP_SCHEMA);
+  }));
 
   assert.equal(profiles.length, 3);
   assert.equal(profiles[0].name, "main hantu");
@@ -97,7 +184,7 @@ test("parses a compact COPY ALL HP Colors bundle into multiple preset profiles",
       { n: "razzor", vs: { m: 1, ch: "#445566" } },
       { n: "Current live settings", vs: { p: "12,34", pce: true } }
     ]
-  }), HP_SCHEMA);
+  }));
 
   assert.equal(profiles.length, 3);
   assert.equal(profiles[0].name, "main hantu");
@@ -120,7 +207,7 @@ test("parses compact hs and verbose heroes in import profiles", () => {
       { n: "shiv lane", vs: { e: false, cl: "#112233" }, hs: ["shiv", "hero_bebop"] },
       { n: "global", vs: { m: 1 }, heroes: ["Grey Talon", "unknown"] }
     ]
-  }), HP_SCHEMA);
+  }));
 
   assert.deepEqual(profiles[0].heroes, ["hero_shiv", "hero_bebop"]);
   assert.equal(profiles[0].heroMode, "selected");
@@ -129,14 +216,14 @@ test("parses compact hs and verbose heroes in import profiles", () => {
 });
 
 test("parses legacy tuple bundle heroes", () => {
-  const code = base64UrlEncode(JSON.stringify({
+  const code = encodeImportPayloadText(JSON.stringify({
     v: 97,
     p: [
       ["shiv tuple", { e: false, cl: "#112233" }, ["hero_shiv", "Bebop"]]
     ]
   }));
 
-  const profiles = parseHpColorsImportProfiles(code, HP_SCHEMA);
+  const profiles = parseHpColorsImportProfiles(code);
 
   assert.equal(profiles[0].name, "shiv tuple");
   assert.equal(profiles[0].values.hp_color_low, "#112233");
@@ -145,7 +232,7 @@ test("parses legacy tuple bundle heroes", () => {
 });
 
 test("parses minimal COPY ALL bundle hero scope modes", () => {
-  const code = base64UrlEncode(JSON.stringify({
+  const code = encodeImportPayloadText(JSON.stringify({
     v: 97,
     p: [
       ["disabled", { e: false }, "off"],
@@ -154,7 +241,7 @@ test("parses minimal COPY ALL bundle hero scope modes", () => {
     ]
   }));
 
-  const profiles = parseHpColorsImportProfiles(code, HP_SCHEMA);
+  const profiles = parseHpColorsImportProfiles(code);
 
   assert.equal(profiles.length, 3);
   assert.equal(profiles[0].name, "disabled");
@@ -175,14 +262,14 @@ test("parses single-profile heroes and hs payloads", () => {
     name: "Verbose",
     values: { e: false },
     heroes: ["Shiv"]
-  }), HP_SCHEMA);
+  }));
   const compact = parseHpColorsImportProfiles(buildToken({
     v: 97,
     c: 1,
     name: "Compact",
     values: { e: true },
     hs: ["hero_bebop"]
-  }), HP_SCHEMA);
+  }));
 
   assert.deepEqual(verbose[0].heroes, ["hero_shiv"]);
   assert.equal(verbose[0].heroMode, "selected");
@@ -190,26 +277,49 @@ test("parses single-profile heroes and hs payloads", () => {
   assert.equal(compact[0].heroMode, "selected");
 });
 
+test("parses compact single-profile payload keys", () => {
+  const profiles = parseHpColorsImportProfiles(buildToken({
+    v: 97,
+    c: 1,
+    n: " Compact Single ",
+    vs: { e: false, cl: "#abc" },
+    hm: "selected",
+    hs: ["shiv", "unknown", "hero_bebop"]
+  }));
+
+  assert.equal(profiles.length, 1);
+  assert.equal(profiles[0].name, "Compact Single");
+  assert.equal(profiles[0].values.hp_enabled, false);
+  assert.equal(profiles[0].values.hp_color_low, "#AABBCC");
+  assert.deepEqual(Object.keys(profiles[0].values), Object.keys(HP_SCHEMA));
+  assert.equal(profiles[0].heroMode, "selected");
+  assert.deepEqual(profiles[0].heroes, ["hero_shiv", "hero_bebop"]);
+});
+
 test("parses the minimal COPY ALL HP Colors bundle into multiple preset profiles", () => {
-  const code = base64UrlEncode(JSON.stringify({
+  const code = encodeImportPayloadText(JSON.stringify({
     v: 97,
     p: [
-      ["main hantu", { e: false, cl: "#112233" }],
-      ["razzor", { m: 1, ch: "#445566" }]
+      ["main hantu", { e: false, cl: "#112233", ebsc: "#ffffff", fbsc: "#acca91" }],
+      ["razzor", { m: 1, ch: "#445566", ebsc: "#445566", fbsc: "#665544" }]
     ]
   }));
 
-  const profiles = parseHpColorsImportProfiles(code, HP_SCHEMA);
+  const profiles = parseHpColorsImportProfiles(code);
 
   assert.equal(profiles.length, 2);
   assert.equal(profiles[0].name, "main hantu");
   assert.equal(profiles[0].heroMode, "off");
   assert.equal(profiles[0].values.hp_enabled, false);
   assert.equal(profiles[0].values.hp_color_low, "#112233");
+  assert.equal(profiles[0].values.hp_bullet_shield_color, "#FFFFFF");
+  assert.equal(profiles[0].values.hp_friend_bullet_shield_color, "#ACCA91");
   assert.equal(profiles[1].name, "razzor");
   assert.equal(profiles[1].heroMode, "off");
   assert.equal(profiles[1].values.hp_mode, 1);
   assert.equal(profiles[1].values.hp_color_high, "#445566");
+  assert.equal(profiles[1].values.hp_bullet_shield_color, "#445566");
+  assert.equal(profiles[1].values.hp_friend_bullet_shield_color, "#665544");
 });
 
 test("minimal COPY ALL bundle is shorter than the previous compact object bundle", () => {
@@ -222,7 +332,7 @@ test("minimal COPY ALL bundle is shorter than the previous compact object bundle
       { n: "razzor", vs: { m: 1, ch: "#445566" } }
     ]
   });
-  const minimal = base64UrlEncode(JSON.stringify({
+  const minimal = encodeImportPayloadText(JSON.stringify({
     v: 97,
     p: [
       ["main hantu", { e: false, cl: "#112233" }],
@@ -238,7 +348,7 @@ test("parses multiple pasted HP Colors tokens into multiple preset profiles", ()
   const first = buildToken({ v: 97, c: 1, values: { e: false, cl: "#112233" } });
   const second = buildToken({ v: 97, c: 1, values: { m: 1, ch: "#445566" } });
 
-  const profiles = parseHpColorsImportProfiles(`main hantu\n${first}\n\nrazzor\n${second}`, HP_SCHEMA);
+  const profiles = parseHpColorsImportProfiles(`main hantu\n${first}\n\nrazzor\n${second}`);
 
   assert.equal(profiles.length, 2);
   assert.equal(profiles[0].name, "Imported preset 1");
@@ -248,7 +358,7 @@ test("parses multiple pasted HP Colors tokens into multiple preset profiles", ()
 });
 
 test("parses a bare HPColorsPresetStore encoded preset payload", () => {
-  const encoded = base64UrlEncode(JSON.stringify({
+  const encoded = encodeImportPayloadText(JSON.stringify({
     name: "Web Builder Preset",
     version: 1,
     values: {
@@ -259,7 +369,7 @@ test("parses a bare HPColorsPresetStore encoded preset payload", () => {
     }
   }));
 
-  const state = parseHpColorsImportCode(encoded, HP_SCHEMA);
+  const state = parseHpColorsImportCode(encoded);
 
   assert.equal(state.hp_enabled, true);
   assert.equal(state.hp_color_low, "#E16161");
@@ -269,7 +379,7 @@ test("parses a bare HPColorsPresetStore encoded preset payload", () => {
 });
 
 test("parses legacy version 25 import tokens", () => {
-  const state = parseHpColorsImportCode(buildToken({ v: 25, c: 1, values: { e: false, cm: "#abcdef", tm: 1 } }), HP_SCHEMA);
+  const state = parseHpColorsImportCode(buildToken({ v: 25, c: 1, values: { e: false, cm: "#abcdef", tm: 1 } }));
 
   assert.equal(state.hp_enabled, false);
   assert.equal(state.hp_color_mid, "#ABCDEF");
@@ -285,39 +395,46 @@ test("parses import colors as canonical hex only", () => {
       cm: "not-a-color;visibility:collapse",
       ch: 'url("s2r://panorama/images/hud/icon.png")'
     }
-  }), HP_SCHEMA);
+  }));
 
   assert.equal(state.hp_color_low, "#AABBCC");
   assert.equal(state.hp_color_mid, HP_SCHEMA.hp_color_mid.defaultValue);
   assert.equal(state.hp_color_high, HP_SCHEMA.hp_color_high.defaultValue);
 });
 
+test("rejects single-profile imports without values", () => {
+  assert.throws(
+    () => parseHpColorsImportProfiles(buildToken({ v: 97, c: 1, n: "No values" })),
+    /Invalid JSON payload/
+  );
+});
+
 test("rejects malformed, wrong-namespace, or invalid payloads", () => {
-  assert.throws(() => parseHpColorsImportCode("not a token", HP_SCHEMA), /Malformed HP Colors import code/i);
-  assert.throws(() => parseHpColorsImportCode("nope", HP_SCHEMA), /Malformed HP Colors import code/i);
-  assert.throws(() => parseHpColorsImportCode("[anita-v1-hp_colors]:abc", HP_SCHEMA), /Malformed HP Colors import code/i);
-  assert.throws(() => parseHpColorsImportCode("[ANITA-v1-wrong]:abc", HP_SCHEMA), /namespace/i);
-  assert.throws(() => parseHpColorsImportCode("[ANITA-v1-hp_colors]:!!!!", HP_SCHEMA), /base64url/i);
-  assert.throws(() => parseHpColorsImportCode("[ANITA-v1-hp_colors]:eA", HP_SCHEMA), /JSON payload/i);
-  assert.throws(() => parseHpColorsImportCode("[ANITA-v1-hp_colors]:e30", HP_SCHEMA), /JSON payload/i);
-  assert.throws(() => parseHpColorsImportCode(buildToken({ v: 98, c: 1, values: { e: true } }), HP_SCHEMA), /version/i);
-  assert.throws(() => parseHpColorsImportCode(buildToken({ v: 97, values: { e: true } }), HP_SCHEMA), /JSON payload/i);
-  assert.throws(() => parseHpColorsImportCode(buildToken({ v: 97, compact: 1, values: { e: true } }), HP_SCHEMA), /JSON payload/i);
-  assert.throws(() => parseHpColorsImportCode(buildToken({ v: 97, c: 2, values: { e: true } }), HP_SCHEMA), /version/i);
-  assert.throws(() => parseHpColorsImportCode(buildToken({ v: 97, c: 1, values: { zz: 1 } }), HP_SCHEMA), /unknown/i);
-  assert.throws(() => parseHpColorsImportCode(buildToken({ v: 97, c: 1, values: { badField: 1 } }), HP_SCHEMA), /unknown/i);
+  assert.throws(() => parseHpColorsImportCode("not a token"), /Malformed HP Colors import code/i);
+  assert.throws(() => parseHpColorsImportCode("nope"), /Malformed HP Colors import code/i);
+  assert.throws(() => parseHpColorsImportCode("[anita-v1-hp_colors]:abc"), /Malformed HP Colors import code/i);
+  assert.throws(() => parseHpColorsImportCode("[ANITA-v1-wrong]:abc"), /namespace/i);
+  assert.throws(() => parseHpColorsImportCode("[ANITA-v1-hp_colors]:!!!!"), /base64url/i);
+  assert.throws(() => parseHpColorsImportCode("[ANITA-v1-hp_colors]:eA"), /JSON payload/i);
+  assert.throws(() => parseHpColorsImportCode("[ANITA-v1-hp_colors]:e30"), /JSON payload/i);
+  assert.throws(() => parseHpColorsImportCode(buildToken({ v: 98, c: 1, values: { e: true } })), /version/i);
+  assert.throws(() => parseHpColorsImportCode(buildToken({ v: 97, values: { e: true } })), /JSON payload/i);
+  assert.throws(() => parseHpColorsImportCode(buildToken({ v: 97, compact: 1, values: { e: true } })), /JSON payload/i);
+  assert.throws(() => parseHpColorsImportCode(buildToken({ v: 97, c: 2, values: { e: true } })), /version/i);
+  assert.throws(() => parseHpColorsImportCode(buildToken({ v: 97, c: 1, values: { zz: 1 } })), /unknown/i);
+  assert.throws(() => parseHpColorsImportCode(buildToken({ v: 97, c: 1, values: { badField: 1 } })), /unknown/i);
 });
 
 test("rejects oversized import payloads before JSON parsing", () => {
   const hugeToken = `[ANITA-v1-hp_colors]:${"A".repeat(70000)}`;
 
   assert.throws(() => extractHpColorsImportToken(hugeToken), /too large/i);
-  assert.throws(() => parseHpColorsImportCode(hugeToken, HP_SCHEMA), /too large/i);
+  assert.throws(() => parseHpColorsImportCode(hugeToken), /too large/i);
 });
 
 test("rejects decoded payloads over the size cap before JSON parsing", () => {
   const token = buildToken({ v: 97, c: 1, notes: "A".repeat(9000), values: { e: true } });
 
   assert.ok(token.length < 16384);
-  assert.throws(() => parseHpColorsImportCode(token, HP_SCHEMA), /too large/i);
+  assert.throws(() => parseHpColorsImportCode(token), /too large/i);
 });

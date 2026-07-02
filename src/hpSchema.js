@@ -14,6 +14,9 @@ export const HP_SCHEMA = {
   hp_color_low: { type: "colorpicker", label: "Low HP bar color", category: "HEALTH BARS|Enemy Colors", defaultValue: "#E16161" },
   hp_color_mid: { type: "colorpicker", label: "Mid HP bar color", category: "HEALTH BARS|Enemy Colors", defaultValue: "#FF7B00" },
   hp_color_high: { type: "colorpicker", label: "High HP bar color", category: "HEALTH BARS|Enemy Colors", defaultValue: "#00FF00" },
+  hp_heal_color: { type: "colorpicker", label: "Healing bar color", category: "HEALTH BARS|Enemy Colors", defaultValue: "#5fff80" },
+  hp_delta_color: { type: "colorpicker", label: "Damage delta color", category: "HEALTH BARS|Enemy Colors", defaultValue: "#ffe55b" },
+  hp_bullet_shield_color: { type: "colorpicker", label: "Enemy bullet shield color", category: "HEALTH BARS|Enemy Colors", defaultValue: "#ffffff" },
 
   hp_pulse_enabled: { type: "toggle", label: "Pulse at low HP", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: true },
   hp_pulse_threshold: { type: "slider", label: "Pulse starts below %", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: 25, bounds: { min: 0, max: 100, step: 1 }, visibleWhen: { id: "hp_pulse_enabled", equals: true } },
@@ -42,6 +45,9 @@ export const HP_SCHEMA = {
   hp_friend_color_low: { type: "colorpicker", label: "Ally low HP color", category: "HEALTH BARS|Ally Colors", defaultValue: "#E16161", visibleWhen: { id: "hp_friend_enabled", equals: true } },
   hp_friend_color_mid: { type: "colorpicker", label: "Ally mid HP color", category: "HEALTH BARS|Ally Colors", defaultValue: "#FF7B00", visibleWhen: { id: "hp_friend_enabled", equals: true } },
   hp_friend_color_high: { type: "colorpicker", label: "Ally high HP color", category: "HEALTH BARS|Ally Colors", defaultValue: "#00FF00", visibleWhen: { id: "hp_friend_enabled", equals: true } },
+  hp_friend_heal_color: { type: "colorpicker", label: "Ally healing bar color", category: "HEALTH BARS|Ally Colors", defaultValue: "#5fff80", visibleWhen: { id: "hp_friend_enabled", equals: true } },
+  hp_friend_delta_color: { type: "colorpicker", label: "Ally damage delta color", category: "HEALTH BARS|Ally Colors", defaultValue: "#504c47", visibleWhen: { id: "hp_friend_enabled", equals: true } },
+  hp_friend_bullet_shield_color: { type: "colorpicker", label: "Ally bullet shield color", category: "HEALTH BARS|Ally Colors", defaultValue: "#acca91", visibleWhen: { id: "hp_friend_enabled", equals: true } },
   hp_friend_pulse_enabled: { type: "toggle", label: "Pulse ally bars", category: "HEALTH BARS|Ally Colors", defaultValue: false, visibleWhen: { id: "hp_friend_enabled", equals: true } },
   hp_friend_pulse_threshold: { type: "slider", label: "Ally pulse starts below %", category: "HEALTH BARS|Ally Colors", defaultValue: 25, bounds: { min: 0, max: 100, step: 1 }, visibleWhen: { id: "hp_friend_pulse_enabled", equals: true } },
   hp_friend_pulse_bpm: { type: "slider", label: "Ally pulse speed", category: "HEALTH BARS|Ally Colors", defaultValue: 75, bounds: { min: 30, max: 300, step: 1 }, visibleWhen: { id: "hp_friend_pulse_enabled", equals: true } },
@@ -71,7 +77,7 @@ function normalizeHexColorValue(value, fallback = "#FFFFFF") {
   return canonicalHexColor(value) || canonicalHexColor(fallback) || "#FFFFFF";
 }
 
-export function coerceHpValue(key, value) {
+function coerceValue(key, value) {
   const spec = HP_SCHEMA[key];
   if (!spec) return undefined;
   if (spec.type === "toggle") {
@@ -149,3 +155,87 @@ export function coerceHpValue(key, value) {
   }
   return value;
 }
+
+function splitCategoryPath(category = "") {
+  return String(category || "")
+    .split("|")
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function ensureGroup(groups, name, path) {
+  let group = groups.find((entry) => entry.name === name);
+  if (!group) {
+    group = { name, path: [...path, name], children: [], fields: [] };
+    groups.push(group);
+  }
+  return group;
+}
+
+function createDefaultState() {
+  const state = {};
+  for (const [id, spec] of Object.entries(HP_SCHEMA)) {
+    state[id] = coerceValue(id, spec?.defaultValue);
+  }
+  return state;
+}
+
+function sanitizeState(state = {}) {
+  const next = {};
+  for (const [id, spec] of Object.entries(HP_SCHEMA)) {
+    next[id] = coerceValue(id, state?.[id] ?? spec?.defaultValue);
+  }
+  return next;
+}
+
+function splitCategoryGroups() {
+  const rootGroups = [];
+  for (const [id, spec] of Object.entries(HP_SCHEMA)) {
+    const path = splitCategoryPath(spec?.category);
+    if (!path.length) continue;
+    let cursor = rootGroups;
+    let lineage = [];
+    let current = null;
+    for (const segment of path) {
+      current = ensureGroup(cursor, segment, lineage);
+      lineage = current.path;
+      cursor = current.children;
+    }
+    current.fields.push({ id, ...spec });
+  }
+  return rootGroups;
+}
+
+function isFieldVisible(spec, state) {
+  if (!spec?.visibleWhen) return true;
+  const { id, equals } = spec.visibleWhen;
+  return state?.[id] === equals;
+}
+
+function getCategoryPathLabel(group) {
+  return (group?.path || []).join(" / ");
+}
+
+function getCategoryKey(group) {
+  return (group?.path || [group?.name || ""]).join("|");
+}
+
+function countOverrides(values, defaultState) {
+  let count = 0;
+  for (const id of Object.keys(HP_SCHEMA)) {
+    if (!Object.is(values?.[id], defaultState[id])) count += 1;
+  }
+  return count;
+}
+
+export const HP_FIELD_CATALOG = Object.freeze({
+  schema: HP_SCHEMA,
+  coerceValue,
+  createDefaultState,
+  sanitizeState,
+  splitCategoryGroups,
+  isFieldVisible,
+  getCategoryKey,
+  getCategoryPathLabel,
+  countOverrides
+});
