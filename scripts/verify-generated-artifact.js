@@ -12,7 +12,6 @@ import {
   validateHpColorsPackageFiles
 } from "../src/packageArtifacts.js";
 import {
-  HP_FULL_ONLY_EXCLUDED_FIELD_IDS,
   HP_PRESET_FIELD_COUNT,
   HP_PRESET_FIELD_IDS,
   HP_PRESET_PAYLOAD_VERSION
@@ -65,14 +64,11 @@ function inspectPackage(result) {
   assert.equal(profiles.length, 1);
   const [profile] = profiles;
   assert.equal(profile.version, HP_PRESET_PAYLOAD_VERSION);
-  assert.equal(Object.keys(profile.values).length, 55);
-  assert.equal(HP_PRESET_FIELD_COUNT, 55);
+  assert.equal(Object.keys(profile.values).length, HP_PRESET_FIELD_COUNT);
+  assert.equal(HP_PRESET_FIELD_COUNT, 56);
   assert.deepEqual(Object.keys(profile.values), HP_PRESET_FIELD_IDS);
   assert.equal(profile.heroMode, "all");
   assert.deepEqual(profile.heroes, []);
-  for (const fieldId of HP_FULL_ONLY_EXCLUDED_FIELD_IDS) {
-    assert.equal(Object.hasOwn(profile.values, fieldId), false, `full-only field present: ${fieldId}`);
-  }
 
   return { archive, baseHudXml, profiles };
 }
@@ -91,7 +87,7 @@ async function main() {
 
   inspectPackage(first);
   inspectPackage(second);
-  console.log(`Verified ${OUTPUT_FILENAME}: deterministic, one validated minimal artifact, one global v1 profile with 55 fields.`);
+  console.log(`Verified ${OUTPUT_FILENAME}: deterministic, one validated minimal artifact, one global v1 profile with ${HP_PRESET_FIELD_COUNT} fields.`);
 }
 
 main().catch((error) => {

@@ -16,12 +16,12 @@ import {
 import { HP_HEROES } from "../src/hpHeroData.js";
 
 
-test("canonical contract projects full runtime schema to 55 fields with one exclusion", () => {
-  assert.equal(HP_PRESET_FIELD_IDS.length, 55);
-  assert.deepEqual(HP_FULL_ONLY_EXCLUDED_FIELD_IDS, ["hp_precise_pips_enabled"]);
-  assert.equal(new Set([...HP_PRESET_FIELD_IDS, ...HP_FULL_ONLY_EXCLUDED_FIELD_IDS]).size, 56);
+test("canonical contract exposes the shared 56-field runtime schema", () => {
+  assert.equal(HP_PRESET_FIELD_IDS.length, 56);
+  assert.deepEqual(HP_FULL_ONLY_EXCLUDED_FIELD_IDS, []);
+  assert.equal(HP_PRESET_FIELD_IDS.length, 56);
   assert.equal(HP_RUNTIME_STORAGE_VERSION, 99);
-  assert.equal(Object.keys(HP_PERSIST_ALIASES).length, 55);
+  assert.equal(Object.keys(HP_PERSIST_ALIASES).length, 56);
   assert.equal(HP_COLORS_PRESET_CONTRACT.fields, HP_PRESET_SCHEMA);
 });
 

@@ -56,7 +56,7 @@ function validatePresetPayload(payload, encodedBytes = 0) {
   if (typeof payload.name !== "string" || !payload.name.trim() || payload.name.length > HP_COLORS_PACKAGE_LIMITS.MAX_PROFILE_NAME_CHARS || isControlText(payload.name)) throw new Error("HP Colors preset name exceeds 96-character limit");
   if (!isPlainObject(payload.values)) throw new Error("HP Colors preset values must be an object");
   const keys = Object.keys(payload.values);
-  if (keys.length !== HP_PRESET_FIELD_IDS.length || keys.some((key) => !HP_PRESET_FIELD_IDS.includes(key))) throw new Error("HP Colors preset values must contain exactly 55 recognized fields");
+  if (keys.length !== HP_PRESET_FIELD_IDS.length || keys.some((key) => !HP_PRESET_FIELD_IDS.includes(key))) throw new Error(`HP Colors preset values must contain exactly ${HP_PRESET_FIELD_IDS.length} recognized fields`);
   const normalized = normalizeHpPresetPayload(payload, { requireValues: true });
   for (const id of HP_PRESET_FIELD_IDS) {
     if (JSON.stringify(payload.values[id]) !== JSON.stringify(normalized.values[id])) throw new Error(`HP Colors preset field is not normalized: ${id}`);

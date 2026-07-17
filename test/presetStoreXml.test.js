@@ -16,7 +16,7 @@ test("writePresetStoreToBaseHudXml adds semantic preset labels after Anita ancho
   const preset = {
     name: "Test",
     version: 1,
-    values: { hp_color_low: "#FF00FF" }
+    values: { hp_color_low: "#FF00FF", hp_precise_pips_enabled: true }
   };
 
   const patched = writePresetStoreToBaseHudXml(xml, [preset]);
@@ -28,7 +28,8 @@ test("writePresetStoreToBaseHudXml adds semantic preset labels after Anita ancho
   assert.equal(decoded[0].name, preset.name);
   assert.equal(decoded[0].version, 1);
   assert.equal(decoded[0].values.hp_color_low, "#FF00FF");
-  assert.equal(Object.keys(decoded[0].values).length, 55);
+  assert.equal(decoded[0].values.hp_precise_pips_enabled, true);
+  assert.equal(Object.keys(decoded[0].values).length, 56);
 });
 
 test("preset store encodes signature conditions as compact runtime overrides", () => {
@@ -90,7 +91,7 @@ test("readPresetStoreFromBaseHudXml reads labels when text appears before class"
   const preset = {
     name: "Text First",
     version: 1,
-    values: { hp_color_low: "#FF00FF" }
+    values: { hp_color_low: "#FF00FF", hp_precise_pips_enabled: true }
   };
   const xml = [
     "<root>",
@@ -103,7 +104,8 @@ test("readPresetStoreFromBaseHudXml reads labels when text appears before class"
   const decoded = readPresetStoreFromBaseHudXml(xml);
   assert.equal(decoded[0].name, preset.name);
   assert.equal(decoded[0].values.hp_color_low, "#FF00FF");
-  assert.equal(Object.keys(decoded[0].values).length, 55);
+  assert.equal(decoded[0].values.hp_precise_pips_enabled, true);
+  assert.equal(Object.keys(decoded[0].values).length, 56);
 });
 
 test("readPresetStoreFromBaseHudXml throws when no store entries exist", () => {

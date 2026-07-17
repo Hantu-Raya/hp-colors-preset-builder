@@ -30,8 +30,8 @@ Keep only one selected HP Colors target installed at a time. If you change targe
 
 The builder's package contract is deliberately narrow and deterministic:
 
-- Each profile contains exactly **55 shared fields**.
-- The Full runtime has **56 settings**; `hp_precise_pips_enabled` is Full-only and is not serialized by this builder. The Minimal and Full package targets therefore both consume the same 55-field preset store.
+- Each profile contains exactly **56 shared runtime fields**.
+- `hp_precise_pips_enabled` is serialized for the Minimal runtime so its HP-number parser matches the copied pip convars. Full presets keep using the in-game global setting for this option.
 - The current runtime storage version is **99**. Builder output uses **v1** payloads, and the importer accepts legacy runtime **v97** (and **v25**) input.
 - Builder exports use payload **version 1**. Copied codes use the `[ANITA-v1-hp_colors]:` prefix, and downloaded profile JSON is a `version: 1` document.
 
@@ -85,7 +85,7 @@ Run the artifact verifier from the repository root:
 node scripts/verify-generated-artifact.js
 ```
 
-It rebuilds the canonical fixture, checks the exact package contents and 55-field Minimal contract, and verifies byte-for-byte determinism. A successful run exits `0` and prints the verified `pak96_dir.vpk` result.
+It rebuilds the canonical fixture, checks the exact package contents and 56-field Minimal contract, and verifies byte-for-byte determinism. A successful run exits `0` and prints the verified `pak96_dir.vpk` result.
 
 CI runs the Node test suite, a moderate production-dependency audit, the Astro build, this verifier, and Playwright desktop/mobile end-to-end checks. GitHub Pages upload and deployment are blocked until that same check workflow succeeds.
 

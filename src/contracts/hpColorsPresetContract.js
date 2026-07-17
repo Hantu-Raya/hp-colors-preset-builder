@@ -37,6 +37,7 @@ const HP_SCHEMA_DEFINITION = {
   hp_text_color_mode: { type: "cycler", label: "HP number color source", category: "HEALTH BARS|Number Overlay", defaultValue: 0, options: ["Bar color", "Custom"] },
   hp_level_number_visible: { type: "toggle", label: "Show level number", category: "HEALTH BARS|Number Overlay", defaultValue: true },
   hp_pip_visible: { type: "toggle", label: "Show pip HP segments", category: "HEALTH BARS|Number Overlay", defaultValue: true },
+  hp_precise_pips_enabled: { type: "toggle", label: "More Precise HP Pips", category: "HEALTH BARS|Number Overlay", defaultValue: false },
   hp_text_color_low: { type: "colorpicker", label: "Low HP number color", category: "HEALTH BARS|Number Overlay", defaultValue: "#E16161", visibleWhen: { id: "hp_text_color_mode", equals: 1 } },
   hp_text_color_mid: { type: "colorpicker", label: "Mid HP number color", category: "HEALTH BARS|Number Overlay", defaultValue: "#FF7B00", visibleWhen: { id: "hp_text_color_mode", equals: 1 } },
   hp_text_color_high: { type: "colorpicker", label: "High HP number color", category: "HEALTH BARS|Number Overlay", defaultValue: "#FFFFFF", visibleWhen: { id: "hp_text_color_mode", equals: 1 } },
@@ -82,6 +83,7 @@ const HP_PERSISTENCE_ALIASES = {
   hp_text_color_mode: "tm",
   hp_level_number_visible: "lnv",
   hp_pip_visible: "plv",
+  hp_precise_pips_enabled: "ppe",
   hp_ult_color_enabled: "uce",
   hp_ult_color_custom: "ucc",
   hp_text_color_low: "tl",
@@ -168,11 +170,8 @@ export const HP_PRESET_FIELD_IDS = Object.freeze(Object.keys(HP_SCHEMA_DEFINITIO
 export const HP_PRESET_SUPPORTED_FIELD_IDS = HP_PRESET_FIELD_IDS;
 export const HP_PERSIST_ALIASES = Object.freeze(HP_PERSISTENCE_ALIASES);
 export const HP_LEGACY_FIELD_ID_BY_PERSIST_ALIAS = Object.freeze(HP_LEGACY_PERSISTENCE_ALIASES);
-export const HP_FULL_ONLY_EXCLUDED_FIELD_IDS = Object.freeze(["hp_precise_pips_enabled"]);
-export const HP_FULL_RUNTIME_FIELD_IDS = Object.freeze([
-  ...HP_PRESET_FIELD_IDS,
-  ...HP_FULL_ONLY_EXCLUDED_FIELD_IDS
-]);
+export const HP_FULL_ONLY_EXCLUDED_FIELD_IDS = Object.freeze([]);
+export const HP_FULL_RUNTIME_FIELD_IDS = HP_PRESET_FIELD_IDS;
 export const HP_FULL_RUNTIME_FIELD_COUNT = HP_FULL_RUNTIME_FIELD_IDS.length;
 export const HP_PRESET_FIELD_COUNT = HP_PRESET_FIELD_IDS.length;
 export const HP_PRESET_PAYLOAD_VERSION = 1;

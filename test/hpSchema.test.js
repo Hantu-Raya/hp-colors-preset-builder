@@ -40,6 +40,7 @@ test("HP schema exposes the supported preset fields", () => {
     "hp_low_threshold",
     "hp_mode",
     "hp_pip_visible",
+    "hp_precise_pips_enabled",
     "hp_pulse_bpm",
     "hp_pulse_color",
     "hp_pulse_color_enabled",
@@ -60,7 +61,7 @@ test("HP schema exposes the supported preset fields", () => {
     "hp_ult_color_custom",
     "hp_ult_color_enabled"
   ]);
-  assert.equal(Object.keys(HP_SCHEMA).length, 55);
+  assert.equal(Object.keys(HP_SCHEMA).length, 56);
 });
 
 test("HP schema preserves representative metadata", () => {

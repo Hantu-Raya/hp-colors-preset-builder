@@ -19,18 +19,20 @@ test("alias catalog covers every schema field exactly once", () => {
   assert.equal(new Set(aliasValues).size, aliasValues.length);
   assert.equal(HP_PERSIST_ALIASES.hp_bullet_shield_color, "ebsc");
   assert.equal(HP_PERSIST_ALIASES.hp_friend_bullet_shield_color, "fbsc");
-  assert.equal(aliasEntries.length, 55);
+  assert.equal(HP_PERSIST_ALIASES.hp_precise_pips_enabled, "ppe");
+  assert.equal(aliasEntries.length, 56);
 });
 
 test("expandHpPresetValueAliases accepts compact aliases and full field ids together", () => {
   assert.deepEqual(
-    expandHpPresetValueAliases({ e: false, hp_color_low: "#abc", pc: "#123456", ebsc: "#ffffff", fbsc: "#acca91" }),
+    expandHpPresetValueAliases({ e: false, hp_color_low: "#abc", pc: "#123456", ebsc: "#ffffff", fbsc: "#acca91", ppe: true }),
     {
       hp_enabled: false,
       hp_color_low: "#abc",
       hp_pulse_color: "#123456",
       hp_bullet_shield_color: "#ffffff",
-      hp_friend_bullet_shield_color: "#acca91"
+      hp_friend_bullet_shield_color: "#acca91",
+      hp_precise_pips_enabled: true
     }
   );
 });
@@ -50,16 +52,18 @@ test("expandHpPresetValueAliases keeps full field ids over compact aliases", () 
   );
 });
 
-test("compactHpPresetValues exports bullet shield values with compact aliases", () => {
+test("compactHpPresetValues exports runtime values with compact aliases", () => {
   const compact = compactHpPresetValues({
     hp_bullet_shield_color: "#ffffff",
-    hp_friend_bullet_shield_color: "#acca91"
+    hp_friend_bullet_shield_color: "#acca91",
+    hp_precise_pips_enabled: true
   });
 
-  assert.equal(Object.keys(compact).length, 55);
+  assert.equal(Object.keys(compact).length, 56);
   assert.deepEqual(Object.keys(compact).sort(), Object.values(HP_PERSIST_ALIASES).sort());
   assert.equal(compact.ebsc, "#FFFFFF");
   assert.equal(compact.fbsc, "#ACCA91");
+  assert.equal(compact.ppe, true);
   assert.deepEqual(expandHpPresetValueAliases({ ebsc: compact.ebsc, fbsc: compact.fbsc }), {
     hp_bullet_shield_color: "#FFFFFF",
     hp_friend_bullet_shield_color: "#ACCA91"

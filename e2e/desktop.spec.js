@@ -65,7 +65,7 @@ test.describe('desktop builder workflow', () => {
   test('copies precise and default pip convars for the full target', async ({ page }) => {
     const errors = await openBuilder(page);
     await chooseFullTarget(page);
-    await page.getByRole('option', { name: 'Number Overlay 7' }).click();
+    await page.getByRole('option', { name: /^Number Overlay/ }).click();
     await page.getByRole('button', { name: 'Configure' }).click();
 
     const dialog = page.getByRole('dialog', { name: 'More Precise HP Pips' });
@@ -142,6 +142,14 @@ test.describe('desktop builder workflow', () => {
   test('builds, downloads, decodes, and converts the fixed VPK output', async ({ page }) => {
     await openBuilder(page);
     await chooseMinimalTarget(page);
+    await page.getByRole('option', { name: /^Number Overlay/ }).click();
+    await page.getByRole('button', { name: 'Configure' }).click();
+    const preciseDialog = page.getByRole('dialog', { name: 'More Precise HP Pips' });
+    await expect(preciseDialog.getByRole('radio', { name: 'Game default' })).toBeChecked();
+    await preciseDialog.getByRole('radio', { name: 'More precise' }).click();
+    await expect(preciseDialog.getByRole('radio', { name: 'More precise' })).toBeChecked();
+    await preciseDialog.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(page.locator('.precise-pips-field-hint')).toContainText('More precise; stored in this Minimal preset.');
 
     await page.getByRole('button', { name: 'Build VPK' }).click();
     const warning = page.getByRole('dialog', { name: /Confirm Minimal preset VPK/ });
@@ -154,7 +162,9 @@ test.describe('desktop builder workflow', () => {
     const archive = readVpkArchive(bytes);
     expect(archive.files.map((file) => file.path)).toEqual(['panorama/layout/base_hud.vxml_c']);
     const xml = extractSource2Resource({ bytes: archive.files[0].bytes, codec: HP_COLORS_PACKAGE_ARTIFACTS.baseHud.codec });
-    expect(validatePresetStoreXml(xml)).toHaveLength(1);
+    const decodedPresets = validatePresetStoreXml(xml);
+    expect(decodedPresets).toHaveLength(1);
+    expect(decodedPresets[0].values.hp_precise_pips_enabled).toBe(true);
     await expect(page.locator('.build-result-card')).toContainText('pak96_dir.vpk');
 
     await page.getByRole('button', { name: 'Convert VPK' }).click();

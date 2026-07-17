@@ -309,13 +309,14 @@ test("buildHpColorsPackage accepts compact presets and writes verbose canonical 
   assert.equal(decoded.name, "Shiv");
   assert.equal(decoded.version, 1);
   assert.deepEqual(Object.keys(decoded.values), Object.keys(HP_SCHEMA));
-  assert.equal(Object.keys(decoded.values).length, 55);
+  assert.equal(Object.keys(decoded.values).length, 56);
   assert.equal(decoded.values.hp_enabled, false);
   assert.equal(decoded.values.hp_color_low, "#AABBCC");
   assert.equal(decoded.values.hp_low_threshold, 100);
   assert.equal(decoded.values.hp_mode, HP_SCHEMA.hp_mode.defaultValue);
   assert.equal(decoded.values.hp_bullet_shield_color, "#FFFFFF");
   assert.equal(decoded.values.hp_friend_bullet_shield_color, "#ACCA91");
+  assert.equal(decoded.values.hp_precise_pips_enabled, false);
   const compact = compactHpPresetValues(decoded.values);
   assert.deepEqual(Object.keys(compact).sort(), Object.values(HP_PERSIST_ALIASES).sort());
   assert.equal(compact.ebsc, "#FFFFFF");

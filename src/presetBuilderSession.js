@@ -68,7 +68,7 @@ function flattenGroups(groups) {
 }
 
 function getVisibleFields(group, state) {
-  return (group?.fields || []).filter((field) => HP_FIELD_CATALOG.isFieldVisible(field, state));
+  return (group?.fields || []).filter((field) => field.id !== 'hp_precise_pips_enabled' && HP_FIELD_CATALOG.isFieldVisible(field, state));
 }
 
 function nextImportedProfileId(usedIds) {

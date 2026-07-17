@@ -221,8 +221,8 @@ function SignatureConditionDialog({ field, baseValue, rule, onClose, onSave }) {
   );
 }
 
-function PrecisePipsDialog({ onClose }) {
-  const [mode, setMode] = useState('precise');
+function PrecisePipsDialog({ enabled, persistMode, onClose, onModeChange }) {
+  const [mode, setMode] = useState(persistMode && !enabled ? 'default' : 'precise');
   const [copyState, setCopyState] = useState('ready');
   const dialogRef = useDialogA11y(true, onClose);
   const precise = mode === 'precise';
@@ -237,6 +237,12 @@ function PrecisePipsDialog({ onClose }) {
     }
   }
 
+  function chooseMode(nextMode) {
+    setMode(nextMode);
+    setCopyState('ready');
+    if (persistMode) onModeChange(nextMode === 'precise');
+  }
+
   return (
     <div className="build-warning-modal precise-pips-modal" role="dialog" aria-modal="true" aria-labelledby="precisePipsTitle" aria-describedby="precisePipsWarning">
       <button type="button" className="build-warning-backdrop" onClick={onClose} aria-label="Close precise pips dialog" />
@@ -249,10 +255,10 @@ function PrecisePipsDialog({ onClose }) {
             : 'Copy these reset commands and paste them under your convar block to restore the default pip scale.'}
         </p>
         <div className="precise-pips-mode" role="radiogroup" aria-label="Pip scale">
-          <button type="button" role="radio" aria-checked={precise} className={precise ? 'is-selected' : ''} onClick={() => { setMode('precise'); setCopyState('ready'); }}>
+          <button type="button" role="radio" aria-checked={precise} className={precise ? 'is-selected' : ''} onClick={() => chooseMode('precise')}>
             More precise
           </button>
-          <button type="button" role="radio" aria-checked={!precise} className={!precise ? 'is-selected' : ''} onClick={() => { setMode('default'); setCopyState('ready'); }}>
+          <button type="button" role="radio" aria-checked={!precise} className={!precise ? 'is-selected' : ''} onClick={() => chooseMode('default')}>
             Game default
           </button>
         </div>
@@ -340,7 +346,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const conditionalField = conditionalFieldId
     ? { id: conditionalFieldId, ...HP_FIELD_CATALOG.schema[conditionalFieldId] }
     : null;
-  const showPrecisePipsControl = fullTargetMode && currentGroup?.name === 'Number Overlay';
+  const showPrecisePipsControl = currentGroup?.name === 'Number Overlay';
   const profileOptionRefs = useRef([]);
   const heroOptionRefs = useRef([]);
   const operationLockRef = useRef(false);
@@ -800,7 +806,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                   <div className="schema-field-row precise-pips-row">
                     <div className="schema-field-meta">
                       <span className="schema-field-label">More Precise HP Pips</span>
-                      <span className="precise-pips-field-hint">Requires game convars; not stored in the preset VPK.</span>
+                      <span className="precise-pips-field-hint">
+                        {fullTargetMode ? 'Requires game convars; not stored in the Full preset VPK.' : `${state.hp_precise_pips_enabled ? 'More precise' : 'Game default'}; stored in this Minimal preset.`}
+                      </span>
                     </div>
                     <div className="schema-field-control precise-pips-field-control">
                       <button type="button" className="secondary-action precise-pips-open" onClick={() => setPrecisePipsOpen(true)}>
@@ -943,7 +951,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
           onSave={saveSignatureCondition}
         />
       ) : null}
-      {precisePipsOpen ? <PrecisePipsDialog onClose={() => setPrecisePipsOpen(false)} /> : null}
+      {precisePipsOpen ? (
+        <PrecisePipsDialog
+          enabled={state.hp_precise_pips_enabled}
+          persistMode={!fullTargetMode}
+          onClose={() => setPrecisePipsOpen(false)}
+          onModeChange={(enabled) => updateField('hp_precise_pips_enabled', enabled)}
+        />
+      ) : null}
 
 
       {modePickerOpen && targetModeLoaded ? (
