@@ -221,8 +221,8 @@ function SignatureConditionDialog({ field, baseValue, rule, onClose, onSave }) {
   );
 }
 
-function PrecisePipsDialog({ enabled, persistMode, onClose, onModeChange }) {
-  const [mode, setMode] = useState(persistMode && !enabled ? 'default' : 'precise');
+function PrecisePipsDialog({ onClose }) {
+  const [mode, setMode] = useState('precise');
   const [copyState, setCopyState] = useState('ready');
   const dialogRef = useDialogA11y(true, onClose);
   const precise = mode === 'precise';
@@ -240,7 +240,6 @@ function PrecisePipsDialog({ enabled, persistMode, onClose, onModeChange }) {
   function chooseMode(nextMode) {
     setMode(nextMode);
     setCopyState('ready');
-    if (persistMode) onModeChange(nextMode === 'precise');
   }
 
   return (
@@ -806,15 +805,28 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 {showPrecisePipsControl ? (
                   <div className="schema-field-row precise-pips-row">
                     <div className="schema-field-meta">
-                      <span className="schema-field-label">More Precise HP Pips</span>
+                      <span id="precise-pips-label" className="schema-field-label">More Precise HP Pips</span>
                       <span className="precise-pips-field-hint">
-                        {fullTargetMode ? 'Requires game convars; not stored in the Full preset VPK.' : `${state.hp_precise_pips_enabled ? 'More precise' : 'Game default'}; stored in this Minimal preset.`}
+                        {fullTargetMode ? 'Requires game convars; not stored in the Full preset VPK.' : 'Stored in this Minimal preset.'}
                       </span>
                     </div>
                     <div className="schema-field-control precise-pips-field-control">
-                      <button type="button" className="secondary-action precise-pips-open" onClick={() => setPrecisePipsOpen(true)}>
-                        Configure
-                      </button>
+                      {fullTargetMode ? (
+                        <button type="button" className="secondary-action precise-pips-open" onClick={() => setPrecisePipsOpen(true)}>
+                          Configure
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={Boolean(state.hp_precise_pips_enabled)}
+                          aria-labelledby="precise-pips-label"
+                          className="secondary-action precise-pips-open"
+                          onClick={() => updateField('hp_precise_pips_enabled', !state.hp_precise_pips_enabled)}
+                        >
+                          {state.hp_precise_pips_enabled ? 'More precise' : 'Game default'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : null}
@@ -952,12 +964,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
           onSave={saveSignatureCondition}
         />
       ) : null}
-      {precisePipsOpen ? (
+      {precisePipsOpen && fullTargetMode ? (
         <PrecisePipsDialog
-          enabled={state.hp_precise_pips_enabled}
-          persistMode={!fullTargetMode}
           onClose={() => setPrecisePipsOpen(false)}
-          onModeChange={(enabled) => updateField('hp_precise_pips_enabled', enabled)}
         />
       ) : null}
 
