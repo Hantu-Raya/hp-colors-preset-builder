@@ -55,5 +55,8 @@ test("full and minimal targets expose precise pips configuration", async () => {
   assert.match(source, /currentGroup\?\.name === 'Number Overlay'/);
   assert.match(source, /persistMode=\{!fullTargetMode\}/);
   assert.match(source, /updateField\('hp_precise_pips_enabled', enabled\)/);
-  assert.match(source, /showConditionButton=\{fullTargetMode\}/);
+  assert.match(source, /showConditionButton\s*\/>/);
+  assert.match(source, /createProfileCode\(activeProfile, activeProfileIndex, session\.targetMode\)/);
+  assert.match(source, /createAllProfileCodes\(profiles, session\.targetMode\)/);
+  assert.match(source, /createProfilesJsonExport\(profiles, session\.targetMode\)/);
 });

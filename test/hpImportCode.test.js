@@ -74,7 +74,8 @@ test("reports features omitted by sparse in-game preset codes", () => {
   assert.equal(profiles[0].values.hp_precise_pips_enabled, false);
   assert.deepEqual(profiles[0].importFeatures, {
     precisePips: null,
-    signatureConditionCount: 0
+    signatureConditionCount: 0,
+    absentFields: ["ppe", "o"]
   });
 });
 

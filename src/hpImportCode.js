@@ -191,11 +191,17 @@ function withImportFeatures(profile, source) {
         : {};
   const hasPrecisePips = Object.prototype.hasOwnProperty.call(rawValues, "hp_precise_pips_enabled") ||
     Object.prototype.hasOwnProperty.call(rawValues, "ppe");
+  const hasOverrides = Object.prototype.hasOwnProperty.call(source || {}, "o") ||
+    Object.prototype.hasOwnProperty.call(source || {}, "overrides");
   return {
     ...profile,
     importFeatures: {
       precisePips: hasPrecisePips ? profile.values.hp_precise_pips_enabled : null,
-      signatureConditionCount: Object.keys(profile.overrides || {}).length
+      signatureConditionCount: Object.keys(profile.overrides || {}).length,
+      absentFields: [
+        ...(hasPrecisePips ? [] : ["ppe"]),
+        ...(hasOverrides ? [] : ["o"])
+      ]
     }
   };
 }
@@ -219,8 +225,9 @@ function parseImportProfileEntry(preset, index, allowInheritedVersion) {
 function parseMinimalBundleEntry(entry, index) {
   if (!Array.isArray(entry) || entry.length < 2 || entry.length > 4) throw new Error("Invalid JSON payload");
   const payload = Array.isArray(entry[2])
-    ? { name: entry[0], values: entry[1], heroMode: "selected", heroes: entry[2], overrides: entry[3] }
-    : { name: entry[0], values: entry[1], heroMode: entry[2], heroes: [], overrides: entry[3] };
+    ? { name: entry[0], values: entry[1], heroMode: "selected", heroes: entry[2] }
+    : { name: entry[0], values: entry[1], heroMode: entry[2], heroes: [] };
+  if (entry.length >= 4) payload.overrides = entry[3];
   return withImportFeatures(normalizeHpPresetPayload(payload, {
     index,
     fallbackName: `Imported preset ${index + 1}`,

@@ -48,10 +48,16 @@ function prepareBaseHudXml(baseHudXml, modVariant) {
   return xml;
 }
 
-function normalizePackagePresets({ preset, presets }) {
+function normalizePackagePresets({ preset, presets, modVariant }) {
   const sourcePresets = Array.isArray(presets) && presets.length > 0 ? presets : [preset || {}];
   if (sourcePresets.length > HP_COLORS_PACKAGE_LIMITS.MAX_PROFILES) throw new Error("HP Colors package must contain 1-128 profiles");
-  return sourcePresets.map((item, index) => normalizeHpPresetPayload(item, { index }));
+  return sourcePresets.map((item, index) => {
+    const normalized = normalizeHpPresetPayload(item, { index });
+    if (modVariant === HP_COLORS_MOD_VARIANTS.FULL) {
+      normalized.values.hp_precise_pips_enabled = false;
+    }
+    return normalized;
+  });
 }
 
 export function validateHpColorsBaseHudXml(baseHudXml, modVariant = DEFAULT_HP_COLORS_MOD_VARIANT) {
@@ -67,7 +73,7 @@ export function validateHpColorsBaseHudXml(baseHudXml, modVariant = DEFAULT_HP_C
 
 export function createHpColorsPackagePlan({ sourceTexts, preset = null, presets = null, modVariant = DEFAULT_HP_COLORS_MOD_VARIANT }) {
   const activeModVariant = normalizeModVariant(modVariant);
-  const activePresets = normalizePackagePresets({ preset, presets });
+  const activePresets = normalizePackagePresets({ preset, presets, modVariant: activeModVariant });
   const baseHudArtifact = HP_COLORS_PACKAGE_ARTIFACTS.baseHud;
   const baseHudXml = readHpColorsArtifactSourceText(sourceTexts, baseHudArtifact);
   const modSpecificBaseHudXml = prepareBaseHudXml(baseHudXml, activeModVariant);

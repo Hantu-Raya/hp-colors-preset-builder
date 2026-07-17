@@ -800,7 +800,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     onChange={updateField}
                     conditionRule={activeOverrides[field.id]}
                     onEditCondition={(id) => dispatchSessionIntent({ type: 'OPEN_SIGNATURE_CONDITION', id })}
-                    showConditionButton={fullTargetMode}
+                    showConditionButton
                   />
                 ))}
                 {showPrecisePipsControl ? (
@@ -900,15 +900,15 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
             <DisclosurePanel title="Export profiles" open={previewOpen} onOpenChange={(open) => dispatchSessionIntent({ type: 'SET_PREVIEW_OPEN', open })}>
               <div className="export-action-list">
-                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('copy-current', () => copyText(createProfileCode(activeProfile, activeProfileIndex)), `Copied ${presetName}.`)}>
+                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('copy-current', () => copyText(createProfileCode(activeProfile, activeProfileIndex, session.targetMode)), `Copied ${presetName}.`)}>
                   <Copy aria-hidden="true" />
                   <span>Copy current profile code</span>
                 </button>
-                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('copy-all', () => copyText(createAllProfileCodes(profiles)), `Copied ${profiles.length} profile code${profiles.length === 1 ? '' : 's'}.`)}>
+                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('copy-all', () => copyText(createAllProfileCodes(profiles, session.targetMode)), `Copied ${profiles.length} profile code${profiles.length === 1 ? '' : 's'}.`)}>
                   <Copy aria-hidden="true" />
                   <span>Copy all profile codes</span>
                 </button>
-                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('export-json', () => downloadText(createProfilesJsonFileName(presetName), createProfilesJsonExport(profiles), 'application/json;charset=utf-8'), 'Downloaded profile JSON.')}>
+                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('export-json', () => downloadText(createProfilesJsonFileName(presetName), createProfilesJsonExport(profiles, session.targetMode), 'application/json;charset=utf-8'), 'Downloaded profile JSON.')}>
                   <FileJson aria-hidden="true" />
                   <span>Download JSON</span>
                 </button>

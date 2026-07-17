@@ -83,16 +83,18 @@ function importedProfileMessage(imported, fallbackName, targetMode) {
   const name = cleanProfileName(imported.name, fallbackName);
   const features = imported.importFeatures;
   if (!features || targetMode !== HP_COLORS_MOD_VARIANTS.MINIMAL) return `Imported ${name}.`;
-  const omittedPrecisePips = features.precisePips === null;
-  const omittedSignatureConditions = features.signatureConditionCount === 0;
+  const omittedPrecisePips = features.precisePips === null ||
+    features.absentFields?.includes?.("ppe");
+  const omittedSignatureConditions = features.signatureConditionCount === 0 ||
+    features.absentFields?.includes?.("o");
   if (omittedPrecisePips && omittedSignatureConditions) {
-    return `Imported ${name}. The source code omitted More Precise HP Pips (Game default selected) and contained no signature-tier conditions. Signature-tier conditions require the Full mod.`;
+    return `Imported ${name}. The source code omitted ppe (More Precise HP Pips; Game default selected) and o (signature-tier conditions).`;
   }
   if (omittedPrecisePips) {
-    return `Imported ${name}. The source code omitted More Precise HP Pips, so Game default is selected.`;
+    return `Imported ${name}. The source code omitted ppe (More Precise HP Pips), so Game default is selected.`;
   }
   if (omittedSignatureConditions) {
-    return `Imported ${name}. The source code contained no signature-tier conditions.`;
+    return `Imported ${name}. The source code omitted o (signature-tier conditions).`;
   }
   return `Imported ${name} with More Precise HP Pips ${features.precisePips ? "enabled" : "disabled"} and ${features.signatureConditionCount} signature-tier condition${features.signatureConditionCount === 1 ? "" : "s"}.`;
 }
