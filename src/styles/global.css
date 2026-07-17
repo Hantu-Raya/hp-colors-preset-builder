@@ -2333,7 +2333,7 @@
   }
 }
 
-@media (max-width: 1240px) {
+@media (max-width: 1600px) {
   .panorama-topbar {
     grid-template-columns: 1fr;
     align-items: start;
