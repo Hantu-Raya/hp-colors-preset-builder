@@ -16,6 +16,7 @@ import {
   Plus,
   RotateCcw,
   ShieldCheck,
+  Star,
   Trash2,
   Upload
 } from 'lucide-preact';
@@ -52,6 +53,17 @@ import {
 } from '../presetBuilderWorkflow.js';
 import { SchemaField } from './schema-field.jsx';
 import { SchemaTree } from './schema-tree.jsx';
+
+const PRECISE_PIPS_COMMAND = [
+  '"citadel_unit_status_health_per_minor_pip" "10"',
+  '"citadel_unit_status_health_per_pip" "10"',
+  '"citadel_unit_status_minor_pip_per_major_pip" "10"'
+].join('\n');
+const RESET_PIPS_COMMAND = [
+  '"citadel_unit_status_health_per_minor_pip" "100"',
+  '"citadel_unit_status_health_per_pip" "100"',
+  '"citadel_unit_status_minor_pip_per_major_pip" "5"'
+].join('\n');
 
 
 
@@ -209,6 +221,55 @@ function SignatureConditionDialog({ field, baseValue, rule, onClose, onSave }) {
   );
 }
 
+function PrecisePipsDialog({ onClose }) {
+  const [mode, setMode] = useState('precise');
+  const [copyState, setCopyState] = useState('ready');
+  const dialogRef = useDialogA11y(true, onClose);
+  const precise = mode === 'precise';
+  const command = precise ? PRECISE_PIPS_COMMAND : RESET_PIPS_COMMAND;
+
+  async function handleCopyCommand() {
+    try {
+      await copyText(command);
+      setCopyState('copied');
+    } catch {
+      setCopyState('failed');
+    }
+  }
+
+  return (
+    <div className="build-warning-modal precise-pips-modal" role="dialog" aria-modal="true" aria-labelledby="precisePipsTitle" aria-describedby="precisePipsWarning">
+      <button type="button" className="build-warning-backdrop" onClick={onClose} aria-label="Close precise pips dialog" />
+      <div ref={dialogRef} className="build-warning-panel precise-pips-panel" tabIndex={-1}>
+        <div className="build-warning-badge">Game settings required</div>
+        <h3 id="precisePipsTitle">More Precise HP Pips</h3>
+        <p id="precisePipsWarning" className="precise-pips-warning">
+          {precise
+            ? 'Copy these commands and paste them under your convar block. HP Colors cannot apply or verify these game settings.'
+            : 'Copy these reset commands and paste them under your convar block to restore the default pip scale.'}
+        </p>
+        <div className="precise-pips-mode" role="radiogroup" aria-label="Pip scale">
+          <button type="button" role="radio" aria-checked={precise} className={precise ? 'is-selected' : ''} onClick={() => { setMode('precise'); setCopyState('ready'); }}>
+            More precise
+          </button>
+          <button type="button" role="radio" aria-checked={!precise} className={!precise ? 'is-selected' : ''} onClick={() => { setMode('default'); setCopyState('ready'); }}>
+            Game default
+          </button>
+        </div>
+        <pre className="precise-pips-command"><code>{command}</code></pre>
+        <div className="build-warning-actions">
+          <button type="button" className="secondary-action" onClick={onClose}>Close</button>
+          <button type="button" className="primary-action" onClick={handleCopyCommand}>
+            {copyState === 'copied' ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+            {copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed' : 'Copy command'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const defaultState = useMemo(() => HP_FIELD_CATALOG.createDefaultState(), []);
   const [freshGitCommitInfo, setFreshGitCommitInfo] = useState(gitCommitInfo);
@@ -279,9 +340,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const conditionalField = conditionalFieldId
     ? { id: conditionalFieldId, ...HP_FIELD_CATALOG.schema[conditionalFieldId] }
     : null;
+  const showPrecisePipsControl = fullTargetMode && currentGroup?.name === 'Number Overlay';
   const profileOptionRefs = useRef([]);
   const heroOptionRefs = useRef([]);
   const operationLockRef = useRef(false);
+  const [precisePipsOpen, setPrecisePipsOpen] = useState(false);
 
   const loadBaseHudXml = useMemo(
     () => createBaseHudXmlLoader({ baseUrl: import.meta.env.BASE_URL }),
@@ -374,17 +437,18 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
   useEffect(() => {
     const handleShortcut = (event) => {
-      if (event.key === 'Escape' && !warningOpen && !modePickerOpen) {
+      const dialogOpen = warningOpen || modePickerOpen || precisePipsOpen || Boolean(conditionalFieldId);
+      if (event.key === 'Escape' && !dialogOpen) {
         dispatchSessionIntent({ type: 'CLOSE_MENUS' });
       }
-      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !busy) {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !busy && !dialogOpen) {
         event.preventDefault();
         openBuildWarning();
       }
     };
     window.addEventListener('keydown', handleShortcut);
     return () => window.removeEventListener('keydown', handleShortcut);
-  }, [busy, dispatchSessionIntent, modePickerOpen, openBuildWarning, warningOpen]);
+  }, [busy, conditionalFieldId, dispatchSessionIntent, modePickerOpen, openBuildWarning, precisePipsOpen, warningOpen]);
 
   function updateField(id, value) {
     dispatchSessionIntent({ type: 'UPDATE_FIELD', id, value });
@@ -706,7 +770,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <div>
                 <h2>{HP_FIELD_CATALOG.getCategoryPathLabel(currentGroup)}</h2>
                 <p className="anita-detail-hint">
-                  {visibleCount} visible controls / {profiles.length} profile{profiles.length === 1 ? '' : 's'}
+                  {visibleCount + (showPrecisePipsControl ? 1 : 0)} visible controls / {profiles.length} profile{profiles.length === 1 ? '' : 's'}
                 </p>
               </div>
               <div className="reset-actions">
@@ -732,7 +796,20 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     onEditCondition={(id) => dispatchSessionIntent({ type: 'OPEN_SIGNATURE_CONDITION', id })}
                   />
                 ))}
-                {visibleFields.length === 0 ? (
+                {showPrecisePipsControl ? (
+                  <div className="schema-field-row precise-pips-row">
+                    <div className="schema-field-meta">
+                      <span className="schema-field-label">More Precise HP Pips</span>
+                      <span className="precise-pips-field-hint">Requires game convars; not stored in the preset VPK.</span>
+                    </div>
+                    <div className="schema-field-control precise-pips-field-control">
+                      <button type="button" className="secondary-action precise-pips-open" onClick={() => setPrecisePipsOpen(true)}>
+                        Configure
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                {visibleFields.length === 0 && !showPrecisePipsControl ? (
                   <div className="empty-panel">
                     <strong>No visible controls</strong>
                     <span>Enable the related setting in this preset to reveal the dependent options.</span>
@@ -866,6 +943,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
           onSave={saveSignatureCondition}
         />
       ) : null}
+      {precisePipsOpen ? <PrecisePipsDialog onClose={() => setPrecisePipsOpen(false)} /> : null}
+
 
       {modePickerOpen && targetModeLoaded ? (
         <div className="build-warning-modal target-mode-modal" role="dialog" aria-modal="true" aria-labelledby="targetModeTitle">

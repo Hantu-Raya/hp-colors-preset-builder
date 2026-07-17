@@ -45,3 +45,12 @@ test("toggle text and responsive sticky navigation remain explicit", async () =>
   assert.match(css, /\.field-condition-button/);
   assert.match(css, /\.operation-feedback/);
 });
+
+test("full target exposes precise pips convar warning and copy workflow", async () => {
+  const source = await readFile(islandPath, "utf8");
+  assert.match(source, /More Precise HP Pips/);
+  assert.match(source, /HP Colors cannot apply or verify these game settings/);
+  assert.match(source, /citadel_unit_status_health_per_minor_pip/);
+  assert.match(source, /copyText\(command\)/);
+  assert.match(source, /fullTargetMode && currentGroup\?\.name === 'Number Overlay'/);
+});

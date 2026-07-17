@@ -1039,6 +1039,21 @@
   min-width: 0;
 }
 
+.precise-pips-field-hint {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.precise-pips-field-control {
+  grid-template-columns: minmax(150px, 220px);
+  justify-content: end;
+}
+
+.precise-pips-open {
+  width: 100%;
+}
+
 .anita-toggle {
   position: relative;
   width: 64px;
@@ -1681,6 +1696,53 @@
   color: var(--destructive);
 }
 
+
+.precise-pips-panel {
+  width: min(620px, 100%);
+}
+
+.precise-pips-warning {
+  padding: 11px 12px;
+  border: 1px solid color-mix(in srgb, var(--warning-text) 45%, var(--border));
+  border-radius: 7px;
+  background: var(--warning-bg);
+  color: var(--warning-text) !important;
+}
+
+.precise-pips-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.precise-pips-mode button {
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-weight: 700;
+}
+
+.precise-pips-mode button.is-selected {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, var(--muted));
+  color: var(--primary);
+}
+
+.precise-pips-command {
+  overflow: auto;
+  margin: 0;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #0b0f0e;
+  color: var(--foreground);
+  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
 
 .target-mode-panel {
   width: min(720px, 100%);
@@ -2512,6 +2574,11 @@
   }
   .signature-condition-options {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .precise-pips-field-control,
+  .precise-pips-mode {
+    grid-template-columns: 1fr;
   }
 
 }

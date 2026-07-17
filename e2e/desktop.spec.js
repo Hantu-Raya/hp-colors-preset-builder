@@ -15,6 +15,14 @@ async function chooseMinimalTarget(page) {
   await expect(page.locator('.target-mode-trigger')).toContainText('Minimal');
 }
 
+async function chooseFullTarget(page) {
+  const dialog = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });
+  await expect(dialog).toBeVisible();
+  await dialog.locator('.target-mode-choice-select').filter({ hasText: 'Full mod' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('.target-mode-trigger')).toContainText('Full');
+}
+
 async function openBuilder(page) {
   const errors = [];
   page.on('console', (message) => {
@@ -50,6 +58,22 @@ test.describe('desktop builder workflow', () => {
     await expect(targetDialog).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(targetDialog).toBeHidden();
+    expect(errors).toEqual([]);
+  });
+
+  test('copies precise and default pip convars for the full target', async ({ page }) => {
+    const errors = await openBuilder(page);
+    await chooseFullTarget(page);
+    await page.getByRole('option', { name: 'Number Overlay 7' }).click();
+    await page.getByRole('button', { name: 'Configure' }).click();
+
+    const dialog = page.getByRole('dialog', { name: 'More Precise HP Pips' });
+    await expect(dialog).toContainText('HP Colors cannot apply or verify these game settings.');
+    await expect(dialog.locator('code')).toContainText('"citadel_unit_status_health_per_minor_pip" "10"');
+
+    await dialog.getByRole('radio', { name: 'Game default' }).click();
+    await expect(dialog).toContainText('restore the default pip scale');
+    await expect(dialog.locator('code')).toContainText('"citadel_unit_status_minor_pip_per_major_pip" "5"');
     expect(errors).toEqual([]);
   });
 
