@@ -181,6 +181,25 @@ function hasVersionFields(value) {
     Object.prototype.hasOwnProperty.call(value, "version");
 }
 
+function withImportFeatures(profile, source) {
+  const rawValues = source?.values && typeof source.values === "object"
+    ? source.values
+    : source?.vals && typeof source.vals === "object"
+      ? source.vals
+      : source?.vs && typeof source.vs === "object"
+        ? source.vs
+        : {};
+  const hasPrecisePips = Object.prototype.hasOwnProperty.call(rawValues, "hp_precise_pips_enabled") ||
+    Object.prototype.hasOwnProperty.call(rawValues, "ppe");
+  return {
+    ...profile,
+    importFeatures: {
+      precisePips: hasPrecisePips ? profile.values.hp_precise_pips_enabled : null,
+      signatureConditionCount: Object.keys(profile.overrides || {}).length
+    }
+  };
+}
+
 function parseImportProfileEntry(preset, index, allowInheritedVersion) {
   if (!preset || typeof preset !== "object" || Array.isArray(preset)) {
     throw new Error("Invalid JSON payload");
@@ -190,11 +209,11 @@ function parseImportProfileEntry(preset, index, allowInheritedVersion) {
   } else if (!allowInheritedVersion) {
     throw new Error("Invalid JSON payload");
   }
-  return normalizeHpPresetPayload(preset, {
+  return withImportFeatures(normalizeHpPresetPayload(preset, {
     index,
     fallbackName: `Imported preset ${index + 1}`,
     requireValues: true
-  });
+  }), preset);
 }
 
 function parseMinimalBundleEntry(entry, index) {
@@ -202,11 +221,11 @@ function parseMinimalBundleEntry(entry, index) {
   const payload = Array.isArray(entry[2])
     ? { name: entry[0], values: entry[1], heroMode: "selected", heroes: entry[2], overrides: entry[3] }
     : { name: entry[0], values: entry[1], heroMode: entry[2], heroes: [], overrides: entry[3] };
-  return normalizeHpPresetPayload(payload, {
+  return withImportFeatures(normalizeHpPresetPayload(payload, {
     index,
     fallbackName: `Imported preset ${index + 1}`,
     requireValues: true
-  });
+  }), payload);
 }
 
 function parseImportProfilesFromPayload(parsed, fallbackIndex = 0) {
@@ -227,11 +246,11 @@ function parseImportProfilesFromPayload(parsed, fallbackIndex = 0) {
     return parsed.profiles.map((profile, index) => parseImportProfileEntry(profile, index, true));
   }
 
-  return [normalizeHpPresetPayload(parsed, {
+  return [withImportFeatures(normalizeHpPresetPayload(parsed, {
     index: fallbackIndex,
     fallbackName: `Imported preset ${fallbackIndex + 1}`,
     requireValues: true
-  })];
+  }), parsed)];
 }
 
 export function parseHpColorsPresetStorePayload(payload) {

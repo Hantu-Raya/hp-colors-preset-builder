@@ -79,6 +79,24 @@ function nextImportedProfileId(usedIds) {
   return id;
 }
 
+function importedProfileMessage(imported, fallbackName, targetMode) {
+  const name = cleanProfileName(imported.name, fallbackName);
+  const features = imported.importFeatures;
+  if (!features || targetMode !== HP_COLORS_MOD_VARIANTS.MINIMAL) return `Imported ${name}.`;
+  const omittedPrecisePips = features.precisePips === null;
+  const omittedSignatureConditions = features.signatureConditionCount === 0;
+  if (omittedPrecisePips && omittedSignatureConditions) {
+    return `Imported ${name}. The source code omitted More Precise HP Pips (Game default selected) and contained no signature-tier conditions. Configure either feature in the builder before building.`;
+  }
+  if (omittedPrecisePips) {
+    return `Imported ${name}. The source code omitted More Precise HP Pips, so Game default is selected.`;
+  }
+  if (omittedSignatureConditions) {
+    return `Imported ${name}. The source code contained no signature-tier conditions.`;
+  }
+  return `Imported ${name} with More Precise HP Pips ${features.precisePips ? "enabled" : "disabled"} and ${features.signatureConditionCount} signature-tier condition${features.signatureConditionCount === 1 ? "" : "s"}.`;
+}
+
 function updateActiveProfile(session, updater) {
   const profiles = Array.isArray(session.profiles) && session.profiles.length
     ? session.profiles
@@ -458,7 +476,7 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
       if (importedProfiles.length === 1) {
         const imported = importedProfiles[0];
         const selected = selectPresetBuilderSession(session, context.defaultState || {}, context.groups || [], context.activeKey);
-        const message = `Imported ${cleanProfileName(imported.name, selected.activeProfileIndex)}.`;
+        const message = importedProfileMessage(imported, selected.activeProfileIndex, session.targetMode);
         return {
           ...updateActiveProfile(session, {
             name: imported.name,

@@ -37,6 +37,28 @@ test("new session profiles apply all-hero defaults without overriding imported o
   assert.deepEqual(imported.profiles[0].heroes, []);
 });
 
+test("minimal import feedback identifies omitted precise pips and signature conditions", () => {
+  const session = {
+    ...createPresetBuilderSession(defaultState),
+    targetMode: HP_COLORS_MOD_VARIANTS.MINIMAL
+  };
+  const imported = reducePresetBuilderSession(session, {
+    type: "IMPORT_PROFILES_SUCCEEDED",
+    importedProfiles: [{
+      name: "pak96_dir",
+      values: defaultState,
+      heroMode: "all",
+      heroes: [],
+      importFeatures: { precisePips: null, signatureConditionCount: 0 }
+    }]
+  }, { defaultState, groups });
+
+  assert.equal(
+    imported.feedback.message,
+    "Imported pak96_dir. The source code omitted More Precise HP Pips (Game default selected) and contained no signature-tier conditions. Configure either feature in the builder before building."
+  );
+});
+
 test("build validation toggles through the session reducer", () => {
   const session = createPresetBuilderSession(defaultState);
   const validated = reducePresetBuilderSession(

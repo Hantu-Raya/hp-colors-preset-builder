@@ -62,6 +62,22 @@ test("parses current game preset aliases used by HP Colors exports", () => {
   assert.equal(state.hp_kill_zone_width, 6);
 });
 
+test("reports features omitted by sparse in-game preset codes", () => {
+  const profiles = parseHpColorsImportProfiles(buildToken({
+    v: 99,
+    c: 1,
+    values: { m: 0, t: true, sb: true, s: 187 },
+    hm: "all",
+    name: "pak96_dir"
+  }));
+
+  assert.equal(profiles[0].values.hp_precise_pips_enabled, false);
+  assert.deepEqual(profiles[0].importFeatures, {
+    precisePips: null,
+    signatureConditionCount: 0
+  });
+});
+
 test("parses new healthbar layer compact aliases", () => {
   const state = parseHpColorsImportCode(buildToken({
     v: 97,
