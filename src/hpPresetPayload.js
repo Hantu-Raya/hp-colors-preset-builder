@@ -17,6 +17,35 @@ export const HP_FIELD_ID_BY_PERSIST_ALIAS = Object.freeze({
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 
+export const HP_SIGNATURE_OVERRIDE_INELIGIBLE_IDS = Object.freeze({
+  hp_precise_pips_enabled: true
+});
+
+export function normalizeHpPresetOverrides(rawOverrides) {
+  if (!isPlainObject(rawOverrides)) return {};
+  const canonical = {};
+  for (const [rawId, rawRule] of Object.entries(rawOverrides)) {
+    const id = hasOwn(HP_FIELD_CATALOG.schema, rawId) ? rawId : HP_FIELD_ID_BY_PERSIST_ALIAS[rawId];
+    if (!id || HP_SIGNATURE_OVERRIDE_INELIGIBLE_IDS[id] || hasOwn(canonical, id) && rawId !== id) continue;
+    const tuple = Array.isArray(rawRule)
+      ? rawRule
+      : [rawRule?.slot, rawRule?.minTier, rawRule?.value];
+    const slot = Number(tuple[0]);
+    const minTier = Number(tuple[1]);
+    if (!Number.isInteger(slot) || slot < 1 || slot > 4 || !Number.isInteger(minTier) || minTier < 1 || minTier > 3) continue;
+    canonical[id] = { slot, minTier, value: HP_FIELD_CATALOG.coerceValue(id, tuple[2]) };
+  }
+  return canonical;
+}
+
+export function compactHpPresetOverrides(rawOverrides) {
+  const normalized = normalizeHpPresetOverrides(rawOverrides);
+  return Object.fromEntries(Object.entries(normalized).map(([id, rule]) => [
+    HP_PERSIST_ALIASES[id],
+    [rule.slot, rule.minTier, rule.value]
+  ]));
+}
+
 function isPlainObject(value) {
   return value && typeof value === "object" && !Array.isArray(value);
 }
@@ -77,17 +106,20 @@ export function normalizeHpPresetPayload(payload = {}, {
   const rawValues = hasOwn(source, "vs") ? source.vs : source.values;
   const rawHeroMode = hasOwn(source, "hm") ? source.hm : source.heroMode;
   const rawHeroes = hasOwn(source, "hs") ? source.hs : source.heroes;
+  const rawOverrides = hasOwn(source, "o") ? source.o : source.overrides;
   const name = preserveBlankName && typeof rawName === "string" && rawName.trim() === ""
     ? ""
     : cleanHpPresetName(rawName, index, fallbackName);
   const values = normalizeHpPresetValues(rawValues, { requireObject: requireValues });
   const scope = normalizeHeroScope(rawHeroMode, rawHeroes || []);
-
-  return {
+  const overrides = normalizeHpPresetOverrides(rawOverrides);
+  const normalized = {
     name,
     version: HP_PRESET_PAYLOAD_VERSION,
     values,
     heroMode: scope.heroMode,
     heroes: scope.heroes
   };
+  if (Object.keys(overrides).length) normalized.overrides = overrides;
+  return normalized;
 }

@@ -42,6 +42,6 @@ test("toggle text and responsive sticky navigation remain explicit", async () =>
   assert.match(css, /\.mobile-workspace-nav\s*\{/);
   assert.match(css, /position: sticky/);
   assert.match(css, /\.anita-toggle-state/);
-  assert.match(css, /\.healthbar-preview/);
+  assert.match(css, /\.field-condition-button/);
   assert.match(css, /\.operation-feedback/);
 });

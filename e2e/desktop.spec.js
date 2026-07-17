@@ -41,10 +41,9 @@ async function downloadBytes(download) {
 }
 
 test.describe('desktop builder workflow', () => {
-  test('opens target picker, renders preview, and closes dialog on Escape', async ({ page }) => {
+  test('opens target picker and closes dialog on Escape', async ({ page }) => {
     const errors = await openBuilder(page);
     await chooseMinimalTarget(page);
-    await expect(page.getByRole('region', { name: 'Enemy and ally healthbar preview' })).toBeVisible();
 
     await page.locator('.target-mode-trigger').click();
     const targetDialog = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });

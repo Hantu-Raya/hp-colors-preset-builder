@@ -211,6 +211,19 @@ test("parses a compact COPY ALL HP Colors bundle into multiple preset profiles",
   assert.equal(profiles[2].values.hp_pulse_color_enabled, true);
 });
 
+test("parses signature conditions from the fourth COPY ALL tuple field", () => {
+  const profiles = parseHpColorsImportProfiles(buildToken({
+    v: 99,
+    p: [
+      ["Conditional", { cl: "#112233" }, "all", { cl: [4, 2, "#abcdef"] }]
+    ]
+  }));
+
+  assert.deepEqual(profiles[0].overrides, {
+    hp_color_low: { slot: 4, minTier: 2, value: "#ABCDEF" }
+  });
+});
+
 test("parses compact hs and verbose heroes in import profiles", () => {
   const profiles = parseHpColorsImportProfiles(buildToken({
     v: 97,

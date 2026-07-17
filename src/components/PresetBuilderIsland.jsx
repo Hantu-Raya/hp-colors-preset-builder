@@ -16,7 +16,6 @@ import {
   Plus,
   RotateCcw,
   ShieldCheck,
-  Star,
   Trash2,
   Upload
 } from 'lucide-preact';
@@ -31,7 +30,6 @@ import { HP_COLORS_MOD_VARIANTS } from '../hpModVariants.js';
 import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitCommitInfoRefresh.js';
 import { TARGET_MODE_CHOICES } from '../targetModeStore.js';
 import { copyText, downloadText } from '../download.js';
-import { createHealthbarPreviewModel } from '../healthbarPreviewModel.js';
 import { cleanProfileName, createProfilePersistenceSnapshot, saveProfileState } from '../profileStore.js';
 import {
   createAllProfileCodes,
@@ -122,6 +120,95 @@ function moveRovingFocus(event, refs, currentIndex, itemCount) {
 }
 
 
+function SignatureConditionDialog({ field, baseValue, rule, onClose, onSave }) {
+  const [enabled, setEnabled] = useState(Boolean(rule));
+  const [slot, setSlot] = useState(rule?.slot || 1);
+  const [minTier, setMinTier] = useState(rule?.minTier || 1);
+  const [value, setValue] = useState(rule?.value ?? baseValue);
+  const dialogRef = useDialogA11y(true, onClose);
+  const editorField = { ...field, id: `conditional-${field.id}` };
+
+  return (
+    <div className="build-warning-modal signature-condition-modal" role="dialog" aria-modal="true" aria-labelledby="signatureConditionTitle">
+      <button type="button" className="build-warning-backdrop" onClick={onClose} aria-label="Cancel" />
+      <div ref={dialogRef} className="build-warning-panel signature-condition-panel" tabIndex={-1}>
+        <div className="build-warning-badge">Signature condition</div>
+        <h3 id="signatureConditionTitle">{field.label}</h3>
+        <p>Use a different value when an ability reaches the selected signature tier.</p>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          className={`signature-condition-toggle${enabled ? ' is-checked' : ''}`}
+          onClick={() => setEnabled((current) => !current)}
+        >
+          <span>Use signature tier</span>
+          <strong>{enabled ? 'On' : 'Off'}</strong>
+        </button>
+        <fieldset className="signature-condition-group" disabled={!enabled}>
+          <legend>Ability slot</legend>
+          <div className="signature-condition-options" role="radiogroup" aria-label="Ability slot">
+            {[1, 2, 3, 4].map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                className={slot === option ? 'is-selected' : ''}
+                aria-checked={slot === option}
+                onClick={() => setSlot(option)}
+              >
+                Ability {option}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset className="signature-condition-group" disabled={!enabled}>
+          <legend>Minimum tier</legend>
+          <div className="signature-condition-options" role="radiogroup" aria-label="Minimum tier">
+            {[1, 2, 3].map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                className={minTier === option ? 'is-selected' : ''}
+                aria-checked={minTier === option}
+                onClick={() => setMinTier(option)}
+              >
+                Tier {option}+
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <div className={`signature-condition-value${enabled ? '' : ' is-disabled'}`}>
+          <span>Conditional value</span>
+          <SchemaField
+            field={editorField}
+            value={value}
+            onChange={(_id, nextValue) => setValue(nextValue)}
+            showConditionButton={false}
+          />
+        </div>
+        <div className="build-warning-actions">
+          {rule ? (
+            <button type="button" className="secondary-action signature-condition-remove" onClick={() => onSave(null)}>
+              <Trash2 aria-hidden="true" />
+              Remove
+            </button>
+          ) : null}
+          <button type="button" className="secondary-action" onClick={onClose}>Cancel</button>
+          <button
+            type="button"
+            className="primary-action"
+            onClick={() => onSave(enabled ? { slot, minTier, value } : null)}
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const defaultState = useMemo(() => HP_FIELD_CATALOG.createDefaultState(), []);
   const [freshGitCommitInfo, setFreshGitCommitInfo] = useState(gitCommitInfo);
@@ -145,6 +232,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     activeHeroMode,
     selectedHeroIds,
     selectedHeroSet,
+    activeOverrides,
     heroSelectionLabel,
     currentGroup,
     visibleFields,
@@ -185,9 +273,12 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     targetMode,
     targetModeLoaded,
     modePickerOpen,
-    modePickerUpgrade
+    modePickerUpgrade,
+    conditionalFieldId
   } = session;
-  const previewModel = useMemo(() => createHealthbarPreviewModel(state), [state]);
+  const conditionalField = conditionalFieldId
+    ? { id: conditionalFieldId, ...HP_FIELD_CATALOG.schema[conditionalFieldId] }
+    : null;
   const profileOptionRefs = useRef([]);
   const heroOptionRefs = useRef([]);
   const operationLockRef = useRef(false);
@@ -210,6 +301,13 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const closeTargetModePicker = useCallback(() => {
     dispatchSessionIntent({ type: 'CLOSE_TARGET_MODE_PICKER' });
   }, [dispatchSessionIntent]);
+  const closeSignatureCondition = useCallback(() => {
+    dispatchSessionIntent({ type: 'CLOSE_SIGNATURE_CONDITION' });
+  }, [dispatchSessionIntent]);
+  const saveSignatureCondition = useCallback((rule) => {
+    if (!conditionalFieldId) return;
+    dispatchSessionIntent({ type: 'SET_SIGNATURE_CONDITION', id: conditionalFieldId, rule });
+  }, [conditionalFieldId, dispatchSessionIntent]);
   const buildDialogRef = useDialogA11y(warningOpen, closeBuildWarning);
   const targetDialogRef = useDialogA11y(modePickerOpen && targetModeLoaded, closeTargetModePicker);
 
@@ -482,7 +580,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                   <div className="profile-selector-menu" role="listbox" aria-label="Preset profiles">
                     {profiles.map((profile, index) => {
                       const label = cleanProfileName(profile.name, index);
-                      const overrides = HP_FIELD_CATALOG.countOverrides(profile.values, defaultState);
+                      const overrides = HP_FIELD_CATALOG.countOverrides(profile.values, defaultState) + Object.keys(profile.overrides || {}).length;
                       const active = profile.id === activeProfile.id;
                       return (
                         <div
@@ -625,7 +723,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             <div className="detail-scroll">
               <div className="schema-field-list">
                 {visibleFields.map((field) => (
-                  <SchemaField key={field.id} field={field} value={state[field.id]} onChange={updateField} />
+                  <SchemaField
+                    key={field.id}
+                    field={field}
+                    value={state[field.id]}
+                    onChange={updateField}
+                    conditionRule={activeOverrides[field.id]}
+                    onEditCondition={(id) => dispatchSessionIntent({ type: 'OPEN_SIGNATURE_CONDITION', id })}
+                  />
                 ))}
                 {visibleFields.length === 0 ? (
                   <div className="empty-panel">
@@ -639,11 +744,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
           <aside className="anita-right-rail" id="builderBuild">
             <div className="rail-heading">
-              <span className="panorama-kicker">Live preview</span>
-              <strong>Healthbar states</strong>
-            </div>
-            <HealthbarPreview model={previewModel} />
-            <div className="rail-heading rail-heading-tools">
               <span className="panorama-kicker">Tools</span>
               <strong>Preset utility</strong>
             </div>
@@ -755,6 +855,17 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
           </aside>
         </div>
       </div>
+
+      {conditionalField ? (
+        <SignatureConditionDialog
+          key={conditionalField.id}
+          field={conditionalField}
+          baseValue={state[conditionalField.id]}
+          rule={activeOverrides[conditionalField.id]}
+          onClose={closeSignatureCondition}
+          onSave={saveSignatureCondition}
+        />
+      ) : null}
 
       {modePickerOpen && targetModeLoaded ? (
         <div className="build-warning-modal target-mode-modal" role="dialog" aria-modal="true" aria-labelledby="targetModeTitle">
@@ -922,69 +1033,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   );
 }
 
-function HealthbarPreview({ model }) {
-  return (
-    <section
-      className="healthbar-preview"
-      aria-label="Enemy and ally healthbar preview"
-      style={{
-        '--preview-height-scale': model.barHeightScale,
-        '--preview-top-offset': model.topOffsetScale
-      }}
-    >
-      {model.teams.map((team) => (
-        <div key={team.id} className={`healthbar-preview-team is-${team.id}${team.enabled ? '' : ' is-disabled'}`}>
-          <div className="healthbar-preview-team-heading">
-            <strong>{team.label}</strong>
-            <span>{team.enabled ? 'On' : 'Off'}</span>
-          </div>
-          <div className="healthbar-preview-samples">
-            {team.samples.map((sample) => (
-              <article
-                key={sample.id}
-                className={`healthbar-preview-sample${sample.pulse ? ' is-pulsing' : ''}${sample.hideBarWhilePulsing ? ' hides-on-pulse' : ''}`}
-                style={{
-                  '--health-percent': `${sample.healthPercent}%`,
-                  '--bar-color': sample.fillColor,
-                  '--heal-color': sample.healingColor,
-                  '--delta-color': sample.damageColor,
-                  '--shield-color': sample.shieldColor,
-                  '--counter-color': sample.counterColor,
-                  '--pulse-color': sample.pulseColor,
-                  '--pulse-duration': `${sample.pulseDurationMs}ms`,
-                  '--pulse-scale': sample.pulseScale,
-                  '--kill-position': `${sample.killMarker.positionPercent}%`,
-                  '--kill-color': sample.killMarker.color,
-                  '--kill-width': `${sample.killMarker.width}px`
-                }}
-              >
-                <span className="healthbar-preview-state">{sample.label} · {sample.healthPercent}%</span>
-                <div className="healthbar-preview-unit">
-                  {sample.levelVisible ? <span className="healthbar-preview-level">12</span> : null}
-                  <div className="healthbar-preview-body">
-                    <div className="healthbar-preview-shield" aria-label="Bullet shield" />
-                    <div className="healthbar-preview-track">
-                      <span className="healthbar-preview-delta" aria-label="Recent damage" />
-                      <span className="healthbar-preview-fill" />
-                      <span className="healthbar-preview-heal" aria-label="Incoming healing" />
-                      {sample.pipsVisible ? (
-                        <span className="healthbar-preview-pips" aria-label="Health pips">
-                          {Array.from({ length: 10 }, (_, index) => <i key={index} />)}
-                        </span>
-                      ) : null}
-                      {sample.killMarker.visible ? <span className="healthbar-preview-kill" aria-label="Kill marker" /> : null}
-                    </div>
-                    {sample.counterVisible ? <span className="healthbar-preview-counter">{sample.counterText}</span> : null}
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      ))}
-    </section>
-  );
-}
 function PakFileIcon({ showLabel = false, ...props }) {
   return (
 

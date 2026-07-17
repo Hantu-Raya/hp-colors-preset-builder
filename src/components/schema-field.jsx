@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'preact/hooks';
-import { Minus, Plus, RotateCcw } from 'lucide-preact';
+import { Minus, Plus, RotateCcw, Star } from 'lucide-preact';
 import { normalizeHexColor, parsePositionValue, formatPositionValue, clampNumber, isDefaultValue } from './schema-control-utils.js';
 
 function StepButton({ direction, label, onClick }) {
@@ -213,7 +213,7 @@ function PositionControl({ field, value, onChange }) {
   );
 }
 
-export function SchemaField({ field, value, onChange }) {
+export function SchemaField({ field, value, onChange, conditionRule = null, onEditCondition = null, showConditionButton = true }) {
   if (!field) return null;
 
   const labelId = `${field.id}-label`;
@@ -236,6 +236,18 @@ export function SchemaField({ field, value, onChange }) {
       </div>
       <div className="schema-field-control">
         {control}
+        {showConditionButton && field.id !== 'hp_precise_pips_enabled' ? (
+          <button
+            type="button"
+            className={`field-condition-button${conditionRule ? ' is-active' : ''}`}
+            aria-haspopup="dialog"
+            onClick={() => onEditCondition?.(field.id)}
+            aria-label={`${conditionRule ? 'Edit' : 'Add'} signature condition for ${field.label}`}
+            title={conditionRule ? `Signature ${conditionRule.slot}, tier ${conditionRule.minTier}+` : 'Add signature condition'}
+          >
+            <Star aria-hidden="true" />
+          </button>
+        ) : null}
         <button
           type="button"
           className="field-reset-button"

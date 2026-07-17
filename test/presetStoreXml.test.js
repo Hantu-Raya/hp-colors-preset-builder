@@ -31,6 +31,25 @@ test("writePresetStoreToBaseHudXml adds semantic preset labels after Anita ancho
   assert.equal(Object.keys(decoded[0].values).length, 55);
 });
 
+test("preset store encodes signature conditions as compact runtime overrides", () => {
+  const xml = [
+    "<root>",
+    '  <Panel id="AnitaUI_Anchor" hittest="false" />',
+    "</root>"
+  ].join("\n");
+  const patched = writePresetStoreToBaseHudXml(xml, [{
+    name: "Conditional",
+    version: 1,
+    values: { hp_color_low: "#FF00FF" },
+    overrides: { hp_color_low: { slot: 3, minTier: 2, value: "#123456" } }
+  }]);
+
+  const decoded = readPresetStoreFromBaseHudXml(patched);
+  assert.deepEqual(decoded[0].overrides, {
+    hp_color_low: { slot: 3, minTier: 2, value: "#123456" }
+  });
+});
+
 test("writePresetStoreToBaseHudXml preserves multiple preset labels", () => {
   const xml = [
     "<root>",

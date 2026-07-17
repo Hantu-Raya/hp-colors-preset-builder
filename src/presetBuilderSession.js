@@ -116,6 +116,7 @@ export function createPresetBuilderSession(defaultState) {
     convertStatus: "",
     previewOpen: false,
     warningOpen: false,
+    conditionalFieldId: null,
     installValidated: false,
     targetMode: DEFAULT_HP_COLORS_MOD_VARIANT,
     targetModeLoaded: false,
@@ -169,7 +170,9 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
     return counts;
   }, { all: 0, selected: 0, off: 0 });
   const changedSettingCount = profiles.reduce(
-    (total, profile) => total + HP_FIELD_CATALOG.countOverrides(profile.values, defaultState),
+    (total, profile) => total
+      + HP_FIELD_CATALOG.countOverrides(profile.values, defaultState)
+      + Object.keys(profile.overrides || {}).length,
     0
   );
 
@@ -181,13 +184,14 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
     activeHeroMode,
     selectedHeroIds,
     selectedHeroSet,
+    activeOverrides: activeProfile.overrides || {},
     heroSelectionLabel,
     flatGroups,
     firstLeafKey,
     currentGroup,
     visibleFields,
     visibleCount: visibleFields.length,
-    activeOverrideCount: HP_FIELD_CATALOG.countOverrides(state, defaultState),
+    activeOverrideCount: HP_FIELD_CATALOG.countOverrides(state, defaultState) + Object.keys(activeProfile.overrides || {}).length,
     changedSettingCount,
     profileScopeCounts,
     allProfilesOff: profiles.length > 0 && profileScopeCounts.off === profiles.length,
@@ -195,7 +199,6 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
     targetModeDetails,
     fullTargetMode: isFullTargetMode(session.targetMode),
     buildProfilePresets,
-    preview: session.previewOpen ? JSON.stringify({ targetMode: session.targetMode, presets: buildProfilePresets }, null, 2) : "",
     canConfirmBuildVariant: !session.busy && canConfirmBuild({ installValidated: session.installValidated, buildVariant: session.targetMode }),
     presetVpkFileName: "pak96_dir.vpk",
     installDirectory: "Deadlock/game/citadel/addons",
@@ -310,6 +313,19 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
       return { ...session, importOpen: Boolean(intent.open) };
     case "SET_CONVERT_OPEN":
       return { ...session, convertOpen: Boolean(intent.open) };
+    case "OPEN_SIGNATURE_CONDITION":
+      return { ...session, conditionalFieldId: intent.id };
+    case "CLOSE_SIGNATURE_CONDITION":
+      return { ...session, conditionalFieldId: null };
+    case "SET_SIGNATURE_CONDITION":
+      return {
+        ...updateActiveProfile(session, (profile) => ({
+          overrides: intent.rule
+            ? { ...(profile.overrides || {}), [intent.id]: intent.rule }
+            : Object.fromEntries(Object.entries(profile.overrides || {}).filter(([id]) => id !== intent.id))
+        })),
+        conditionalFieldId: null
+      };
     case "OPEN_BUILD_WARNING":
       if (session.busy) return session;
       return { ...session, installValidated: false, warningOpen: true };
@@ -424,12 +440,19 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
       const defaultState = intent.defaultState || context.defaultState || {};
       return updateActiveProfile(session, (profile) => {
         const next = { ...profile.values };
+        const resetIds = new Set(fieldIds);
         for (const id of fieldIds) next[id] = defaultState[id];
-        return { values: next };
+        return {
+          values: next,
+          overrides: Object.fromEntries(Object.entries(profile.overrides || {}).filter(([id]) => !resetIds.has(id)))
+        };
       });
     }
     case "RESET_ALL_FIELDS":
-      return updateActiveProfile(session, { values: { ...(intent.defaultState || context.defaultState || {}) } });
+      return updateActiveProfile(session, {
+        values: { ...(intent.defaultState || context.defaultState || {}) },
+        overrides: {}
+      });
     case "IMPORT_PROFILES_SUCCEEDED": {
       const importedProfiles = Array.isArray(intent.importedProfiles) ? intent.importedProfiles : [];
       if (importedProfiles.length === 1) {
@@ -441,7 +464,8 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
             name: imported.name,
             values: imported.values,
             heroMode: imported.heroMode,
-            heroes: imported.heroes
+            heroes: imported.heroes,
+            overrides: imported.overrides || {}
           }),
           busy: false,
           busyOperation: null,
@@ -468,7 +492,8 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
           name: cleanProfileName(profile.name, profiles.length + index),
           values: profile.values,
           heroMode: profile.heroMode,
-          heroes: profile.heroes
+          heroes: profile.heroes,
+          overrides: profile.overrides || {}
         }));
         const truncated = appendedProfiles.length < importedProfiles.length;
         const message = truncated

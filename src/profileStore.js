@@ -29,7 +29,9 @@ export function createProfile(input = {}) {
     n,
     vs,
     hs,
-    hm
+    hm,
+    overrides,
+    o
   } = input || {};
   const has = (key) => Object.prototype.hasOwnProperty.call(input || {}, key);
   const rawHeroes = has("hs") ? hs : heroes;
@@ -38,7 +40,8 @@ export function createProfile(input = {}) {
     name: has("n") ? n : name,
     values: has("vs") ? vs : values,
     heroMode: has("hm") || has("heroMode") ? (has("hm") ? hm : heroMode) : inferredHeroMode,
-    heroes: rawHeroes
+    heroes: rawHeroes,
+    overrides: has("o") ? o : overrides
   }, { preserveBlankName: true });
 
   return {
@@ -46,7 +49,8 @@ export function createProfile(input = {}) {
     name: normalized.name,
     values: normalized.values,
     heroMode: normalized.heroMode,
-    heroes: normalized.heroes
+    heroes: normalized.heroes,
+    overrides: normalized.overrides || {}
   };
 }
 
@@ -80,7 +84,8 @@ function normalizeProfiles(rawProfiles, defaultState) {
       name: cleanProfileName(rawProfile?.name, index),
       values: rawProfile?.values || rawProfile?.vs || defaultState,
       heroMode: rawProfile?.heroMode ?? rawProfile?.hm ?? HP_HERO_SCOPE_ALL,
-      heroes: rawProfile?.heroes || rawProfile?.hs || []
+      heroes: rawProfile?.heroes || rawProfile?.hs || [],
+      overrides: rawProfile?.overrides || rawProfile?.o || {}
     });
   });
 }
@@ -127,7 +132,8 @@ export function saveProfileState(storage, state) {
           name: normalized.name,
           values: normalized.values,
           heroMode: normalized.heroMode,
-          heroes: normalized.heroes
+          heroes: normalized.heroes,
+          overrides: normalized.overrides || {}
         };
       })
     }));

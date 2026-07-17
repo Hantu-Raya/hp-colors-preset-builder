@@ -198,10 +198,10 @@ function parseImportProfileEntry(preset, index, allowInheritedVersion) {
 }
 
 function parseMinimalBundleEntry(entry, index) {
-  if (!Array.isArray(entry) || entry.length < 2 || entry.length > 3) throw new Error("Invalid JSON payload");
+  if (!Array.isArray(entry) || entry.length < 2 || entry.length > 4) throw new Error("Invalid JSON payload");
   const payload = Array.isArray(entry[2])
-    ? { name: entry[0], values: entry[1], heroMode: "selected", heroes: entry[2] }
-    : { name: entry[0], values: entry[1], heroMode: entry[2], heroes: [] };
+    ? { name: entry[0], values: entry[1], heroMode: "selected", heroes: entry[2], overrides: entry[3] }
+    : { name: entry[0], values: entry[1], heroMode: entry[2], heroes: [], overrides: entry[3] };
   return normalizeHpPresetPayload(payload, {
     index,
     fallbackName: `Imported preset ${index + 1}`,

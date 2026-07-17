@@ -2,7 +2,7 @@ import {
   HP_PRESET_FIELD_IDS,
   HP_PRESET_PAYLOAD_VERSION
 } from "./contracts/hpColorsPresetContract.js";
-import { normalizeHpPresetPayload } from "./hpPresetPayload.js";
+import { compactHpPresetOverrides, normalizeHpPresetPayload } from "./hpPresetPayload.js";
 import { HP_COLORS_PACKAGE_LIMITS } from "./packageArtifacts.js";
 
 export const PRESET_STORE_PANEL_ID = "HPColorsPresetStore";
@@ -67,7 +67,12 @@ function validatePresetPayload(payload, encodedBytes = 0) {
 }
 
 export function encodePresetStoreEntry(preset) {
-  const encoded = encodeBase64UrlText(JSON.stringify(preset));
+  const wirePreset = { ...preset };
+  const compactOverrides = compactHpPresetOverrides(preset?.overrides || preset?.o);
+  delete wirePreset.overrides;
+  if (Object.keys(compactOverrides).length) wirePreset.o = compactOverrides;
+  else delete wirePreset.o;
+  const encoded = encodeBase64UrlText(JSON.stringify(wirePreset));
   if (utf8Bytes(encoded).byteLength > HP_COLORS_PACKAGE_LIMITS.MAX_ENCODED_PRESET_BYTES) throw new Error("Encoded HP Colors preset exceeds 64 KiB limit");
   return encoded;
 }

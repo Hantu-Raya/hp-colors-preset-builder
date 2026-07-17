@@ -72,6 +72,25 @@ test("profile heroes round trip through storage and preset export", () => {
   assert.equal(preset.heroMode, "selected");
 });
 
+test("signature conditions round trip through profile storage and preset export", () => {
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
+  const storage = createMemoryStorage();
+  const profile = createProfile({
+    id: "conditional",
+    name: "Conditional",
+    values: defaultState,
+    overrides: { hp_color_low: { slot: 2, minTier: 3, value: "#123456" } }
+  });
+
+  saveProfileState(storage, { profiles: [profile], activeProfileId: profile.id });
+  const loaded = loadProfileState(storage, defaultState);
+  const preset = profileToPreset(loaded.profiles[0]);
+
+  assert.deepEqual(preset.overrides, {
+    hp_color_low: { slot: 2, minTier: 3, value: "#123456" }
+  });
+});
+
 test("new profiles default to all heroes when no mode or heroes are supplied", () => {
   const defaultState = HP_FIELD_CATALOG.createDefaultState();
   const profile = createProfile({ id: "first", name: "Global", values: defaultState });

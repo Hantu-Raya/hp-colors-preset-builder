@@ -1033,7 +1033,7 @@
 
 .schema-field-control {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 64px;
+  grid-template-columns: minmax(0, 1fr) 32px 32px;
   gap: 10px;
   align-items: center;
   min-width: 0;
@@ -1305,6 +1305,36 @@
   font-weight: 780;
 }
 
+.field-condition-button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted-foreground);
+  opacity: 0;
+}
+
+.schema-field-row:hover .field-condition-button,
+.schema-field-row:focus-within .field-condition-button,
+.field-condition-button.is-active {
+  opacity: 1;
+}
+
+.field-condition-button:hover,
+.field-condition-button.is-active {
+  border-color: color-mix(in srgb, var(--primary) 56%, var(--border));
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  color: var(--primary);
+}
+
+.field-condition-button svg {
+  width: 15px;
+  height: 15px;
+}
+
 .field-reset-button {
   display: grid;
   place-items: center;
@@ -1497,24 +1527,6 @@
   outline: none;
 }
 
-.preview-box {
-  max-height: 330px;
-  overflow: auto;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #0b0f0e;
-}
-
-.preview-box pre {
-  margin: 0;
-  padding: 12px;
-  color: var(--foreground);
-  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
-  font-size: 0.72rem;
-  line-height: 1.45;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
 
 .status-card {
   display: grid;
@@ -1565,6 +1577,110 @@
   color: var(--foreground);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.44);
 }
+
+.signature-condition-panel {
+  width: min(600px, 100%);
+  max-height: min(90dvh, 760px);
+  overflow: auto;
+}
+
+.signature-condition-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 13px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--muted);
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.signature-condition-toggle strong {
+  color: var(--muted-foreground);
+}
+
+.signature-condition-toggle.is-checked {
+  border-color: color-mix(in srgb, var(--primary) 62%, var(--border));
+  background: color-mix(in srgb, var(--primary) 10%, var(--muted));
+}
+
+.signature-condition-toggle.is-checked strong {
+  color: var(--primary);
+}
+
+.signature-condition-group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.signature-condition-group legend,
+.signature-condition-value > span {
+  margin-bottom: 7px;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 780;
+  text-transform: uppercase;
+}
+
+.signature-condition-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.signature-condition-options button {
+  min-height: 42px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.signature-condition-options button.is-selected {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, var(--muted));
+  color: var(--primary);
+}
+
+.signature-condition-group:disabled,
+.signature-condition-value.is-disabled {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+.signature-condition-value {
+  padding-top: 2px;
+}
+
+.signature-condition-value .schema-field-row {
+  grid-template-columns: 1fr;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--muted);
+}
+
+.signature-condition-value .schema-field-meta {
+  display: none;
+}
+
+.signature-condition-value .schema-field-control {
+  grid-template-columns: minmax(0, 1fr) 32px;
+}
+
+.signature-condition-remove {
+  margin-right: auto;
+  color: var(--destructive);
+}
+
 
 .target-mode-panel {
   width: min(720px, 100%);
@@ -2031,168 +2147,6 @@
   padding-inline-start: calc(var(--tree-depth, 0) * 0.75rem);
 }
 
-.rail-heading-tools {
-  margin-top: 4px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-}
-
-.healthbar-preview {
-  display: grid;
-  gap: 12px;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--muted);
-  overflow: hidden;
-}
-
-.healthbar-preview-team {
-  display: grid;
-  gap: 7px;
-  opacity: 1;
-  transition: opacity 180ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.healthbar-preview-team.is-disabled {
-  opacity: 0.46;
-}
-
-.healthbar-preview-team-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--foreground);
-  font-size: 0.72rem;
-}
-
-.healthbar-preview-team-heading span,
-.healthbar-preview-state {
-  color: var(--muted-foreground);
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.healthbar-preview-samples {
-  display: grid;
-  gap: 8px;
-}
-
-.healthbar-preview-sample {
-  display: grid;
-  gap: 4px;
-  transform: translateY(calc(var(--preview-top-offset) * 0.5rem));
-}
-
-.healthbar-preview-unit {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
-  gap: 5px;
-  align-items: center;
-}
-
-.healthbar-preview-level {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--card);
-  color: var(--foreground);
-  font-size: 0.62rem;
-  font-weight: 800;
-}
-
-.healthbar-preview-body {
-  position: relative;
-  display: grid;
-  gap: 2px;
-}
-
-.healthbar-preview-shield {
-  width: 62%;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--shield-color);
-  opacity: 0.78;
-}
-
-.healthbar-preview-track {
-  position: relative;
-  height: clamp(5px, calc(8px * var(--preview-height-scale)), 16px);
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--foreground) 18%, transparent);
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--background) 84%, var(--card));
-}
-
-.healthbar-preview-fill,
-.healthbar-preview-heal,
-.healthbar-preview-delta,
-.healthbar-preview-kill,
-.healthbar-preview-pips {
-  position: absolute;
-  inset-block: 0;
-}
-
-.healthbar-preview-fill {
-  left: 0;
-  width: var(--health-percent);
-  background: var(--bar-color);
-}
-
-.healthbar-preview-delta {
-  left: var(--health-percent);
-  width: 12%;
-  background: var(--delta-color);
-  opacity: 0.88;
-}
-
-.healthbar-preview-heal {
-  left: var(--health-percent);
-  width: 7%;
-  background: var(--heal-color);
-  mix-blend-mode: screen;
-}
-
-.healthbar-preview-pips {
-  inset-inline: 0;
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
-}
-
-.healthbar-preview-pips i {
-  border-right: 1px solid color-mix(in srgb, var(--background) 66%, transparent);
-}
-
-.healthbar-preview-pips i:last-child {
-  border-right: 0;
-}
-
-.healthbar-preview-kill {
-  left: var(--kill-position);
-  width: var(--kill-width);
-  background: var(--kill-color);
-  transform: translateX(-50%);
-}
-
-.healthbar-preview-counter {
-  justify-self: end;
-  color: var(--counter-color);
-  font-size: 0.68rem;
-  font-weight: 820;
-  line-height: 1.1;
-}
-
-.healthbar-preview-sample.is-pulsing .healthbar-preview-unit {
-  animation: healthbar-pulse var(--pulse-duration) cubic-bezier(0.16, 1, 0.3, 1) infinite;
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--pulse-color) 58%, transparent));
-}
-
-.healthbar-preview-sample.hides-on-pulse .healthbar-preview-fill {
-  animation: healthbar-hide var(--pulse-duration) ease-out infinite;
-}
 
 .export-action-list {
   display: grid;
@@ -2277,25 +2231,6 @@
   }
 }
 
-@keyframes healthbar-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  45% {
-    transform: scale(var(--pulse-scale));
-  }
-}
-
-@keyframes healthbar-hide {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  45% {
-    opacity: 0.15;
-  }
-}
 @keyframes shell-in {
   from {
     opacity: 0;
@@ -2517,7 +2452,7 @@
   }
 
   .schema-field-control {
-    grid-template-columns: minmax(0, 1fr) 64px;
+    grid-template-columns: minmax(0, 1fr) 32px 32px;
   }
 }
 
@@ -2575,4 +2510,8 @@
     align-items: stretch;
     flex-direction: column;
   }
+  .signature-condition-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
 }
