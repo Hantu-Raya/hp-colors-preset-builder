@@ -83,3 +83,17 @@ test("getTargetModeDetails exposes choice copy and download links", () => {
   assert.match(full.downloadHref, /^https:\/\//);
 });
 
+
+test("target mode storage failures are surfaced", () => {
+  const loaded = loadTargetModeState({
+    getItem() { throw new DOMException("Access denied", "SecurityError"); }
+  });
+  assert.match(loaded.error, /could not be read: Access denied/);
+  assert.equal(loaded.shouldShowPicker, true);
+
+  const saved = saveTargetModeState({
+    setItem() { throw new DOMException("Quota full", "QuotaExceededError"); }
+  }, HP_COLORS_MOD_VARIANTS.FULL);
+  assert.equal(saved.ok, false);
+  assert.match(saved.error, /could not be saved: Quota full/);
+});

@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   Braces,
   Check,
   ChevronDown,
+  Copy,
   Download,
+  FileJson,
   GitCommitHorizontal,
   GripVertical,
   Heart,
@@ -26,7 +30,15 @@ import {
 import { HP_COLORS_MOD_VARIANTS } from '../hpModVariants.js';
 import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitCommitInfoRefresh.js';
 import { TARGET_MODE_CHOICES } from '../targetModeStore.js';
+import { copyText, downloadText } from '../download.js';
+import { createHealthbarPreviewModel } from '../healthbarPreviewModel.js';
 import { cleanProfileName, createProfilePersistenceSnapshot, saveProfileState } from '../profileStore.js';
+import {
+  createAllProfileCodes,
+  createProfileCode,
+  createProfilesJsonExport,
+  createProfilesJsonFileName
+} from '../presetBuilderExport.js';
 import {
   createPresetBuilderSession,
   loadPresetBuilderSession,
@@ -53,6 +65,60 @@ function scheduleIdleWork(callback) {
   }
   const id = window.setTimeout(callback, 160);
   return () => window.clearTimeout(id);
+}
+
+function useDialogA11y(open, onClose) {
+  const panelRef = useRef(null);
+  const previousFocusRef = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    previousFocusRef.current = document.activeElement;
+    const panel = panelRef.current;
+    const focusable = () => Array.from(panel?.querySelectorAll(
+      'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])'
+    ) || []);
+    focusable()[0]?.focus();
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const items = focusable();
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocusRef.current?.focus?.();
+    };
+  }, [onClose, open]);
+  return panelRef;
+}
+
+function moveRovingFocus(event, refs, currentIndex, itemCount) {
+  let nextIndex = null;
+  if (event.key === 'ArrowDown') nextIndex = Math.min(itemCount - 1, currentIndex + 1);
+  if (event.key === 'ArrowUp') nextIndex = Math.max(0, currentIndex - 1);
+  if (event.key === 'Home') nextIndex = 0;
+  if (event.key === 'End') nextIndex = itemCount - 1;
+  if (nextIndex === null) return null;
+  event.preventDefault();
+  refs.current.forEach((node, index) => {
+    if (node) node.tabIndex = index === nextIndex ? 0 : -1;
+  });
+  refs.current[nextIndex]?.focus();
+  return nextIndex;
 }
 
 
@@ -84,17 +150,24 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     visibleFields,
     visibleCount,
     activeOverrideCount,
+    changedSettingCount,
+    profileScopeCounts,
+    allProfilesOff,
+    profileLimit,
     targetModeDetails,
     fullTargetMode,
-    buildProfilePresets,
-    preview,
     canConfirmBuildVariant,
     presetVpkFileName,
+    installDirectory,
     buildVariantWarning
   } = selectedSession;
   const activeGitCommitInfo = freshGitCommitInfo || gitCommitInfo;
   const {
     importText,
+    feedback,
+    busy,
+    busyOperation,
+    buildResult,
     status,
     profiles,
     activeProfileId,
@@ -112,9 +185,12 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     targetMode,
     targetModeLoaded,
     modePickerOpen,
-    modePickerRequired,
     modePickerUpgrade
   } = session;
+  const previewModel = useMemo(() => createHealthbarPreviewModel(state), [state]);
+  const profileOptionRefs = useRef([]);
+  const heroOptionRefs = useRef([]);
+  const operationLockRef = useRef(false);
 
   const loadBaseHudXml = useMemo(
     () => createBaseHudXmlLoader({ baseUrl: import.meta.env.BASE_URL }),
@@ -126,16 +202,28 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   }, []);
 
   const openBuildWarning = useCallback(() => {
-    setSession((prev) => reducePresetBuilderSession(prev, { type: 'OPEN_BUILD_WARNING' }));
-  }, []);
+    dispatchSessionIntent({ type: 'OPEN_BUILD_WARNING' });
+  }, [dispatchSessionIntent]);
+  const closeBuildWarning = useCallback(() => {
+    dispatchSessionIntent({ type: 'CLOSE_BUILD_WARNING' });
+  }, [dispatchSessionIntent]);
+  const closeTargetModePicker = useCallback(() => {
+    dispatchSessionIntent({ type: 'CLOSE_TARGET_MODE_PICKER' });
+  }, [dispatchSessionIntent]);
+  const buildDialogRef = useDialogA11y(warningOpen, closeBuildWarning);
+  const targetDialogRef = useDialogA11y(modePickerOpen && targetModeLoaded, closeTargetModePicker);
 
   function commitTargetMode(nextMode) {
     const storage = typeof window !== 'undefined' ? window.localStorage : null;
-    setSession((prev) => commitPresetBuilderTargetMode({ session: prev, targetMode: nextMode, storage }));
+    setSession((previous) => commitPresetBuilderTargetMode({
+      session: previous,
+      targetMode: nextMode,
+      storage
+    }));
   }
 
   function openTargetModePicker() {
-    setSession((prev) => reducePresetBuilderSession(prev, { type: 'OPEN_TARGET_MODE_PICKER' }));
+    dispatchSessionIntent({ type: 'OPEN_TARGET_MODE_PICKER' });
   }
 
   useEffect(() => {
@@ -148,12 +236,13 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   }, [defaultState]);
 
   useEffect(() => {
-    if (!profilesLoaded) return;
+    if (!profilesLoaded) return undefined;
     return scheduleIdleWork(() => {
       const storage = typeof window !== 'undefined' ? window.localStorage : null;
-      saveProfileState(storage, latestProfileSnapshot.current);
+      const saved = saveProfileState(storage, latestProfileSnapshot.current);
+      if (!saved.ok) dispatchSessionIntent({ type: 'SET_FEEDBACK', feedback: { type: 'error', message: saved.error } });
     });
-  }, [profilesLoaded, session]);
+  }, [activeProfileId, dispatchSessionIntent, profiles, profilesLoaded]);
 
   useEffect(() => {
     if (!profilesLoaded || typeof window === 'undefined') return;
@@ -187,33 +276,36 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
   useEffect(() => {
     const handleShortcut = (event) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      if (event.key === 'Escape' && !warningOpen && !modePickerOpen) {
+        dispatchSessionIntent({ type: 'CLOSE_MENUS' });
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !busy) {
         event.preventDefault();
         openBuildWarning();
       }
     };
     window.addEventListener('keydown', handleShortcut);
     return () => window.removeEventListener('keydown', handleShortcut);
-  }, []);
+  }, [busy, dispatchSessionIntent, modePickerOpen, openBuildWarning, warningOpen]);
 
   function updateField(id, value) {
-    setSession((prev) => reducePresetBuilderSession(prev, { type: 'UPDATE_FIELD', id, value }));
+    dispatchSessionIntent({ type: 'UPDATE_FIELD', id, value });
   }
 
   function renameActiveProfile(name) {
-    setSession((prev) => reducePresetBuilderSession(prev, { type: 'RENAME_ACTIVE_PROFILE', name }));
+    dispatchSessionIntent({ type: 'RENAME_ACTIVE_PROFILE', name });
   }
 
   function handleHeroToggle(heroId) {
-    setSession((prev) => reducePresetBuilderSession(prev, { type: 'TOGGLE_HERO', heroId }));
+    dispatchSessionIntent({ type: 'TOGGLE_HERO', heroId });
   }
 
   function handleClearHeroes() {
-    setSession((prev) => reducePresetBuilderSession(prev, { type: 'CLEAR_HEROES' }));
+    dispatchSessionIntent({ type: 'CLEAR_HEROES' });
   }
 
   function handleDisableHeroSelection() {
-    setSession((prev) => reducePresetBuilderSession(prev, { type: 'DISABLE_HERO_SELECTION' }));
+    dispatchSessionIntent({ type: 'DISABLE_HERO_SELECTION' });
   }
 
   function handleSelectGroup(group) {
@@ -222,58 +314,101 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     setActiveKey(HP_FIELD_CATALOG.getCategoryKey(cursor || group));
   }
 
-  const handleImport = useCallback(() => runPresetImportWorkflow({
-    importText,
-    defaultState,
-    groups,
-    activeKey,
-    dispatch: dispatchSessionIntent
-  }), [activeKey, defaultState, dispatchSessionIntent, groups, importText]);
+  const handleImport = useCallback(async () => {
+    if (busy || operationLockRef.current) return;
+    operationLockRef.current = true;
+    dispatchSessionIntent({ type: 'OPERATION_STARTED', operation: 'import' });
+    try {
+      await runPresetImportWorkflow({ importText, defaultState, groups, activeKey, dispatch: dispatchSessionIntent });
+      dispatchSessionIntent({ type: 'OPERATION_SUCCEEDED' });
+    } finally {
+      operationLockRef.current = false;
+    }
+  }, [activeKey, busy, defaultState, dispatchSessionIntent, groups, importText]);
 
   function handleResetPage() {
-    setSession((prev) => reducePresetBuilderSession(prev, {
+    dispatchSessionIntent({
       type: 'RESET_FIELDS',
       fieldIds: (currentGroup?.fields || []).map((field) => field.id),
       defaultState
-    }));
+    });
   }
 
   function handleResetAll() {
-    setSession((prev) => reducePresetBuilderSession(prev, { type: 'RESET_ALL_FIELDS', defaultState }));
+    dispatchSessionIntent({ type: 'RESET_ALL_FIELDS', defaultState });
   }
 
   function handleAddProfile() {
-    setSession((prev) => reducePresetBuilderSession(prev, { type: 'ADD_PROFILE', defaultState }));
+    dispatchSessionIntent({ type: 'ADD_PROFILE', defaultState });
   }
 
   function handleDeleteProfile() {
-    setSession((prev) => reducePresetBuilderSession(prev, { type: 'DELETE_ACTIVE_PROFILE' }, { presetName }));
+    dispatchSessionIntent({ type: 'DELETE_ACTIVE_PROFILE' }, { presetName });
   }
 
   function handleSelectProfile(profileId) {
-    setSession((prev) => reducePresetBuilderSession(prev, { type: 'SELECT_PROFILE', profileId }));
+    dispatchSessionIntent({ type: 'SELECT_PROFILE', profileId });
   }
 
   function handleDropProfile(event, toIndex) {
     event.preventDefault();
     const rawIndex = event.dataTransfer.getData('text/plain');
     const fromIndex = rawIndex === '' ? dragIndex : Number(rawIndex);
-    setSession((prev) => reducePresetBuilderSession(prev, { type: 'DROP_PROFILE', fromIndex, toIndex }));
+    dispatchSessionIntent({ type: 'DROP_PROFILE', fromIndex, toIndex });
   }
 
-  const performBuild = useCallback((modVariant) => runPresetBuildWorkflow({
-    selection: selectedSession,
-    targetMode: modVariant || targetMode,
-    loadBaseHudXml,
-    dispatch: dispatchSessionIntent
-  }), [dispatchSessionIntent, loadBaseHudXml, selectedSession, targetMode]);
+  const performBuild = useCallback(async (modVariant) => {
+    if (busy || operationLockRef.current) return;
+    operationLockRef.current = true;
+    try {
+      await runPresetBuildWorkflow({
+        selection: selectedSession,
+        targetMode: modVariant || targetMode,
+        loadBaseHudXml,
+        dispatch: dispatchSessionIntent
+      });
+    } finally {
+      operationLockRef.current = false;
+    }
+  }, [busy, dispatchSessionIntent, loadBaseHudXml, selectedSession, targetMode]);
 
-  const performConvert = useCallback((targetModVariant) => runPresetConvertWorkflow({
-    convertFile,
-    targetModVariant,
-    loadBaseHudXml,
-    dispatch: dispatchSessionIntent
-  }), [convertFile, dispatchSessionIntent, loadBaseHudXml]);
+  const performConvert = useCallback(async (targetModVariant) => {
+    if (busy || operationLockRef.current) return;
+    operationLockRef.current = true;
+    dispatchSessionIntent({ type: 'OPERATION_STARTED', operation: 'convert' });
+    try {
+      await runPresetConvertWorkflow({ convertFile, targetModVariant, loadBaseHudXml, dispatch: dispatchSessionIntent });
+      dispatchSessionIntent({ type: 'OPERATION_SUCCEEDED' });
+    } finally {
+      operationLockRef.current = false;
+    }
+  }, [busy, convertFile, dispatchSessionIntent, loadBaseHudXml]);
+
+  const handleExport = useCallback(async (operation, value, successMessage) => {
+    if (busy || operationLockRef.current) return;
+    operationLockRef.current = true;
+    dispatchSessionIntent({ type: 'OPERATION_STARTED', operation });
+    try {
+      await value();
+      dispatchSessionIntent({ type: 'OPERATION_SUCCEEDED', message: successMessage });
+    } catch (error) {
+      dispatchSessionIntent({ type: 'OPERATION_FAILED', message: error?.message || String(error) });
+    } finally {
+      operationLockRef.current = false;
+    }
+  }, [busy, dispatchSessionIntent]);
+
+  const heroOptions = [
+    { id: 'off', label: 'Hero select off', avatar: 'Off', selected: activeHeroMode === HP_HERO_SCOPE_OFF, onSelect: handleDisableHeroSelection },
+    { id: 'all', label: 'All heroes', avatar: 'All', selected: activeHeroMode === HP_HERO_SCOPE_ALL, onSelect: handleClearHeroes },
+    ...HP_HEROES.map((hero) => ({
+      id: hero.id,
+      label: hero.name,
+      hero,
+      selected: selectedHeroSet.has(hero.id),
+      onSelect: () => handleHeroToggle(hero.id)
+    }))
+  ];
 
   return (
     <div className="panorama-page">
@@ -325,7 +460,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </span>
             </button>
             <div className="topbar-profile-controls" aria-label="Preset profiles">
-              <button type="button" className="profile-icon-action" onClick={handleAddProfile} aria-label="Add preset">
+              <button type="button" className="profile-icon-action" onClick={handleAddProfile} disabled={profiles.length >= profileLimit} aria-label="Add preset">
                 <Plus aria-hidden="true" />
               </button>
               <button type="button" className="profile-icon-action" onClick={handleDeleteProfile} disabled={profiles.length <= 1} aria-label="Remove preset">
@@ -335,7 +470,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 <button
                   type="button"
                   className="profile-selector-trigger"
-                  onClick={() => setSession((prev) => ({ ...prev, profileMenuOpen: !prev.profileMenuOpen }))}
+                  onClick={() => dispatchSessionIntent({ type: 'TOGGLE_PROFILE_MENU' })}
                   aria-expanded={profileMenuOpen}
                   aria-haspopup="listbox"
                 >
@@ -348,17 +483,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     {profiles.map((profile, index) => {
                       const label = cleanProfileName(profile.name, index);
                       const overrides = HP_FIELD_CATALOG.countOverrides(profile.values, defaultState);
+                      const active = profile.id === activeProfile.id;
                       return (
-                        <button
+                        <div
                           key={profile.id}
-                          type="button"
+                          className="profile-menu-entry"
                           draggable
-                          className={profile.id === activeProfile.id ? 'profile-menu-row is-active' : 'profile-menu-row'}
-                          role="option"
-                          aria-selected={profile.id === activeProfile.id}
-                          onClick={() => handleSelectProfile(profile.id)}
                           onDragStart={(event) => {
-                            setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_DRAG_INDEX', dragIndex: index }));
+                            dispatchSessionIntent({ type: 'SET_DRAG_INDEX', dragIndex: index });
                             event.dataTransfer.effectAllowed = 'move';
                             event.dataTransfer.setData('text/plain', String(index));
                           }}
@@ -367,14 +499,41 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                             event.dataTransfer.dropEffect = 'move';
                           }}
                           onDrop={(event) => handleDropProfile(event, index)}
-                          onDragEnd={() => setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_DRAG_INDEX', dragIndex: null }))}
+                          onDragEnd={() => dispatchSessionIntent({ type: 'SET_DRAG_INDEX', dragIndex: null })}
                         >
-                          <GripVertical className="profile-drag-handle" aria-hidden="true" />
-                          <span className="profile-menu-text">
-                            <span className="profile-row-name">{label}</span>
-                            <span className="profile-row-meta">{overrides} override{overrides === 1 ? '' : 's'} / priority {index + 1}</span>
-                          </span>
-                        </button>
+                          <button
+                            ref={(node) => { profileOptionRefs.current[index] = node; }}
+                            type="button"
+                            className={active ? 'profile-menu-row is-active' : 'profile-menu-row'}
+                            role="option"
+                            tabIndex={active ? 0 : -1}
+                            aria-selected={active}
+                            onClick={() => handleSelectProfile(profile.id)}
+                            onKeyDown={(event) => {
+                              if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+                                event.preventDefault();
+                                dispatchSessionIntent({ type: 'MOVE_PROFILE', profileId: profile.id, direction: event.key === 'ArrowUp' ? -1 : 1 });
+                                return;
+                              }
+                              const nextIndex = moveRovingFocus(event, profileOptionRefs, index, profiles.length);
+                              if (nextIndex !== null) dispatchSessionIntent({ type: 'NAVIGATE_PROFILE', profileId: profiles[nextIndex].id });
+                            }}
+                          >
+                            <GripVertical className="profile-drag-handle" aria-hidden="true" />
+                            <span className="profile-menu-text">
+                              <span className="profile-row-name">{label}</span>
+                              <span className="profile-row-meta">{overrides} override{overrides === 1 ? '' : 's'} / priority {index + 1}</span>
+                            </span>
+                          </button>
+                          <div className="profile-move-actions" aria-label={`Move ${label}`}>
+                            <button type="button" disabled={index === 0} onClick={() => dispatchSessionIntent({ type: 'MOVE_PROFILE', profileId: profile.id, direction: -1 })} aria-label={`Move ${label} up`}>
+                              <ArrowUp aria-hidden="true" />
+                            </button>
+                            <button type="button" disabled={index === profiles.length - 1} onClick={() => dispatchSessionIntent({ type: 'MOVE_PROFILE', profileId: profile.id, direction: 1 })} aria-label={`Move ${label} down`}>
+                              <ArrowDown aria-hidden="true" />
+                            </button>
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
@@ -389,7 +548,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <button
                 type="button"
                 className="hero-selector-trigger"
-                onClick={() => setSession((prev) => ({ ...prev, heroMenuOpen: !prev.heroMenuOpen }))}
+                onClick={() => dispatchSessionIntent({ type: 'TOGGLE_HERO_MENU' })}
                 aria-expanded={heroMenuOpen}
                 aria-haspopup="listbox"
               >
@@ -410,54 +569,36 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </button>
               {heroMenuOpen ? (
                 <div className="hero-selector-menu" role="listbox" aria-label="Target heroes" aria-multiselectable="true">
-                  <button
-                    type="button"
-                    className={activeHeroMode === HP_HERO_SCOPE_OFF ? 'hero-menu-row is-active' : 'hero-menu-row'}
-                    role="option"
-                    aria-selected={activeHeroMode === HP_HERO_SCOPE_OFF}
-                    onClick={handleDisableHeroSelection}
-                  >
-                    <span className="hero-avatar hero-avatar-all" aria-hidden="true">Off</span>
-                    <span className="hero-menu-name">Hero select off</span>
-                    {activeHeroMode === HP_HERO_SCOPE_OFF ? <Check aria-hidden="true" /> : null}
-                  </button>
-                  <button
-                    type="button"
-                    className={activeHeroMode === HP_HERO_SCOPE_ALL ? 'hero-menu-row is-active' : 'hero-menu-row'}
-                    role="option"
-                    aria-selected={activeHeroMode === HP_HERO_SCOPE_ALL}
-                    onClick={handleClearHeroes}
-                  >
-                    <span className="hero-avatar hero-avatar-all" aria-hidden="true">All</span>
-                    <span className="hero-menu-name">All heroes</span>
-                    {activeHeroMode === HP_HERO_SCOPE_ALL ? <Check aria-hidden="true" /> : null}
-                  </button>
-                  {HP_HEROES.map((hero) => {
-                    const selected = selectedHeroSet.has(hero.id);
-                    return (
-                      <button
-                        key={hero.id}
-                        type="button"
-                        className={selected ? 'hero-menu-row is-active' : 'hero-menu-row'}
-                        role="option"
-                        aria-selected={selected}
-                        onClick={() => handleHeroToggle(hero.id)}
-                      >
-                        <HeroAvatar hero={hero} />
-                        <span className="hero-menu-name">{hero.name}</span>
-                        {selected ? <Check aria-hidden="true" /> : null}
-                      </button>
-                    );
-                  })}
+                  {heroOptions.map((option, index) => (
+                    <button
+                      key={option.id}
+                      ref={(node) => { heroOptionRefs.current[index] = node; }}
+                      type="button"
+                      className={option.selected ? 'hero-menu-row is-active' : 'hero-menu-row'}
+                      role="option"
+                      tabIndex={index === Math.max(0, heroOptions.findIndex((item) => item.selected)) ? 0 : -1}
+                      aria-selected={option.selected}
+                      onClick={option.onSelect}
+                      onKeyDown={(event) => moveRovingFocus(event, heroOptionRefs, index, heroOptions.length)}
+                    >
+                      {option.hero ? <HeroAvatar hero={option.hero} /> : <span className="hero-avatar hero-avatar-all" aria-hidden="true">{option.avatar}</span>}
+                      <span className="hero-menu-name">{option.label}</span>
+                      {option.selected ? <Check aria-hidden="true" /> : null}
+                    </button>
+                  ))}
                 </div>
               ) : null}
             </div>
-            <button type="button" className="build-action" onClick={openBuildWarning}>
+            <button type="button" className="build-action" onClick={openBuildWarning} disabled={busy}>
               <Download aria-hidden="true" />
-              <span>Build VPK</span>
+              <span>{busyOperation === 'build' ? 'Building…' : 'Build VPK'}</span>
             </button>
           </div>
         </header>
+        <nav className="mobile-workspace-nav" aria-label="Mobile builder navigation">
+          <a href="#builderCategories">Categories</a>
+          <a href="#builderBuild">Build &amp; export</a>
+        </nav>
 
         <div className="panorama-workspace">
           <SchemaTree groups={groups} activeKey={activeKey} state={state} defaultState={defaultState} onSelect={handleSelectGroup} />
@@ -496,12 +637,17 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             </div>
           </section>
 
-          <aside className="anita-right-rail">
+          <aside className="anita-right-rail" id="builderBuild">
             <div className="rail-heading">
+              <span className="panorama-kicker">Live preview</span>
+              <strong>Healthbar states</strong>
+            </div>
+            <HealthbarPreview model={previewModel} />
+            <div className="rail-heading rail-heading-tools">
               <span className="panorama-kicker">Tools</span>
               <strong>Preset utility</strong>
             </div>
-            <DisclosurePanel title="Import game preset codes" open={importOpen} onOpenChange={(open) => setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_IMPORT_OPEN', open }))}>
+            <DisclosurePanel title="Import game preset codes" open={importOpen} onOpenChange={(open) => dispatchSessionIntent({ type: 'SET_IMPORT_OPEN', open })}>
               <div className="import-panel-body">
                 <p className="panel-helper">
                   Paste COPY ALL from the in-game HP Colors menu, or paste several individual HP Colors codes. Bundles import as separate profiles for the selected target.
@@ -511,11 +657,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                   className="builder-textarea"
                   rows={5}
                   value={importText}
-                  onChange={(e) => setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_IMPORT_TEXT', text: e.target.value }))}
+                  onInput={(e) => dispatchSessionIntent({ type: 'SET_IMPORT_TEXT', text: e.currentTarget.value })}
                   placeholder="Paste COPY ALL or HP Colors import codes here"
                 />
                 <div className="rail-actions">
-                  <button type="button" className="secondary-action" onClick={handleImport}>
+                  <button type="button" className="secondary-action" onClick={handleImport} disabled={busy || !importText.trim()}>
                     <Upload aria-hidden="true" />
                     <span>Import codes</span>
                   </button>
@@ -523,7 +669,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
             </DisclosurePanel>
 
-            <DisclosurePanel title="Convert VPK" open={convertOpen} onOpenChange={(open) => setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_CONVERT_OPEN', open }))}>
+            <DisclosurePanel title="Convert VPK" open={convertOpen} onOpenChange={(open) => dispatchSessionIntent({ type: 'SET_CONVERT_OPEN', open })}>
               <div className="convert-panel-body">
                 <label className="builder-file-control">
                   <span>Preset VPK</span>
@@ -532,8 +678,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     accept=".vpk"
                     onChange={(event) => {
                       const nextFile = event.target.files?.[0] || null;
-                      setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_CONVERT_FILE', file: nextFile }));
-                      setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_CONVERT_STATUS', status: nextFile ? `Ready: ${nextFile.name}` : '' }));
+                      dispatchSessionIntent({ type: 'SET_CONVERT_FILE', file: nextFile });
+                      dispatchSessionIntent({ type: 'SET_CONVERT_STATUS', status: nextFile ? `Ready: ${nextFile.name}` : '' });
                     }}
                   />
                 </label>
@@ -543,7 +689,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     <button
                       type="button"
                       className="secondary-action"
-                      disabled={!convertFile}
+                      disabled={!convertFile || busy}
                       onClick={() => performConvert(HP_COLORS_MOD_VARIANTS.FULL)}
                     >
                       <RotateCcw aria-hidden="true" />
@@ -554,7 +700,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     <button
                       type="button"
                       className="secondary-action"
-                      disabled={!convertFile}
+                      disabled={!convertFile || busy}
                       onClick={() => performConvert(HP_COLORS_MOD_VARIANTS.MINIMAL)}
                     >
                       <RotateCcw aria-hidden="true" />
@@ -566,9 +712,41 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
             </DisclosurePanel>
 
-            <DisclosurePanel title="JSON preview" open={previewOpen} onOpenChange={(open) => setSession((prev) => reducePresetBuilderSession(prev, { type: 'SET_PREVIEW_OPEN', open }))}>
-              <div className="preview-box"><pre>{preview}</pre></div>
+            <DisclosurePanel title="Export profiles" open={previewOpen} onOpenChange={(open) => dispatchSessionIntent({ type: 'SET_PREVIEW_OPEN', open })}>
+              <div className="export-action-list">
+                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('copy-current', () => copyText(createProfileCode(activeProfile, activeProfileIndex)), `Copied ${presetName}.`)}>
+                  <Copy aria-hidden="true" />
+                  <span>Copy current profile code</span>
+                </button>
+                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('copy-all', () => copyText(createAllProfileCodes(profiles)), `Copied ${profiles.length} profile code${profiles.length === 1 ? '' : 's'}.`)}>
+                  <Copy aria-hidden="true" />
+                  <span>Copy all profile codes</span>
+                </button>
+                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('export-json', () => downloadText(createProfilesJsonFileName(presetName), createProfilesJsonExport(profiles), 'application/json;charset=utf-8'), 'Downloaded profile JSON.')}>
+                  <FileJson aria-hidden="true" />
+                  <span>Download JSON</span>
+                </button>
+              </div>
             </DisclosurePanel>
+
+            {feedback ? (
+              <div className={`operation-feedback is-${feedback.type}`} role={feedback.type === 'error' ? 'alert' : 'status'}>
+                {feedback.type === 'error' ? <AlertTriangle aria-hidden="true" /> : <Check aria-hidden="true" />}
+                <span>{feedback.message}</span>
+              </div>
+            ) : null}
+
+            {buildResult ? (
+              <div className="build-result-card" role="status">
+                <strong>{buildResult.filename}</strong>
+                <dl>
+                  <div><dt>Size</dt><dd>{Number(buildResult.byteLength || 0).toLocaleString()} bytes</dd></div>
+                  <div><dt>SHA-256</dt><dd><code>{buildResult.sha256}</code></dd></div>
+                </dl>
+                <p>Move the file into <code>{buildResult.installDirectory || installDirectory}</code>.</p>
+                <p>Keep the selected {targetModeDetails.title.toLowerCase()} installed as the base runtime.</p>
+              </div>
+            ) : null}
 
             <div className="status-card" role="status">
               <Braces aria-hidden="true" />
@@ -580,12 +758,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
       {modePickerOpen && targetModeLoaded ? (
         <div className="build-warning-modal target-mode-modal" role="dialog" aria-modal="true" aria-labelledby="targetModeTitle">
-          {!modePickerRequired ? (
-            <button type="button" className="build-warning-backdrop" onClick={() => setSession((prev) => ({ ...prev, modePickerOpen: false }))} aria-label="Cancel" />
-          ) : (
-            <div className="build-warning-backdrop" aria-hidden="true" />
-          )}
-          <div className="build-warning-panel target-mode-panel">
+          <button type="button" className="build-warning-backdrop" onClick={closeTargetModePicker} aria-label="Cancel" />
+          <div ref={targetDialogRef} className="build-warning-panel target-mode-panel" tabIndex={-1}>
             <div className="build-warning-badge">{modePickerUpgrade ? 'New setup step' : 'Setup'}</div>
             <h3 id="targetModeTitle">Choose your HP Colors mod</h3>
             <p>
@@ -615,41 +789,47 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 );
               })}
             </div>
-            {!modePickerRequired ? (
-              <div className="build-warning-actions">
-                <button type="button" className="secondary-action" onClick={() => setSession((prev) => ({ ...prev, modePickerOpen: false }))}>Cancel</button>
-              </div>
-            ) : null}
+            <div className="build-warning-actions">
+              <button type="button" className="secondary-action" onClick={closeTargetModePicker}>Cancel</button>
+            </div>
           </div>
         </div>
       ) : null}
 
       {warningOpen && (
         <div className="build-warning-modal" role="dialog" aria-modal="true" aria-labelledby="buildWarningTitle">
-          <button type="button" className="build-warning-backdrop" onClick={() => setSession((prev) => reducePresetBuilderSession(prev, { type: 'CLOSE_BUILD_WARNING' }))} aria-label="Cancel" />
-          <div className="build-warning-panel">
+          <button type="button" className="build-warning-backdrop" onClick={closeBuildWarning} aria-label="Cancel" />
+          <div ref={buildDialogRef} className="build-warning-panel" tabIndex={-1}>
             <div className="build-warning-badge">Build target</div>
             <h3 id="buildWarningTitle">Confirm {targetModeDetails.label} preset VPK</h3>
             <div className="build-warning-summary" aria-label="Build summary">
               <div className="build-warning-item">
-                <span className="build-warning-item-icon"><PakFileIcon aria-hidden="true" /></span>
+                <span className="build-warning-item-icon"><Layers3 aria-hidden="true" /></span>
                 <span className="build-warning-item-copy">
-                  <span>Creates</span>
-                  <strong>base_hud preset override</strong>
+                  <span>Target / profiles</span>
+                  <strong>{targetModeDetails.title} / {profiles.length} total</strong>
                 </span>
               </div>
               <div className="build-warning-item">
-                <span className="build-warning-item-icon"><Layers3 aria-hidden="true" /></span>
+                <span className="build-warning-item-icon"><Braces aria-hidden="true" /></span>
                 <span className="build-warning-item-copy">
-                  <span>Pak order</span>
-                  <strong>Preset number must be lower than the Full or Minimal base mod.</strong>
+                  <span>Routing</span>
+                  <strong>{profileScopeCounts.all} global / {profileScopeCounts.selected} selected / {profileScopeCounts.off} off</strong>
+                </span>
+              </div>
+              <div className="build-warning-item">
+                <span className="build-warning-item-icon"><Check aria-hidden="true" /></span>
+                <span className="build-warning-item-copy">
+                  <span>Changed settings</span>
+                  <strong>{changedSettingCount}</strong>
                 </span>
               </div>
               <div className="build-warning-item is-output">
                 <span className="build-warning-item-icon"><PakFileIcon showLabel aria-hidden="true" /></span>
                 <span className="build-warning-item-copy">
-                  <span>Output</span>
+                  <span>Fixed output</span>
                   <strong>{presetVpkFileName}</strong>
+                  <code>…/SteamLibrary/steamapps/common/Deadlock/game/citadel/addons</code>
                 </span>
               </div>
             </div>
@@ -664,7 +844,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
               <div className="target-mode-summary-actions">
                 <button type="button" className="secondary-action" onClick={() => {
-                  setSession((prev) => reducePresetBuilderSession(prev, { type: 'CLOSE_BUILD_WARNING' }));
+                  closeBuildWarning();
                   openTargetModePicker();
                 }}>
                   <Layers3 aria-hidden="true" />
@@ -672,6 +852,15 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 </button>
               </div>
             </div>
+            {allProfilesOff ? (
+              <div className="build-mod-warning" role="alert">
+                <span className="build-mod-warning-icon"><AlertTriangle aria-hidden="true" /></span>
+                <span className="build-mod-warning-copy">
+                  <strong>Every profile is off</strong>
+                  <span>The VPK will build, but no profile will be routed to a hero.</span>
+                </span>
+              </div>
+            ) : null}
             <div className={installValidated ? 'build-validation-card is-valid' : 'build-validation-card'}>
               <div>
                 <span className="build-validation-label">Install check</span>
@@ -680,12 +869,10 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <button
                 type="button"
                 className="secondary-action build-validation-action"
-                onClick={() => {
-                  setSession((prev) => reducePresetBuilderSession(prev, { type: 'TOGGLE_INSTALL_VALIDATION' }));
-                }}
+                onClick={() => dispatchSessionIntent({ type: 'TOGGLE_INSTALL_VALIDATION' })}
               >
                 <ShieldCheck aria-hidden="true" />
-                <span>{installValidated ? 'Unvalidate' : 'Validate install'}</span>
+                <span>{installValidated ? 'Undo install confirmation' : 'I installed the selected base mod'}</span>
               </button>
             </div>
             {buildVariantWarning ? (
@@ -700,19 +887,18 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
             ) : null}
             <div className="build-warning-actions">
-              <button type="button" className="secondary-action" onClick={() => setSession((prev) => reducePresetBuilderSession(prev, { type: 'CLOSE_BUILD_WARNING' }))}>Cancel</button>
+              <button type="button" className="secondary-action" onClick={closeBuildWarning}>Cancel</button>
               <button
                 type="button"
                 className="primary-action build-confirm-action"
-                disabled={!canConfirmBuildVariant}
-                onClick={async () => {
-                  if (!canConfirmBuildVariant) return;
-                  setSession((prev) => reducePresetBuilderSession(prev, { type: 'CLOSE_BUILD_WARNING' }));
-                  await performBuild(targetMode);
+                disabled={!canConfirmBuildVariant || busy}
+                onClick={() => {
+                  if (!canConfirmBuildVariant || busy) return;
+                  performBuild(targetMode);
                 }}
               >
                 <Download aria-hidden="true" />
-                <span>Confirm build</span>
+                <span>{busy ? 'Building…' : 'Confirm build'}</span>
               </button>
             </div>
           </div>
@@ -736,8 +922,72 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   );
 }
 
+function HealthbarPreview({ model }) {
+  return (
+    <section
+      className="healthbar-preview"
+      aria-label="Enemy and ally healthbar preview"
+      style={{
+        '--preview-height-scale': model.barHeightScale,
+        '--preview-top-offset': model.topOffsetScale
+      }}
+    >
+      {model.teams.map((team) => (
+        <div key={team.id} className={`healthbar-preview-team is-${team.id}${team.enabled ? '' : ' is-disabled'}`}>
+          <div className="healthbar-preview-team-heading">
+            <strong>{team.label}</strong>
+            <span>{team.enabled ? 'On' : 'Off'}</span>
+          </div>
+          <div className="healthbar-preview-samples">
+            {team.samples.map((sample) => (
+              <article
+                key={sample.id}
+                className={`healthbar-preview-sample${sample.pulse ? ' is-pulsing' : ''}${sample.hideBarWhilePulsing ? ' hides-on-pulse' : ''}`}
+                style={{
+                  '--health-percent': `${sample.healthPercent}%`,
+                  '--bar-color': sample.fillColor,
+                  '--heal-color': sample.healingColor,
+                  '--delta-color': sample.damageColor,
+                  '--shield-color': sample.shieldColor,
+                  '--counter-color': sample.counterColor,
+                  '--pulse-color': sample.pulseColor,
+                  '--pulse-duration': `${sample.pulseDurationMs}ms`,
+                  '--pulse-scale': sample.pulseScale,
+                  '--kill-position': `${sample.killMarker.positionPercent}%`,
+                  '--kill-color': sample.killMarker.color,
+                  '--kill-width': `${sample.killMarker.width}px`
+                }}
+              >
+                <span className="healthbar-preview-state">{sample.label} · {sample.healthPercent}%</span>
+                <div className="healthbar-preview-unit">
+                  {sample.levelVisible ? <span className="healthbar-preview-level">12</span> : null}
+                  <div className="healthbar-preview-body">
+                    <div className="healthbar-preview-shield" aria-label="Bullet shield" />
+                    <div className="healthbar-preview-track">
+                      <span className="healthbar-preview-delta" aria-label="Recent damage" />
+                      <span className="healthbar-preview-fill" />
+                      <span className="healthbar-preview-heal" aria-label="Incoming healing" />
+                      {sample.pipsVisible ? (
+                        <span className="healthbar-preview-pips" aria-label="Health pips">
+                          {Array.from({ length: 10 }, (_, index) => <i key={index} />)}
+                        </span>
+                      ) : null}
+                      {sample.killMarker.visible ? <span className="healthbar-preview-kill" aria-label="Kill marker" /> : null}
+                    </div>
+                    {sample.counterVisible ? <span className="healthbar-preview-counter">{sample.counterText}</span> : null}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
 function PakFileIcon({ showLabel = false, ...props }) {
   return (
+
     <svg className={showLabel ? 'pak-file-icon has-label' : 'pak-file-icon'} viewBox="0 0 96 96" fill="none" {...props}>
       <path
         d="M32 14h23l15 15v40c0 4.8-3.8 8.6-8.6 8.6H32c-4.8 0-8.6-3.8-8.6-8.6V22.6c0-4.8 3.8-8.6 8.6-8.6Z"

@@ -127,7 +127,7 @@ test("HP schema preserves representative metadata", () => {
     type: "colorpicker",
     label: "Ally bullet shield color",
     category: "HEALTH BARS|Ally Colors",
-    defaultValue: "#acca91",
+    defaultValue: "#FFFFFF",
     visibleWhen: { id: "hp_friend_enabled", equals: true }
   });
   assert.deepEqual(HP_SCHEMA.hp_pulse_text_scale.visibleWhen, { id: "hp_pulse_text_enabled", equals: true });

@@ -139,10 +139,11 @@ test("runPresetBuildWorkflow builds, downloads, and reports success", async () =
     dispatch: (intent) => dispatched.push(intent)
   });
 
-  assert.deepEqual(dispatched[0], { type: "SET_STATUS", status: "Building Lane.vpk..." });
-  assert.equal(downloads[0].name, "Lane.vpk");
+  assert.deepEqual(dispatched[0], { type: "BUILD_STARTED" });
+  assert.equal(dispatched[1].type, "SET_STATUS");
+  assert.equal(downloads[0].name, "pak96_dir.vpk");
   assert.ok(downloads[0].bytes instanceof Uint8Array);
-  assert.match(dispatched.at(-1).status, /^Built Lane\.vpk for full mod \(/);
+  assert.match(dispatched.at(-1).status, /^Built pak96_dir\.vpk for full mod \(/);
   assert.match(dispatched.at(-1).status, /1 profile\)\.$/);
 });
 
@@ -159,7 +160,7 @@ test("runPresetBuildWorkflow normalizes bad target mode to minimal", async () =>
     dispatch: (intent) => dispatched.push(intent)
   });
 
-  assert.match(dispatched.at(-1).status, /^Built Lane\.vpk for minimal mod \(/);
+  assert.match(dispatched.at(-1).status, /^Built pak96_dir\.vpk for minimal mod \(/);
 });
 
 test("runPresetBuildWorkflow reports loader failures without downloading", async () => {
@@ -210,11 +211,11 @@ test("runPresetConvertWorkflow converts a valid generated VPK", async () => {
     dispatch: (intent) => dispatched.push(intent)
   });
 
-  assert.equal(downloads[0].name, "Lane.vpk");
+  assert.equal(downloads[0].name, "pak96_dir.vpk");
   assert.ok(downloads[0].bytes instanceof Uint8Array);
   assert.deepEqual(dispatched.slice(-2), [
-    { type: "SET_CONVERT_STATUS", status: "Converted Lane.vpk for the minimal mod." },
-    { type: "SET_STATUS", status: "Converted Lane.vpk for the minimal mod." }
+    { type: "SET_CONVERT_STATUS", status: "Converted pak96_dir.vpk for the minimal mod." },
+    { type: "SET_STATUS", status: "Converted pak96_dir.vpk for the minimal mod." }
   ]);
 });
 

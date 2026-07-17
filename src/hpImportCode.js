@@ -1,13 +1,19 @@
 import { normalizeHpPresetPayload, normalizeHpPresetValues } from "./hpPresetPayload.js";
+import {
+  HP_ACCEPTED_INPUT_VERSIONS,
+  HP_PRESET_PAYLOAD_VERSION,
+  HP_RUNTIME_LEGACY_STORAGE_VERSIONS,
+  HP_RUNTIME_STORAGE_VERSION
+} from "./contracts/hpColorsPresetContract.js";
 
 const HP_IMPORT_CODE_PREFIX = "[ANITA-v1-hp_colors]:";
 const HP_IMPORT_CODE_NAMESPACE = "hp_colors";
-const HP_IMPORT_CODE_VERSION = 97;
-const HP_IMPORT_CODE_COMPACT_VERSION = 1;
-const HP_IMPORT_CODE_LEGACY_VERSIONS = new Set([25]);
-const MAX_IMPORT_TEXT_CHARS = 32768;
+const HP_IMPORT_CODE_VERSION = HP_RUNTIME_STORAGE_VERSION;
+const HP_IMPORT_CODE_COMPACT_VERSION = HP_PRESET_PAYLOAD_VERSION;
+const HP_IMPORT_CODE_LEGACY_VERSIONS = new Set(HP_RUNTIME_LEGACY_STORAGE_VERSIONS);
 const MAX_IMPORT_TOKEN_CHARS = 16384;
 const MAX_IMPORT_PAYLOAD_CHARS = 8192;
+const MAX_IMPORT_TEXT_CHARS = 32768;
 const BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const BASE64_LOOKUP = new Map(Array.from(BASE64_CHARS, (ch, idx) => [ch, idx]));
 
@@ -107,6 +113,7 @@ function extractHpColorsImportTokens(text) {
 
 function decodeImportPayloadText(text) {
   const body = String(text || "").trim();
+  if (/^\s*\{/.test(body)) return body;
   let token;
   try {
     token = extractHpColorsImportToken(body);
@@ -150,14 +157,14 @@ function assertPayloadVersion(parsed, options = {}) {
       throw new Error("Invalid JSON payload");
     }
     const version = Number(parsed.v);
-    if (version !== HP_IMPORT_CODE_VERSION && !HP_IMPORT_CODE_LEGACY_VERSIONS.has(version)) throw new Error("Unsupported version");
+    if (!HP_ACCEPTED_INPUT_VERSIONS.includes(version) || version === HP_PRESET_PAYLOAD_VERSION && !HP_IMPORT_CODE_LEGACY_VERSIONS.has(version)) throw new Error("Unsupported version");
     if (Object.prototype.hasOwnProperty.call(parsed, "c")) {
       const compactVersion = Number(parsed.c);
       if (compactVersion !== HP_IMPORT_CODE_COMPACT_VERSION) throw new Error("Unsupported version");
     }
   } else if (Object.prototype.hasOwnProperty.call(parsed, "version")) {
     const presetVersion = Number(parsed.version);
-    if (presetVersion !== 1) throw new Error("Unsupported version");
+    if (presetVersion !== HP_PRESET_PAYLOAD_VERSION) throw new Error("Unsupported version");
   } else {
     throw new Error("Invalid JSON payload");
   }
@@ -215,6 +222,9 @@ function parseImportProfilesFromPayload(parsed, fallbackIndex = 0) {
   }
   if (Array.isArray(parsed.presets) && parsed.presets.length > 0) {
     return parsed.presets.map((preset, index) => parseImportProfileEntry(preset, index, false));
+  }
+  if (Array.isArray(parsed.profiles) && parsed.profiles.length > 0) {
+    return parsed.profiles.map((profile, index) => parseImportProfileEntry(profile, index, true));
   }
 
   return [normalizeHpPresetPayload(parsed, {

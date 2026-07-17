@@ -21,7 +21,9 @@ function ToggleControl({ field, value, onChange }) {
       aria-labelledby={`${field.id}-label`}
       className={`anita-toggle${checked ? ' is-checked' : ''}`}
       onClick={() => onChange(field.id, !checked)}
-    />
+    >
+      <span className="anita-toggle-state">{checked ? 'On' : 'Off'}</span>
+    </button>
   );
 }
 

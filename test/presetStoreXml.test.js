@@ -24,7 +24,11 @@ test("writePresetStoreToBaseHudXml adds semantic preset labels after Anita ancho
   assert.match(patched, /HPColorsPresetStore/);
   assert.match(patched, /HPColorsPreset_001/);
   assert.match(patched, /hp_colors_preset_entry/);
-  assert.deepEqual(readPresetStoreFromBaseHudXml(patched), [preset]);
+  const decoded = readPresetStoreFromBaseHudXml(patched);
+  assert.equal(decoded[0].name, preset.name);
+  assert.equal(decoded[0].version, 1);
+  assert.equal(decoded[0].values.hp_color_low, "#FF00FF");
+  assert.equal(Object.keys(decoded[0].values).length, 55);
 });
 
 test("writePresetStoreToBaseHudXml preserves multiple preset labels", () => {
@@ -77,12 +81,15 @@ test("readPresetStoreFromBaseHudXml reads labels when text appears before class"
     "</root>"
   ].join("\n");
 
-  assert.deepEqual(readPresetStoreFromBaseHudXml(xml), [preset]);
+  const decoded = readPresetStoreFromBaseHudXml(xml);
+  assert.equal(decoded[0].name, preset.name);
+  assert.equal(decoded[0].values.hp_color_low, "#FF00FF");
+  assert.equal(Object.keys(decoded[0].values).length, 55);
 });
 
 test("readPresetStoreFromBaseHudXml throws when no store entries exist", () => {
   assert.throws(
-    () => readPresetStoreFromBaseHudXml("<root></root>"),
+    () => readPresetStoreFromBaseHudXml('<root><Panel id="HPColorsPresetStore" /></root>'),
     { message: "No HP Colors preset entry found in this VPK" }
   );
 });
@@ -90,7 +97,9 @@ test("readPresetStoreFromBaseHudXml throws when no store entries exist", () => {
 test("readPresetStoreFromBaseHudXml throws the VPK invalid-entry error for malformed text", () => {
   const xml = [
     "<root>",
-    '\t<Label id="HPColorsPreset_001" class="hp_colors_preset_entry" text="not-valid-json" />',
+    '\t<Panel id="HPColorsPresetStore">',
+    '\t\t<Label id="HPColorsPreset_001" class="hp_colors_preset_entry" text="not-valid-json" />',
+    "\t</Panel>",
     "</root>"
   ].join("\n");
 

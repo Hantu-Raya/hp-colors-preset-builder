@@ -4,8 +4,10 @@ import test from "node:test";
 import { HP_FIELD_CATALOG, HP_SCHEMA } from "../src/hpSchema.js";
 import {
   addProfile,
+  createInitialProfile,
   createProfile,
   loadProfileState,
+  HP_PROFILE_LIMIT,
   profileToPreset,
   removeProfile,
   reorderProfiles,
@@ -70,14 +72,25 @@ test("profile heroes round trip through storage and preset export", () => {
   assert.equal(preset.heroMode, "selected");
 });
 
-test("missing profile heroes keep hero selection off", () => {
+test("new profiles default to all heroes when no mode or heroes are supplied", () => {
   const defaultState = HP_FIELD_CATALOG.createDefaultState();
   const profile = createProfile({ id: "first", name: "Global", values: defaultState });
 
   assert.deepEqual(profile.heroes, []);
-  assert.equal(profile.heroMode, "off");
+  assert.equal(profile.heroMode, "all");
   assert.deepEqual(profileToPreset(profile).heroes, []);
-  assert.equal(profileToPreset(profile).heroMode, "off");
+  assert.equal(profileToPreset(profile).heroMode, "all");
+});
+
+test("new profiles default to all heroes while explicit off remains off", () => {
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
+  const initial = createInitialProfile(defaultState);
+  const added = addProfile([initial], defaultState).profiles[1];
+  const importedOff = createProfile({ id: "off", name: "Imported off", values: defaultState, heroMode: "off" });
+
+  assert.equal(initial.heroMode, "all");
+  assert.equal(added.heroMode, "all");
+  assert.equal(importedOff.heroMode, "off");
 });
 
 test("createProfile accepts compact values and hero keys", () => {
@@ -222,4 +235,30 @@ test("profile blank names stay editable but preset export falls back", () => {
 
   assert.equal(profile.name, "");
   assert.equal(preset.name, "Web Builder Preset");
+});
+
+test("profile count is capped at the contract limit", () => {
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
+  const profiles = Array.from({ length: HP_PROFILE_LIMIT }, (_, index) => createProfile({
+    id: `profile-${index + 1}`,
+    name: `Profile ${index + 1}`,
+    values: defaultState
+  }));
+  const result = addProfile(profiles, defaultState);
+
+  assert.equal(result.profiles.length, HP_PROFILE_LIMIT);
+  assert.equal(result.limitReached, true);
+});
+
+test("storage security and quota failures are returned to the caller", () => {
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
+  const blockedRead = loadProfileState({ getItem() { throw new DOMException("Blocked", "SecurityError"); } }, defaultState);
+  assert.match(blockedRead.error, /could not be read: Blocked/);
+  assert.equal(blockedRead.profiles.length, 1);
+
+  const blockedWrite = saveProfileState({
+    setItem() { throw new DOMException("Quota full", "QuotaExceededError"); }
+  }, { profiles: [createInitialProfile(defaultState)], activeProfileId: "profile-1" });
+  assert.equal(blockedWrite.ok, false);
+  assert.match(blockedWrite.error, /could not be saved: Quota full/);
 });

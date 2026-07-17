@@ -1,65 +1,6 @@
-export const HP_SCHEMA = {
-  hp_enabled: { type: "toggle", label: "Enable enemy HP colors", category: "GENERAL|Core Behavior", defaultValue: true },
-  hp_bg_visible: { type: "toggle", label: "Show enemy HP background", category: "GENERAL|Core Behavior", defaultValue: true },
-  hp_mode: { type: "cycler", label: "Enemy color behavior", category: "GENERAL|Core Behavior", defaultValue: 1, options: ["Fixed", "Gradient"] },
-  hp_low_threshold: { type: "slider", label: "Low HP starts at %", category: "GENERAL|Core Behavior", defaultValue: 25, bounds: { min: 0, max: 100, step: 1 } },
-  hp_high_threshold: { type: "slider", label: "High HP starts at %", category: "GENERAL|Core Behavior", defaultValue: 65, bounds: { min: 0, max: 100, step: 1 } },
-  hp_team_colors: { type: "toggle", label: "Use team color at high HP", category: "GENERAL|Core Behavior", defaultValue: false },
-  hp_skip_buildings: { type: "toggle", label: "Ignore buildings and bosses", category: "GENERAL|Core Behavior", defaultValue: false },
-  hp_info_health_margin_top: { type: "slider", label: "HP container top offset", category: "GENERAL|Core Behavior", defaultValue: 23, bounds: { min: 0, max: 100, step: 1 } },
-  hp_healthbar_height: { type: "slider", label: "HP bar height", category: "GENERAL|Core Behavior", defaultValue: 130, bounds: { min: 0, max: 230, step: 1 } },
+import { HP_PRESET_SCHEMA } from "./contracts/hpColorsPresetContract.js";
 
-  hp_ult_color_enabled: { type: "toggle", label: "Color ult icon", category: "HEALTH BARS|Enemy Colors", defaultValue: true },
-  hp_ult_color_custom: { type: "colorpicker", label: "Ult icon custom color", category: "HEALTH BARS|Enemy Colors", defaultValue: "#E16161", visibleWhen: { id: "hp_ult_color_enabled", equals: false } },
-  hp_color_low: { type: "colorpicker", label: "Low HP bar color", category: "HEALTH BARS|Enemy Colors", defaultValue: "#E16161" },
-  hp_color_mid: { type: "colorpicker", label: "Mid HP bar color", category: "HEALTH BARS|Enemy Colors", defaultValue: "#FF7B00" },
-  hp_color_high: { type: "colorpicker", label: "High HP bar color", category: "HEALTH BARS|Enemy Colors", defaultValue: "#00FF00" },
-  hp_heal_color: { type: "colorpicker", label: "Healing bar color", category: "HEALTH BARS|Enemy Colors", defaultValue: "#5fff80" },
-  hp_delta_color: { type: "colorpicker", label: "Damage delta color", category: "HEALTH BARS|Enemy Colors", defaultValue: "#ffe55b" },
-  hp_bullet_shield_color: { type: "colorpicker", label: "Enemy bullet shield color", category: "HEALTH BARS|Enemy Colors", defaultValue: "#ffffff" },
-
-  hp_pulse_enabled: { type: "toggle", label: "Pulse at low HP", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: true },
-  hp_pulse_threshold: { type: "slider", label: "Pulse starts below %", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: 25, bounds: { min: 0, max: 100, step: 1 }, visibleWhen: { id: "hp_pulse_enabled", equals: true } },
-  hp_pulse_bpm: { type: "slider", label: "Pulse speed", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: 75, bounds: { min: 30, max: 300, step: 1 }, visibleWhen: { id: "hp_pulse_enabled", equals: true } },
-  hp_pulse_intensity: { type: "cycler", label: "Pulse strength", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: 1, options: ["Subtle", "Medium", "Intense"], visibleWhen: { id: "hp_pulse_enabled", equals: true } },
-  hp_pulse_hide_bar: { type: "toggle", label: "Hide bar while pulsing", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: false, visibleWhen: { id: "hp_pulse_enabled", equals: true } },
-  hp_pulse_color_enabled: { type: "toggle", label: "Use custom pulse color", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: false, visibleWhen: { id: "hp_pulse_enabled", equals: true } },
-  hp_pulse_color_mode: { type: "cycler", label: "Pulse color behavior", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: 0, options: ["Fixed", "Gradient"], visibleWhen: { id: "hp_pulse_color_enabled", equals: true } },
-  hp_pulse_color: { type: "colorpicker", label: "Pulse color", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: "#FF2222", visibleWhen: { id: "hp_pulse_color_enabled", equals: true } },
-  hp_pulse_text_enabled: { type: "toggle", label: "Pulse HP number", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: false, visibleWhen: { id: "hp_pulse_enabled", equals: true } },
-  hp_pulse_text_scale: { type: "slider", label: "Pulsing number size", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: 120, bounds: { min: 72, max: 320, step: 1 }, visibleWhen: { id: "hp_pulse_text_enabled", equals: true } },
-  hp_pulse_text_position: { type: "positionpicker", label: "Pulsing number position", category: "VISUAL EFFECTS|Low HP Pulse", defaultValue: "20,196", visibleWhen: { id: "hp_pulse_text_enabled", equals: true } },
-
-  hp_counter_visible: { type: "toggle", label: "Show HP number", category: "HEALTH BARS|Number Overlay", defaultValue: true },
-  hp_counter_size: { type: "slider", label: "HP number size", category: "HEALTH BARS|Number Overlay", defaultValue: 145, bounds: { min: 72, max: 320, step: 1 } },
-  hp_counter_position: { type: "positionpicker", label: "HP number position", category: "HEALTH BARS|Number Overlay", defaultValue: "27,20" },
-  hp_counter_format: { type: "cycler", label: "HP number format", category: "HEALTH BARS|Number Overlay", defaultValue: 0, options: ["HP", "%", "Current HP"] },
-  hp_text_color_mode: { type: "cycler", label: "HP number color source", category: "HEALTH BARS|Number Overlay", defaultValue: 0, options: ["Bar color", "Custom"] },
-  hp_level_number_visible: { type: "toggle", label: "Show level number", category: "HEALTH BARS|Number Overlay", defaultValue: true },
-  hp_pip_visible: { type: "toggle", label: "Show pip HP segments", category: "HEALTH BARS|Number Overlay", defaultValue: true },
-  hp_text_color_low: { type: "colorpicker", label: "Low HP number color", category: "HEALTH BARS|Number Overlay", defaultValue: "#E16161", visibleWhen: { id: "hp_text_color_mode", equals: 1 } },
-  hp_text_color_mid: { type: "colorpicker", label: "Mid HP number color", category: "HEALTH BARS|Number Overlay", defaultValue: "#FF7B00", visibleWhen: { id: "hp_text_color_mode", equals: 1 } },
-  hp_text_color_high: { type: "colorpicker", label: "High HP number color", category: "HEALTH BARS|Number Overlay", defaultValue: "#FFFFFF", visibleWhen: { id: "hp_text_color_mode", equals: 1 } },
-
-  hp_friend_enabled: { type: "toggle", label: "Color ally HP bars", category: "HEALTH BARS|Ally Colors", defaultValue: false },
-  hp_friend_color_low: { type: "colorpicker", label: "Ally low HP color", category: "HEALTH BARS|Ally Colors", defaultValue: "#E16161", visibleWhen: { id: "hp_friend_enabled", equals: true } },
-  hp_friend_color_mid: { type: "colorpicker", label: "Ally mid HP color", category: "HEALTH BARS|Ally Colors", defaultValue: "#FF7B00", visibleWhen: { id: "hp_friend_enabled", equals: true } },
-  hp_friend_color_high: { type: "colorpicker", label: "Ally high HP color", category: "HEALTH BARS|Ally Colors", defaultValue: "#00FF00", visibleWhen: { id: "hp_friend_enabled", equals: true } },
-  hp_friend_heal_color: { type: "colorpicker", label: "Ally healing bar color", category: "HEALTH BARS|Ally Colors", defaultValue: "#5fff80", visibleWhen: { id: "hp_friend_enabled", equals: true } },
-  hp_friend_delta_color: { type: "colorpicker", label: "Ally damage delta color", category: "HEALTH BARS|Ally Colors", defaultValue: "#504c47", visibleWhen: { id: "hp_friend_enabled", equals: true } },
-  hp_friend_bullet_shield_color: { type: "colorpicker", label: "Ally bullet shield color", category: "HEALTH BARS|Ally Colors", defaultValue: "#acca91", visibleWhen: { id: "hp_friend_enabled", equals: true } },
-  hp_friend_pulse_enabled: { type: "toggle", label: "Pulse ally bars", category: "HEALTH BARS|Ally Colors", defaultValue: false, visibleWhen: { id: "hp_friend_enabled", equals: true } },
-  hp_friend_pulse_threshold: { type: "slider", label: "Ally pulse starts below %", category: "HEALTH BARS|Ally Colors", defaultValue: 25, bounds: { min: 0, max: 100, step: 1 }, visibleWhen: { id: "hp_friend_pulse_enabled", equals: true } },
-  hp_friend_pulse_bpm: { type: "slider", label: "Ally pulse speed", category: "HEALTH BARS|Ally Colors", defaultValue: 75, bounds: { min: 30, max: 300, step: 1 }, visibleWhen: { id: "hp_friend_pulse_enabled", equals: true } },
-  hp_friend_pulse_intensity: { type: "cycler", label: "Ally pulse strength", category: "HEALTH BARS|Ally Colors", defaultValue: 1, options: ["Subtle", "Medium", "Intense"], visibleWhen: { id: "hp_friend_pulse_enabled", equals: true } },
-  hp_friend_pulse_color_enabled: { type: "toggle", label: "Use custom ally pulse color", category: "HEALTH BARS|Ally Colors", defaultValue: false, visibleWhen: { id: "hp_friend_pulse_enabled", equals: true } },
-  hp_friend_pulse_color: { type: "colorpicker", label: "Ally pulse color", category: "HEALTH BARS|Ally Colors", defaultValue: "#FF2222", visibleWhen: { id: "hp_friend_pulse_color_enabled", equals: true } },
-
-  hp_kill_zone_enabled: { type: "toggle", label: "Show kill marker", category: "VISUAL EFFECTS|Kill Marker", defaultValue: false },
-  hp_kill_zone_threshold: { type: "slider", label: "Marker position %", category: "VISUAL EFFECTS|Kill Marker", defaultValue: 25, bounds: { min: 5, max: 80, step: 1 }, visibleWhen: { id: "hp_kill_zone_enabled", equals: true } },
-  hp_kill_zone_color: { type: "colorpicker", label: "Marker color", category: "VISUAL EFFECTS|Kill Marker", defaultValue: "#FF2222", visibleWhen: { id: "hp_kill_zone_enabled", equals: true } },
-  hp_kill_zone_width: { type: "slider", label: "Marker width", category: "VISUAL EFFECTS|Kill Marker", defaultValue: 3, bounds: { min: 1, max: 100, step: 1 }, visibleWhen: { id: "hp_kill_zone_enabled", equals: true } }
-};
+export const HP_SCHEMA = HP_PRESET_SCHEMA;
 
 function canonicalHexColor(value) {
   if (typeof value !== "string") return "";

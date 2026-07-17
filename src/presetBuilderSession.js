@@ -9,13 +9,13 @@ import {
   normalizeHeroScopeMode
 } from "./hpHeroData.js";
 import { DEFAULT_HP_COLORS_MOD_VARIANT, HP_COLORS_MOD_VARIANTS } from "./hpModVariants.js";
-import { buildPresetVpkFileName } from "./presetVpkFileName.js";
 import {
   addProfile,
   cleanProfileName,
   createInitialProfile,
   createProfile,
   FIRST_PROFILE_ID,
+  HP_PROFILE_LIMIT,
   loadProfileState,
   profileToPreset,
   removeProfile,
@@ -100,6 +100,10 @@ export function createPresetBuilderSession(defaultState) {
   return {
     importText: "",
     status: "Status: Ready",
+    feedback: null,
+    busy: false,
+    busyOperation: null,
+    buildResult: null,
     profiles: [createInitialProfile(defaultState)],
     activeProfileId: FIRST_PROFILE_ID,
     profilesLoaded: false,
@@ -124,6 +128,7 @@ export function createPresetBuilderSession(defaultState) {
 export function loadPresetBuilderSession(storage, defaultState) {
   const profileState = loadProfileState(storage, defaultState);
   const targetModeState = loadTargetModeState(storage, { profileStorageKey: PROFILE_STORAGE_KEY });
+  const storageError = profileState.error || targetModeState.error || null;
   return {
     ...createPresetBuilderSession(defaultState),
     profiles: profileState.profiles,
@@ -133,7 +138,9 @@ export function loadPresetBuilderSession(storage, defaultState) {
     targetModeLoaded: true,
     modePickerOpen: targetModeState.shouldShowPicker,
     modePickerRequired: targetModeState.shouldShowPicker,
-    modePickerUpgrade: targetModeState.isUpgradePrompt
+    modePickerUpgrade: targetModeState.isUpgradePrompt,
+    feedback: storageError ? { type: "error", message: storageError } : null,
+    status: storageError ? `Status: ${storageError}` : "Status: Ready"
   };
 }
 
@@ -156,6 +163,15 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
   const buildProfilePresets = profiles.map(profileToPreset);
   const targetModeDetails = getTargetModeDetails(session.targetMode);
   const topPresetName = cleanProfileName(profiles[0]?.name, 0);
+  const profileScopeCounts = profiles.reduce((counts, profile) => {
+    const mode = normalizeHeroScopeMode(profile.heroMode || profile.hm, profile.heroes || profile.hs);
+    counts[mode] = (counts[mode] || 0) + 1;
+    return counts;
+  }, { all: 0, selected: 0, off: 0 });
+  const changedSettingCount = profiles.reduce(
+    (total, profile) => total + HP_FIELD_CATALOG.countOverrides(profile.values, defaultState),
+    0
+  );
 
   return {
     activeProfile,
@@ -172,12 +188,17 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
     visibleFields,
     visibleCount: visibleFields.length,
     activeOverrideCount: HP_FIELD_CATALOG.countOverrides(state, defaultState),
+    changedSettingCount,
+    profileScopeCounts,
+    allProfilesOff: profiles.length > 0 && profileScopeCounts.off === profiles.length,
+    profileLimit: HP_PROFILE_LIMIT,
     targetModeDetails,
     fullTargetMode: isFullTargetMode(session.targetMode),
     buildProfilePresets,
     preview: session.previewOpen ? JSON.stringify({ targetMode: session.targetMode, presets: buildProfilePresets }, null, 2) : "",
-    canConfirmBuildVariant: canConfirmBuild({ installValidated: session.installValidated, buildVariant: session.targetMode }),
-    presetVpkFileName: buildPresetVpkFileName(presetName || DEFAULT_PRESET_NAME),
+    canConfirmBuildVariant: !session.busy && canConfirmBuild({ installValidated: session.installValidated, buildVariant: session.targetMode }),
+    presetVpkFileName: "pak96_dir.vpk",
+    installDirectory: "Deadlock/game/citadel/addons",
     topPresetName,
     buildVariantWarning: getBuildVariantWarning({
       buildVariant: session.targetMode,
@@ -189,6 +210,92 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
 
 export function reducePresetBuilderSession(session, intent, context = {}) {
   switch (intent?.type) {
+    case "TOGGLE_PROFILE_MENU":
+      return { ...session, profileMenuOpen: !session.profileMenuOpen, heroMenuOpen: false };
+    case "TOGGLE_HERO_MENU":
+      return { ...session, heroMenuOpen: !session.heroMenuOpen, profileMenuOpen: false };
+    case "CLOSE_MENUS":
+      return { ...session, profileMenuOpen: false, heroMenuOpen: false };
+    case "CLOSE_TARGET_MODE_PICKER":
+      return { ...session, modePickerOpen: false };
+    case "SET_FEEDBACK":
+      return { ...session, feedback: intent.feedback || null };
+    case "CLEAR_FEEDBACK":
+      return { ...session, feedback: null };
+    case "OPERATION_STARTED":
+      if (session.busy) return session;
+      return { ...session, busy: true, busyOperation: intent.operation || "operation", feedback: null };
+    case "OPERATION_SUCCEEDED":
+      return {
+        ...session,
+        busy: false,
+        busyOperation: null,
+        feedback: intent.message ? { type: "success", message: intent.message } : session.feedback
+      };
+    case "OPERATION_FAILED":
+      return {
+        ...session,
+        busy: false,
+        busyOperation: null,
+        feedback: { type: "error", message: intent.message || "The operation failed." },
+        status: intent.message ? `Status: ${intent.message}` : session.status
+      };
+    case "BUILD_STARTED":
+      if (session.busy) return session;
+      return {
+        ...session,
+        busy: true,
+        busyOperation: "build",
+        buildResult: null,
+        feedback: null,
+        warningOpen: false,
+        status: "Status: Building preset VPK…"
+      };
+    case "CONVERT_STARTED":
+      return {
+        ...session,
+        busy: true,
+        busyOperation: "convert",
+        feedback: null
+      };
+    case "CONVERT_SUCCEEDED":
+      return {
+        ...session,
+        busy: false,
+        busyOperation: null,
+        feedback: { type: "success", message: `Converted ${intent.result?.filename || "preset VPK"}.` },
+        convertStatus: `Converted ${intent.result?.filename || "preset VPK"}.`
+      };
+    case "CONVERT_FAILED": {
+      const message = intent.message || "The preset VPK could not be converted.";
+      return {
+        ...session,
+        busy: false,
+        busyOperation: null,
+        feedback: { type: "error", message },
+        convertStatus: message
+      };
+    }
+    case "BUILD_SUCCEEDED":
+      return {
+        ...session,
+        busy: false,
+        busyOperation: null,
+        buildResult: intent.result || null,
+        feedback: { type: "success", message: `Built ${intent.result?.filename || "preset VPK"}.` },
+        status: `Status: Built ${intent.result?.filename || "preset VPK"}.`
+      };
+    case "BUILD_FAILED": {
+      const message = intent.message || intent.error?.message || "The preset VPK could not be built.";
+      return {
+        ...session,
+        busy: false,
+        busyOperation: null,
+        buildResult: null,
+        feedback: { type: "error", message },
+        status: `Status: ${message}`
+      };
+    }
     case "SET_IMPORT_TEXT":
       return { ...session, importText: intent.text };
     case "SET_STATUS":
@@ -204,6 +311,7 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
     case "SET_CONVERT_OPEN":
       return { ...session, convertOpen: Boolean(intent.open) };
     case "OPEN_BUILD_WARNING":
+      if (session.busy) return session;
       return { ...session, installValidated: false, warningOpen: true };
     case "CLOSE_BUILD_WARNING":
       return { ...session, warningOpen: false };
@@ -259,6 +367,13 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
       return updateActiveProfile(session, { heroMode: HP_HERO_SCOPE_OFF, heroes: [] });
     case "ADD_PROFILE": {
       const next = addProfile(session.profiles, intent.defaultState || context.defaultState || {});
+      if (next.limitReached) {
+        return {
+          ...session,
+          feedback: { type: "error", message: `Profile limit reached (${HP_PROFILE_LIMIT}).` },
+          status: `Profile limit reached (${HP_PROFILE_LIMIT}).`
+        };
+      }
       const added = next.profiles[next.profiles.length - 1];
       return {
         ...session,
@@ -283,6 +398,8 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
       return { ...session, activeProfileId: intent.profileId, profileMenuOpen: false };
     case "SET_DRAG_INDEX":
       return { ...session, dragIndex: intent.dragIndex };
+    case "NAVIGATE_PROFILE":
+      return { ...session, activeProfileId: intent.profileId, profileMenuOpen: true };
     case "DROP_PROFILE":
       return {
         ...session,
@@ -290,6 +407,18 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
         dragIndex: null,
         status: "Reordered profiles. First profile has highest load priority."
       };
+    case "MOVE_PROFILE": {
+      const profiles = Array.isArray(session.profiles) ? session.profiles : [];
+      const fromIndex = profiles.findIndex((profile) => profile.id === (intent.profileId || session.activeProfileId));
+      const toIndex = intent.toIndex ?? (fromIndex + Number(intent.direction || 0));
+      const reordered = reorderProfiles(profiles, fromIndex, toIndex);
+      if (reordered === profiles) return session;
+      return {
+        ...session,
+        profiles: reordered,
+        status: "Reordered profiles. First profile has highest load priority."
+      };
+    }
     case "RESET_FIELDS": {
       const fieldIds = Array.isArray(intent.fieldIds) ? intent.fieldIds : [];
       const defaultState = intent.defaultState || context.defaultState || {};
@@ -306,6 +435,7 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
       if (importedProfiles.length === 1) {
         const imported = importedProfiles[0];
         const selected = selectPresetBuilderSession(session, context.defaultState || {}, context.groups || [], context.activeKey);
+        const message = `Imported ${cleanProfileName(imported.name, selected.activeProfileIndex)}.`;
         return {
           ...updateActiveProfile(session, {
             name: imported.name,
@@ -313,31 +443,58 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
             heroMode: imported.heroMode,
             heroes: imported.heroes
           }),
-          status: `Imported ${cleanProfileName(imported.name, selected.activeProfileIndex)}.`
+          busy: false,
+          busyOperation: null,
+          feedback: { type: "success", message },
+          status: message
         };
       }
       if (importedProfiles.length > 1) {
         const profiles = Array.isArray(session.profiles) ? session.profiles : [];
+        const available = Math.max(0, HP_PROFILE_LIMIT - profiles.length);
+        const acceptedProfiles = importedProfiles.slice(0, available);
+        if (!acceptedProfiles.length) {
+          return {
+            ...session,
+            busy: false,
+            busyOperation: null,
+            feedback: { type: "error", message: `Profile limit reached (${HP_PROFILE_LIMIT}).` },
+            status: `Profile limit reached (${HP_PROFILE_LIMIT}).`
+          };
+        }
         const usedIds = new Set(profiles.map((profile) => String(profile.id || "")));
-        const appendedProfiles = importedProfiles.map((profile, index) => createProfile({
+        const appendedProfiles = acceptedProfiles.map((profile, index) => createProfile({
           id: nextImportedProfileId(usedIds),
           name: cleanProfileName(profile.name, profiles.length + index),
           values: profile.values,
           heroMode: profile.heroMode,
           heroes: profile.heroes
         }));
+        const truncated = appendedProfiles.length < importedProfiles.length;
+        const message = truncated
+          ? `Imported ${appendedProfiles.length}; profile limit is ${HP_PROFILE_LIMIT}.`
+          : `Imported ${appendedProfiles.length} profiles from preset codes.`;
         return {
           ...session,
+          busy: false,
+          busyOperation: null,
           profiles: [...profiles, ...appendedProfiles],
           activeProfileId: appendedProfiles[0].id,
           profileMenuOpen: true,
-          status: `Imported ${appendedProfiles.length} profiles from preset codes.`
+          feedback: { type: truncated ? "error" : "success", message },
+          status: message
         };
       }
-      return session;
+      return { ...session, busy: false, busyOperation: null };
     }
     case "IMPORT_FAILED":
-      return { ...session, status: intent.message };
+      return {
+        ...session,
+        busy: false,
+        busyOperation: null,
+        feedback: { type: "error", message: intent.message },
+        status: intent.message
+      };
     default:
       return session;
   }

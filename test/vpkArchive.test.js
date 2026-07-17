@@ -89,3 +89,33 @@ test("readVpkArchive rejects invalid magic and unsupported version", () => {
   new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).setUint32(4, 3, true);
   assert.throws(() => readVpkArchive(bytes), /Unsupported VPK version/);
 });
+
+test("VPK output is deterministic regardless of input file order", () => {
+  const files = [
+    { path: "z/data.txt", bytes: new Uint8Array([3]) },
+    { path: "a/data.txt", bytes: new Uint8Array([1]) },
+    { path: "m/data.txt", bytes: new Uint8Array([2]) }
+  ];
+  assert.deepEqual(
+    Array.from(writeVpkArchive(createVpkArchive(files))),
+    Array.from(writeVpkArchive(createVpkArchive([...files].reverse())))
+  );
+});
+
+test("VPK reader rejects CRC corruption, trailing bytes, and duplicate paths", () => {
+  const bytes = writeVpkArchive({ files: [{ path: "demo.txt", bytes: new Uint8Array([1, 2, 3]) }] });
+  const corrupt = bytes.slice();
+  corrupt[corrupt.length - 1] ^= 0xff;
+  assert.throws(() => readVpkArchive(corrupt), /CRC mismatch/);
+  assert.throws(() => readVpkArchive(new Uint8Array([...bytes, 0])), /bounds/);
+  assert.throws(() => createVpkArchive([
+    { path: "demo.txt", bytes: new Uint8Array([1]) },
+    { path: "DEMO.TXT", bytes: new Uint8Array([2]) }
+  ]), /Duplicate VPK path/);
+});
+
+test("VPK writer rejects non-canonical paths", () => {
+  assert.throws(() => createVpkArchive([{ path: "../demo.txt", bytes: new Uint8Array([1]) }]), /Invalid VPK path/);
+  assert.throws(() => createVpkArchive([{ path: "/demo.txt", bytes: new Uint8Array([1]) }]), /Invalid VPK path/);
+  assert.throws(() => createVpkArchive([{ path: "demo\\demo.txt", bytes: new Uint8Array([1]) }]), /Invalid VPK path/);
+});

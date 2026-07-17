@@ -3,6 +3,8 @@ _astro/
 dist/
 node_modules/
 .playwright-cli/
+test-results/
+playwright-report/
 .tools/
 .tmp-vpk-*/
 /index.html

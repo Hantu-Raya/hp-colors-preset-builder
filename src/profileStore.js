@@ -4,10 +4,12 @@ import {
   defaultHpPresetName,
   normalizeHpPresetPayload
 } from "./hpPresetPayload.js";
+import { HP_HERO_SCOPE_ALL } from "./hpHeroData.js";
 
 export const STORAGE_KEY = "hp_colors_preset_builder_profiles_v1";
 export const DEFAULT_PRESET_NAME = DEFAULT_HP_PRESET_NAME;
 export const FIRST_PROFILE_ID = "profile-1";
+export const HP_PROFILE_LIMIT = 32;
 
 function defaultProfileName(index) {
   return defaultHpPresetName(index);
@@ -30,11 +32,13 @@ export function createProfile(input = {}) {
     hm
   } = input || {};
   const has = (key) => Object.prototype.hasOwnProperty.call(input || {}, key);
+  const rawHeroes = has("hs") ? hs : heroes;
+  const inferredHeroMode = Array.isArray(rawHeroes) && rawHeroes.length ? null : HP_HERO_SCOPE_ALL;
   const normalized = normalizeHpPresetPayload({
     name: has("n") ? n : name,
     values: has("vs") ? vs : values,
-    heroMode: has("hm") ? hm : heroMode,
-    heroes: has("hs") ? hs : heroes
+    heroMode: has("hm") || has("heroMode") ? (has("hm") ? hm : heroMode) : inferredHeroMode,
+    heroes: rawHeroes
   }, { preserveBlankName: true });
 
   return {
@@ -47,7 +51,12 @@ export function createProfile(input = {}) {
 }
 
 export function createInitialProfile(defaultState) {
-  return createProfile({ id: FIRST_PROFILE_ID, name: DEFAULT_PRESET_NAME, values: defaultState });
+  return createProfile({
+    id: FIRST_PROFILE_ID,
+    name: DEFAULT_PRESET_NAME,
+    values: defaultState,
+    heroMode: HP_HERO_SCOPE_ALL
+  });
 }
 
 function nextProfileId(profiles) {
@@ -62,7 +71,7 @@ function nextProfileId(profiles) {
 function normalizeProfiles(rawProfiles, defaultState) {
   if (!Array.isArray(rawProfiles) || rawProfiles.length === 0) return [createInitialProfile(defaultState)];
   const usedIds = new Set();
-  return rawProfiles.map((rawProfile, index) => {
+  return rawProfiles.slice(0, HP_PROFILE_LIMIT).map((rawProfile, index) => {
     const rawId = String(rawProfile?.id || "").trim();
     const id = rawId && !usedIds.has(rawId) ? rawId : `profile-${index + 1}`;
     usedIds.add(id);
@@ -70,7 +79,7 @@ function normalizeProfiles(rawProfiles, defaultState) {
       id,
       name: cleanProfileName(rawProfile?.name, index),
       values: rawProfile?.values || rawProfile?.vs || defaultState,
-      heroMode: rawProfile?.heroMode || rawProfile?.hm,
+      heroMode: rawProfile?.heroMode ?? rawProfile?.hm ?? HP_HERO_SCOPE_ALL,
       heroes: rawProfile?.heroes || rawProfile?.hs || []
     });
   });
@@ -81,50 +90,66 @@ export function loadProfileState(storage, defaultState) {
     const raw = storage?.getItem?.(STORAGE_KEY);
     if (!raw) {
       const profiles = [createInitialProfile(defaultState)];
-      return { profiles, activeProfileId: profiles[0].id };
+      return { profiles, activeProfileId: profiles[0].id, error: null };
     }
     const parsed = JSON.parse(raw);
     const profiles = normalizeProfiles(parsed?.profiles, defaultState);
     const activeProfileId = profiles.some((profile) => profile.id === parsed?.activeProfileId)
       ? parsed.activeProfileId
       : profiles[0].id;
-    return { profiles, activeProfileId };
-  } catch {
+    return { profiles, activeProfileId, error: null };
+  } catch (error) {
     const profiles = [createInitialProfile(defaultState)];
-    return { profiles, activeProfileId: profiles[0].id };
+    return {
+      profiles,
+      activeProfileId: profiles[0].id,
+      error: `Saved profiles could not be read: ${error instanceof Error ? error.message : String(error)}`
+    };
   }
 }
 
 export function saveProfileState(storage, state) {
-  if (!storage?.setItem) return;
+  if (!storage?.setItem) return { ok: true, error: null };
   const profiles = Array.isArray(state?.profiles) && state.profiles.length
-    ? state.profiles
+    ? state.profiles.slice(0, HP_PROFILE_LIMIT)
     : [createInitialProfile({})];
   const activeProfileId = profiles.some((profile) => profile.id === state?.activeProfileId)
     ? state.activeProfileId
     : profiles[0].id;
-  storage.setItem(STORAGE_KEY, JSON.stringify({
-    version: 1,
-    activeProfileId,
-    profiles: profiles.map((profile, index) => {
-      const normalized = normalizeHpPresetPayload(profile, { index });
-      return {
-        id: String(profile.id || `profile-${index + 1}`),
-        name: normalized.name,
-        values: normalized.values,
-        heroMode: normalized.heroMode,
-        heroes: normalized.heroes
-      };
-    })
-  }));
+  try {
+    storage.setItem(STORAGE_KEY, JSON.stringify({
+      version: 1,
+      activeProfileId,
+      profiles: profiles.map((profile, index) => {
+        const normalized = normalizeHpPresetPayload(profile, { index });
+        return {
+          id: String(profile.id || `profile-${index + 1}`),
+          name: normalized.name,
+          values: normalized.values,
+          heroMode: normalized.heroMode,
+          heroes: normalized.heroes
+        };
+      })
+    }));
+    return { ok: true, error: null };
+  } catch (error) {
+    return {
+      ok: false,
+      error: `Profiles could not be saved: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
 }
 
 export function addProfile(profiles, defaultState) {
   const current = normalizeProfiles(profiles, defaultState);
+  if (current.length >= HP_PROFILE_LIMIT) {
+    return { profiles: current, activeProfileId: current[0]?.id, limitReached: true };
+  }
   const profile = createProfile({
     id: nextProfileId(current),
     name: defaultProfileName(current.length),
-    values: defaultState
+    values: defaultState,
+    heroMode: HP_HERO_SCOPE_ALL
   });
   return { profiles: [...current, profile], activeProfileId: profile.id };
 }

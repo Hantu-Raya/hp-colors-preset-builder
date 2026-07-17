@@ -42,25 +42,42 @@ function readSavedTargetMode(storage) {
 }
 
 export function loadTargetModeState(storage, { profileStorageKey = null } = {}) {
-  const saved = readSavedTargetMode(storage);
-  if (saved === HP_COLORS_MOD_VARIANTS.FULL || saved === HP_COLORS_MOD_VARIANTS.MINIMAL) {
+  try {
+    const saved = readSavedTargetMode(storage);
+    if (saved === HP_COLORS_MOD_VARIANTS.FULL || saved === HP_COLORS_MOD_VARIANTS.MINIMAL) {
+      return {
+        targetMode: saved,
+        shouldShowPicker: false,
+        isUpgradePrompt: false
+      };
+    }
+
     return {
-      targetMode: saved,
-      shouldShowPicker: false,
-      isUpgradePrompt: false
+      targetMode: DEFAULT_HP_COLORS_MOD_VARIANT,
+      shouldShowPicker: true,
+      isUpgradePrompt: Boolean(profileStorageKey && storage?.getItem?.(profileStorageKey))
+    };
+  } catch (error) {
+    return {
+      targetMode: DEFAULT_HP_COLORS_MOD_VARIANT,
+      shouldShowPicker: true,
+      isUpgradePrompt: false,
+      error: `Preset target could not be read: ${error instanceof Error ? error.message : String(error)}`
     };
   }
-
-  return {
-    targetMode: DEFAULT_HP_COLORS_MOD_VARIANT,
-    shouldShowPicker: true,
-    isUpgradePrompt: Boolean(profileStorageKey && storage?.getItem?.(profileStorageKey))
-  };
 }
 
 export function saveTargetModeState(storage, targetMode) {
-  if (!storage?.setItem) return;
-  storage.setItem(TARGET_MODE_STORAGE_KEY, normalizeTargetMode(targetMode));
+  if (!storage?.setItem) return { ok: true, error: null };
+  try {
+    storage.setItem(TARGET_MODE_STORAGE_KEY, normalizeTargetMode(targetMode));
+    return { ok: true, error: null };
+  } catch (error) {
+    return {
+      ok: false,
+      error: `Preset target could not be saved: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
 }
 
 export function getTargetModeDetails(targetMode) {
