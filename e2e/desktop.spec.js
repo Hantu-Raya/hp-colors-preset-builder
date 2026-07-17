@@ -143,12 +143,14 @@ test.describe('desktop builder workflow', () => {
     await openBuilder(page);
     await chooseMinimalTarget(page);
     await page.getByRole('option', { name: /^Number Overlay/ }).click();
-    const precisePipsToggle = page.getByRole('switch', { name: 'More Precise HP Pips' });
+    await expect(page.getByRole('button', { name: 'Configure' })).toHaveCount(0);
+    await expect(page.getByText('Stored in this Minimal preset.')).toBeVisible();
+    const precisePipsToggle = page.getByRole('checkbox', { name: 'More Precise HP Pips' });
     await expect(precisePipsToggle).not.toBeChecked();
-    await expect(precisePipsToggle).toHaveText('Game default');
+    await expect(precisePipsToggle).toHaveText('Off');
     await precisePipsToggle.click();
     await expect(precisePipsToggle).toBeChecked();
-    await expect(precisePipsToggle).toHaveText('More precise');
+    await expect(precisePipsToggle).toHaveText('On');
 
     await page.getByRole('button', { name: 'Build VPK' }).click();
     const warning = page.getByRole('dialog', { name: /Confirm Minimal preset VPK/ });

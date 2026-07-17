@@ -64,6 +64,12 @@ const RESET_PIPS_COMMAND = [
   '"citadel_unit_status_health_per_pip" "100"',
   '"citadel_unit_status_minor_pip_per_major_pip" "5"'
 ].join('\n');
+const PRECISE_PIPS_FIELD = Object.freeze({
+  id: 'hp_precise_pips_enabled',
+  label: 'More Precise HP Pips',
+  type: 'toggle',
+  defaultValue: false
+});
 
 
 
@@ -803,32 +809,29 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                   />
                 ))}
                 {showPrecisePipsControl ? (
-                  <div className="schema-field-row precise-pips-row">
-                    <div className="schema-field-meta">
-                      <span id="precise-pips-label" className="schema-field-label">More Precise HP Pips</span>
-                      <span className="precise-pips-field-hint">
-                        {fullTargetMode ? 'Requires game convars; not stored in the Full preset VPK.' : 'Stored in this Minimal preset.'}
-                      </span>
-                    </div>
-                    <div className="schema-field-control precise-pips-field-control">
-                      {fullTargetMode ? (
+                  fullTargetMode ? (
+                    <div className="schema-field-row precise-pips-row">
+                      <div className="schema-field-meta">
+                        <span id="precise-pips-label" className="schema-field-label">More Precise HP Pips</span>
+                        <span className="precise-pips-field-hint">Requires game convars; not stored in the Full preset VPK.</span>
+                      </div>
+                      <div className="schema-field-control precise-pips-field-control">
                         <button type="button" className="secondary-action precise-pips-open" onClick={() => setPrecisePipsOpen(true)}>
                           Configure
                         </button>
-                      ) : (
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={Boolean(state.hp_precise_pips_enabled)}
-                          aria-labelledby="precise-pips-label"
-                          className="secondary-action precise-pips-open"
-                          onClick={() => updateField('hp_precise_pips_enabled', !state.hp_precise_pips_enabled)}
-                        >
-                          {state.hp_precise_pips_enabled ? 'More precise' : 'Game default'}
-                        </button>
-                      )}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="precise-pips-row">
+                      <SchemaField
+                        field={PRECISE_PIPS_FIELD}
+                        value={state.hp_precise_pips_enabled}
+                        onChange={updateField}
+                        showConditionButton={false}
+                      />
+                      <span className="precise-pips-field-hint">Stored in this Minimal preset.</span>
+                    </div>
+                  )
                 ) : null}
                 {visibleFields.length === 0 && !showPrecisePipsControl ? (
                   <div className="empty-panel">

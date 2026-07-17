@@ -47,17 +47,22 @@ test("toggle text and responsive sticky navigation remain explicit", async () =>
 });
 
 test("full target exposes precise pips convars while minimal uses a direct preset toggle", async () => {
-  const source = await readFile(islandPath, "utf8");
+  const [source, field] = await Promise.all([readFile(islandPath, "utf8"), readFile(fieldPath, "utf8")]);
   assert.match(source, /More Precise HP Pips/);
+  assert.match(source, /Stored in this Minimal preset/);
+  assert.match(source, /Requires game convars; not stored in the Full preset VPK/);
   assert.match(source, /HP Colors cannot apply or verify these game settings/);
   assert.match(source, /citadel_unit_status_health_per_minor_pip/);
   assert.match(source, /copyText\(command\)/);
   assert.match(source, /currentGroup\?\.name === 'Number Overlay'/);
-  assert.match(source, /role="switch"/);
-  assert.match(source, /aria-checked=\{Boolean\(state\.hp_precise_pips_enabled\)\}/);
-  assert.match(source, /updateField\('hp_precise_pips_enabled', !state\.hp_precise_pips_enabled\)/);
+  assert.match(source, /id: 'hp_precise_pips_enabled'[\s\S]*type: 'toggle'/);
+  assert.match(source, /field=\{PRECISE_PIPS_FIELD\}/);
+  assert.match(source, /value=\{state\.hp_precise_pips_enabled\}/);
+  assert.match(source, /onChange=\{updateField\}/);
+  assert.match(source, /showConditionButton=\{false\}/);
+  assert.doesNotMatch(source, /role="switch"[\s\S]{0,240}hp_precise_pips_enabled/);
+  assert.match(field, /role="checkbox"/);
   assert.doesNotMatch(source, /persistMode/);
-  assert.match(source, /showConditionButton\s*\/>/);
   assert.match(source, /createProfileCode\(activeProfile, activeProfileIndex, session\.targetMode\)/);
   assert.match(source, /createAllProfileCodes\(profiles, session\.targetMode\)/);
   assert.match(source, /createProfilesJsonExport\(profiles, session\.targetMode\)/);
