@@ -58,10 +58,14 @@ test("full target exposes precise pips convars while minimal uses a direct prese
   assert.match(source, /id: 'hp_precise_pips_enabled'[\s\S]*type: 'toggle'/);
   assert.match(source, /field=\{PRECISE_PIPS_FIELD\}/);
   assert.match(source, /value=\{state\.hp_precise_pips_enabled\}/);
-  assert.match(source, /onChange=\{updateField\}/);
+  assert.match(source, /onChange=\{handleMinimalPrecisePipsChange\}/);
   assert.match(source, /showConditionButton=\{false\}/);
   assert.doesNotMatch(source, /role="switch"[\s\S]{0,240}hp_precise_pips_enabled/);
   assert.match(field, /role="checkbox"/);
+  assert.match(source, /function PrecisePipsDialog\(\{ initialMode = 'precise', onModeChange = null, onClose \}\)/);
+  assert.match(source, /onModeChange\?\.\(nextMode\)/);
+  assert.match(source, /setPrecisePipsDialogMode\(value \? 'precise' : 'default'\)/);
+  assert.match(source, /mode === 'precise'/);
   assert.doesNotMatch(source, /persistMode/);
   assert.match(source, /createProfileCode\(activeProfile, activeProfileIndex, session\.targetMode\)/);
   assert.match(source, /createAllProfileCodes\(profiles, session\.targetMode\)/);

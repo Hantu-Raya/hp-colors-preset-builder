@@ -152,6 +152,24 @@ test.describe('desktop builder workflow', () => {
     await expect(precisePipsToggle).toBeChecked();
     await expect(precisePipsToggle).toHaveText('On');
 
+    const precisePipsDialog = page.getByRole('dialog', { name: 'More Precise HP Pips' });
+    await expect(precisePipsDialog).toContainText('HP Colors cannot apply or verify these game settings');
+    await expect(precisePipsDialog.locator('code')).toHaveText([
+      '"citadel_unit_status_health_per_minor_pip" "10"',
+      '"citadel_unit_status_health_per_pip" "10"',
+      '"citadel_unit_status_minor_pip_per_major_pip" "10"'
+    ].join('\n'));
+
+    await precisePipsDialog.getByRole('radio', { name: 'Game default' }).click();
+    await expect(precisePipsToggle).not.toBeChecked();
+    await expect(precisePipsToggle).toHaveText('Off');
+    await expect(precisePipsDialog.locator('code')).toHaveText([
+      '"citadel_unit_status_health_per_minor_pip" "100"',
+      '"citadel_unit_status_health_per_pip" "100"',
+      '"citadel_unit_status_minor_pip_per_major_pip" "5"'
+    ].join('\n'));
+    await precisePipsDialog.getByRole('button', { name: 'Close', exact: true }).click();
+
     await page.getByRole('button', { name: 'Build VPK' }).click();
     const warning = page.getByRole('dialog', { name: /Confirm Minimal preset VPK/ });
     await warning.getByRole('button', { name: 'I installed the selected base mod' }).click();
@@ -165,7 +183,7 @@ test.describe('desktop builder workflow', () => {
     const xml = extractSource2Resource({ bytes: archive.files[0].bytes, codec: HP_COLORS_PACKAGE_ARTIFACTS.baseHud.codec });
     const decodedPresets = validatePresetStoreXml(xml);
     expect(decodedPresets).toHaveLength(1);
-    expect(decodedPresets[0].values.hp_precise_pips_enabled).toBe(true);
+    expect(decodedPresets[0].values.hp_precise_pips_enabled).toBe(false);
     await expect(page.locator('.build-result-card')).toContainText('pak96_dir.vpk');
 
     await page.getByRole('button', { name: 'Convert VPK' }).click();

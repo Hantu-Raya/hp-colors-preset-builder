@@ -227,8 +227,8 @@ function SignatureConditionDialog({ field, baseValue, rule, onClose, onSave }) {
   );
 }
 
-function PrecisePipsDialog({ onClose }) {
-  const [mode, setMode] = useState('precise');
+function PrecisePipsDialog({ initialMode = 'precise', onModeChange = null, onClose }) {
+  const [mode, setMode] = useState(initialMode);
   const [copyState, setCopyState] = useState('ready');
   const dialogRef = useDialogA11y(true, onClose);
   const precise = mode === 'precise';
@@ -246,6 +246,7 @@ function PrecisePipsDialog({ onClose }) {
   function chooseMode(nextMode) {
     setMode(nextMode);
     setCopyState('ready');
+    onModeChange?.(nextMode);
   }
 
   return (
@@ -356,6 +357,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const heroOptionRefs = useRef([]);
   const operationLockRef = useRef(false);
   const [precisePipsOpen, setPrecisePipsOpen] = useState(false);
+  const [precisePipsDialogMode, setPrecisePipsDialogMode] = useState('precise');
 
   const loadBaseHudXml = useMemo(
     () => createBaseHudXmlLoader({ baseUrl: import.meta.env.BASE_URL }),
@@ -463,6 +465,12 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
   function updateField(id, value) {
     dispatchSessionIntent({ type: 'UPDATE_FIELD', id, value });
+  }
+
+  function handleMinimalPrecisePipsChange(id, value) {
+    updateField(id, value);
+    setPrecisePipsDialogMode(value ? 'precise' : 'default');
+    setPrecisePipsOpen(true);
   }
 
   function renameActiveProfile(name) {
@@ -816,7 +824,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                         <span className="precise-pips-field-hint">Requires game convars; not stored in the Full preset VPK.</span>
                       </div>
                       <div className="schema-field-control precise-pips-field-control">
-                        <button type="button" className="secondary-action precise-pips-open" onClick={() => setPrecisePipsOpen(true)}>
+                        <button
+                          type="button"
+                          className="secondary-action precise-pips-open"
+                          onClick={() => {
+                            setPrecisePipsDialogMode('precise');
+                            setPrecisePipsOpen(true);
+                          }}
+                        >
                           Configure
                         </button>
                       </div>
@@ -826,7 +841,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                       <SchemaField
                         field={PRECISE_PIPS_FIELD}
                         value={state.hp_precise_pips_enabled}
-                        onChange={updateField}
+                        onChange={handleMinimalPrecisePipsChange}
                         showConditionButton={false}
                       />
                       <span className="precise-pips-field-hint">Stored in this Minimal preset.</span>
@@ -967,8 +982,12 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
           onSave={saveSignatureCondition}
         />
       ) : null}
-      {precisePipsOpen && fullTargetMode ? (
+      {precisePipsOpen ? (
         <PrecisePipsDialog
+          initialMode={precisePipsDialogMode}
+          onModeChange={fullTargetMode
+            ? null
+            : (mode) => updateField(PRECISE_PIPS_FIELD.id, mode === 'precise')}
           onClose={() => setPrecisePipsOpen(false)}
         />
       ) : null}
