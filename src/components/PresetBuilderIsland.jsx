@@ -1,3 +1,4 @@
+import { Fragment } from 'preact';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   AlertTriangle,
@@ -806,48 +807,49 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             <div className="detail-scroll">
               <div className="schema-field-list">
                 {visibleFields.map((field) => (
-                  <SchemaField
-                    key={field.id}
-                    field={field}
-                    value={state[field.id]}
-                    onChange={updateField}
-                    conditionRule={activeOverrides[field.id]}
-                    onEditCondition={(id) => dispatchSessionIntent({ type: 'OPEN_SIGNATURE_CONDITION', id })}
-                    showConditionButton
-                  />
+                  <Fragment key={field.id}>
+                    <SchemaField
+                      field={field}
+                      value={state[field.id]}
+                      onChange={updateField}
+                      conditionRule={activeOverrides[field.id]}
+                      onEditCondition={(id) => dispatchSessionIntent({ type: 'OPEN_SIGNATURE_CONDITION', id })}
+                      showConditionButton
+                    />
+                    {showPrecisePipsControl && field.id === 'hp_pip_visible' ? (
+                      fullTargetMode ? (
+                        <div className="schema-field-row precise-pips-row">
+                          <div className="schema-field-meta">
+                            <span id="precise-pips-label" className="schema-field-label">More Precise HP Pips</span>
+                            <span className="precise-pips-field-hint">Requires game convars; not stored in the Full preset VPK.</span>
+                          </div>
+                          <div className="schema-field-control precise-pips-field-control">
+                            <button
+                              type="button"
+                              className="secondary-action precise-pips-open"
+                              onClick={() => {
+                                setPrecisePipsDialogMode('precise');
+                                setPrecisePipsOpen(true);
+                              }}
+                            >
+                              Configure
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="precise-pips-row">
+                          <SchemaField
+                            field={PRECISE_PIPS_FIELD}
+                            value={state.hp_precise_pips_enabled}
+                            onChange={handleMinimalPrecisePipsChange}
+                            showConditionButton={false}
+                          />
+                          <span className="precise-pips-field-hint">Stored in this Minimal preset.</span>
+                        </div>
+                      )
+                    ) : null}
+                  </Fragment>
                 ))}
-                {showPrecisePipsControl ? (
-                  fullTargetMode ? (
-                    <div className="schema-field-row precise-pips-row">
-                      <div className="schema-field-meta">
-                        <span id="precise-pips-label" className="schema-field-label">More Precise HP Pips</span>
-                        <span className="precise-pips-field-hint">Requires game convars; not stored in the Full preset VPK.</span>
-                      </div>
-                      <div className="schema-field-control precise-pips-field-control">
-                        <button
-                          type="button"
-                          className="secondary-action precise-pips-open"
-                          onClick={() => {
-                            setPrecisePipsDialogMode('precise');
-                            setPrecisePipsOpen(true);
-                          }}
-                        >
-                          Configure
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="precise-pips-row">
-                      <SchemaField
-                        field={PRECISE_PIPS_FIELD}
-                        value={state.hp_precise_pips_enabled}
-                        onChange={handleMinimalPrecisePipsChange}
-                        showConditionButton={false}
-                      />
-                      <span className="precise-pips-field-hint">Stored in this Minimal preset.</span>
-                    </div>
-                  )
-                ) : null}
                 {visibleFields.length === 0 && !showPrecisePipsControl ? (
                   <div className="empty-panel">
                     <strong>No visible controls</strong>

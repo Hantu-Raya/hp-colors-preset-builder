@@ -49,6 +49,24 @@ async function downloadBytes(download) {
   return new Uint8Array(Buffer.concat(chunks));
 }
 
+async function expectPrecisePipsFieldOrder(page) {
+  const pipVisibilityRow = page.locator('.schema-field-list > .schema-field-row').filter({
+    has: page.locator('#hp_pip_visible-label')
+  });
+  await expect(pipVisibilityRow).toHaveCount(1);
+  await expect(page.locator('.schema-field-list .schema-field-label', { hasText: 'More Precise HP Pips' })).toHaveCount(1);
+  const labels = await pipVisibilityRow.evaluate((row) => {
+    const nextRow = row.nextElementSibling;
+    const followingRow = nextRow?.nextElementSibling;
+    return [row, nextRow, followingRow].map((item) => item?.querySelector('.schema-field-label')?.textContent?.trim());
+  });
+  expect(labels).toEqual([
+    'Show pip HP segments',
+    'More Precise HP Pips',
+    'Low HP number color'
+  ]);
+}
+
 test.describe('desktop builder workflow', () => {
   test('opens target picker and closes dialog on Escape', async ({ page }) => {
     const errors = await openBuilder(page);
@@ -61,6 +79,20 @@ test.describe('desktop builder workflow', () => {
     await expect(targetDialog).toBeHidden();
     expect(errors).toEqual([]);
   });
+
+  for (const [target, chooseTarget] of [
+    ['Minimal', chooseMinimalTarget],
+    ['Full', chooseFullTarget]
+  ]) {
+    test(`orders precise pips directly after pip visibility for the ${target} target`, async ({ page }) => {
+      const errors = await openBuilder(page);
+      await chooseTarget(page);
+      await page.getByRole('option', { name: /^Number Overlay/ }).click();
+      await page.getByRole('radiogroup', { name: 'HP number color source' }).getByRole('radio', { name: 'Custom' }).click();
+      await expectPrecisePipsFieldOrder(page);
+      expect(errors).toEqual([]);
+    });
+  }
 
   test('copies precise and default pip convars for the full target', async ({ page }) => {
     const errors = await openBuilder(page);
