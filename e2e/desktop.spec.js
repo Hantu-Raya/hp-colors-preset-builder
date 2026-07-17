@@ -6,6 +6,7 @@ import { HP_COLORS_PACKAGE_ARTIFACTS } from '../src/packageArtifacts.js';
 import { validatePresetStoreXml } from '../src/presetStoreXml.js';
 
 const BASE_PATH = '/hp-colors-preset-builder/';
+const APP_ORIGIN = new URL(process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:4321').origin;
 
 async function chooseMinimalTarget(page) {
   const dialog = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });
@@ -78,7 +79,7 @@ test.describe('desktop builder workflow', () => {
   });
 
   test('edits and persists profiles, selects a hero, recovers from malformed import, and exports', async ({ page, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://127.0.0.1:4321' });
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: APP_ORIGIN });
     await openBuilder(page);
     await chooseMinimalTarget(page);
 
@@ -96,6 +97,8 @@ test.describe('desktop builder workflow', () => {
     await page.locator('.hero-selector-trigger').click();
     await page.getByRole('option', { name: 'Warden' }).click();
     await expect(page.locator('.hero-selector-value')).toHaveText(/Warden/);
+    await page.locator('.hero-selector-trigger').click();
+    await expect(page.locator('.hero-selector-menu')).toBeHidden();
 
     const importTrigger = page.getByRole('button', { name: 'Import game preset codes' });
     if (!(await page.locator('#importText').isVisible())) await importTrigger.click();
