@@ -55,7 +55,7 @@ test("minimal import feedback identifies omitted precise pips and signature cond
 
   assert.equal(
     imported.feedback.message,
-    "Imported pak96_dir. The source code omitted More Precise HP Pips (Game default selected) and contained no signature-tier conditions. Configure either feature in the builder before building."
+    "Imported pak96_dir. The source code omitted More Precise HP Pips (Game default selected) and contained no signature-tier conditions. Signature-tier conditions require the Full mod."
   );
 });
 

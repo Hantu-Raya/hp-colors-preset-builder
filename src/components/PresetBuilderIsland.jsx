@@ -800,6 +800,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     onChange={updateField}
                     conditionRule={activeOverrides[field.id]}
                     onEditCondition={(id) => dispatchSessionIntent({ type: 'OPEN_SIGNATURE_CONDITION', id })}
+                    showConditionButton={fullTargetMode}
                   />
                 ))}
                 {showPrecisePipsControl ? (

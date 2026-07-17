@@ -86,7 +86,7 @@ function importedProfileMessage(imported, fallbackName, targetMode) {
   const omittedPrecisePips = features.precisePips === null;
   const omittedSignatureConditions = features.signatureConditionCount === 0;
   if (omittedPrecisePips && omittedSignatureConditions) {
-    return `Imported ${name}. The source code omitted More Precise HP Pips (Game default selected) and contained no signature-tier conditions. Configure either feature in the builder before building.`;
+    return `Imported ${name}. The source code omitted More Precise HP Pips (Game default selected) and contained no signature-tier conditions. Signature-tier conditions require the Full mod.`;
   }
   if (omittedPrecisePips) {
     return `Imported ${name}. The source code omitted More Precise HP Pips, so Game default is selected.`;
