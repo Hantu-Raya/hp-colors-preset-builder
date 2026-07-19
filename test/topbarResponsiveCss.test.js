@@ -4,7 +4,7 @@ import test from "node:test";
 
 test("top bar switches to an uncramped low-DPI layout before mobile width", async () => {
   const css = await readFile(new URL("../src/styles/global.css", import.meta.url), "utf8");
-  const lowDpiStart = css.indexOf("@media (max-width: 1240px)");
+  const lowDpiStart = css.indexOf("@media (max-width: 1600px)");
   const nextBreakpoint = css.indexOf("@media (max-width: 860px)");
 
   assert.notEqual(lowDpiStart, -1);
