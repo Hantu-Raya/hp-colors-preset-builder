@@ -807,12 +807,22 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             <button
               type="button"
               className="build-action"
-              onClick={openBuildWarning}
-              disabled={busy || containsRewriteProfiles}
-              title={containsRewriteProfiles ? 'Rewrite presets transfer by code and cannot be packaged as a legacy Anita VPK.' : undefined}
+              onClick={containsRewriteProfiles
+                ? () => handleExport(
+                    'copy-all',
+                    () => copyText(createRewritePresetBundle(profiles, activeProfile?.id)),
+                    `Copied ${profiles.length} rewrite preset${profiles.length === 1 ? '' : 's'}.`
+                  )
+                : openBuildWarning}
+              disabled={busy}
+              title={containsRewriteProfiles ? 'Copy an HPCRP1 bundle for the HP Colors rewrite.' : undefined}
             >
-              <Download aria-hidden="true" />
-              <span>{busyOperation === 'build' ? 'Building…' : 'Build VPK'}</span>
+              {containsRewriteProfiles ? <Copy aria-hidden="true" /> : <Download aria-hidden="true" />}
+              <span>
+                {containsRewriteProfiles
+                  ? 'Copy Rewrite Presets'
+                  : busyOperation === 'build' ? 'Building…' : 'Build VPK'}
+              </span>
             </button>
           </div>
         </header>

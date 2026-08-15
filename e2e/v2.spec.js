@@ -74,12 +74,15 @@ test('v2 imports rewrite presets, exports them, and adds or removes presets', as
   await page.getByRole('button', { name: 'Import codes' }).click();
   await expect(page.locator('#presetName')).toHaveValue('Shiv');
   await expect(page.locator('.hero-selector-value')).toHaveText(/Shiv/);
-  await expect(page.getByRole('button', { name: 'Build VPK' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Build VPK' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Convert VPK' })).toHaveCount(0);
   await expect(page.getByText('Legacy Anita preset VPKs are disabled for imported rewrite profiles.')).toBeVisible();
+  await page.getByRole('button', { name: 'Copy Rewrite Presets' }).click();
+  const topbarCopied = await page.evaluate(() => window.__rewritePresetClipboard);
+  expect(topbarCopied.startsWith('HPCRP1')).toBe(true);
 
   await page.getByRole('button', { name: 'Export profiles' }).click();
-  await page.getByRole('button', { name: 'Copy rewrite preset' }).click();
+  await page.getByRole('button', { name: 'Copy rewrite preset', exact: true }).click();
   const copied = await page.evaluate(() => window.__rewritePresetClipboard);
   expect(copied.startsWith('HPCRP1')).toBe(true);
   const payload = JSON.parse(copied.slice(6));
