@@ -53,4 +53,7 @@ test("rewrite transfer and preset actions stay isolated to v2", async () => {
   assert.match(v2Island, />\s*Add preset\s*</);
   assert.match(v2Island, />\s*Remove selected\s*</);
   assert.match(v2Island, /Paste an HPCRP1 preset or bundle/);
+  assert.doesNotMatch(v1Island, /V2_STORAGE_KEY/);
+  assert.match(v2Island, /loadPresetBuilderSession\(storage, defaultState, \{ profileStorageKey: V2_STORAGE_KEY \}\)/);
+  assert.match(v2Island, /saveProfileState\(storage, latestProfileSnapshot\.current, V2_STORAGE_KEY\)/);
 });

@@ -7,6 +7,7 @@ import {
 import { HP_HERO_SCOPE_ALL } from "./hpHeroData.js";
 
 export const STORAGE_KEY = "hp_colors_preset_builder_profiles_v1";
+export const V2_STORAGE_KEY = "hp_colors_preset_builder_profiles_v2";
 export const DEFAULT_PRESET_NAME = DEFAULT_HP_PRESET_NAME;
 export const FIRST_PROFILE_ID = "profile-1";
 export const HP_PROFILE_LIMIT = 32;
@@ -108,9 +109,9 @@ function normalizeProfiles(rawProfiles, defaultState) {
   });
 }
 
-export function loadProfileState(storage, defaultState) {
+export function loadProfileState(storage, defaultState, storageKey = STORAGE_KEY) {
   try {
-    const raw = storage?.getItem?.(STORAGE_KEY);
+    const raw = storage?.getItem?.(storageKey);
     if (!raw) {
       const profiles = [createInitialProfile(defaultState)];
       return { profiles, activeProfileId: profiles[0].id, error: null };
@@ -131,7 +132,7 @@ export function loadProfileState(storage, defaultState) {
   }
 }
 
-export function saveProfileState(storage, state) {
+export function saveProfileState(storage, state, storageKey = STORAGE_KEY) {
   if (!storage?.setItem) return { ok: true, error: null };
   const profiles = Array.isArray(state?.profiles) && state.profiles.length
     ? state.profiles.slice(0, HP_PROFILE_LIMIT)
@@ -140,7 +141,7 @@ export function saveProfileState(storage, state) {
     ? state.activeProfileId
     : profiles[0].id;
   try {
-    storage.setItem(STORAGE_KEY, JSON.stringify({
+    storage.setItem(storageKey, JSON.stringify({
       version: 1,
       activeProfileId,
       profiles: profiles.map((profile, index) => {

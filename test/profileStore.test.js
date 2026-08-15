@@ -12,7 +12,8 @@ import {
   removeProfile,
   reorderProfiles,
   saveProfileState,
-  STORAGE_KEY
+  STORAGE_KEY,
+  V2_STORAGE_KEY
 } from "../src/profileStore.js";
 
 function createMemoryStorage(seed = {}) {
@@ -168,6 +169,25 @@ test("V1-style profiles omit rewrite metadata from profiles and storage", () => 
   saveProfileState(storage, { profiles: [profile], activeProfileId: profile.id });
   const stored = JSON.parse(storage.getItem(STORAGE_KEY));
   assert.equal(Object.hasOwn(stored.profiles[0], "rewrite"), false);
+});
+
+test("V1 and V2 profile storage are isolated", () => {
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
+  const storage = createMemoryStorage();
+  const v1 = createProfile({ id: "v1", name: "V1 only", values: defaultState });
+  const v2 = createProfile({
+    id: "v2",
+    name: "Rewrite only",
+    values: defaultState,
+    rewrite: { id: "user_0001", kind: "user", values: [] }
+  });
+
+  saveProfileState(storage, { profiles: [v1], activeProfileId: v1.id });
+  saveProfileState(storage, { profiles: [v2], activeProfileId: v2.id }, V2_STORAGE_KEY);
+
+  assert.equal(loadProfileState(storage, defaultState).profiles[0].name, "V1 only");
+  assert.equal(loadProfileState(storage, defaultState, V2_STORAGE_KEY).profiles[0].name, "Rewrite only");
+  assert.notEqual(storage.getItem(STORAGE_KEY), storage.getItem(V2_STORAGE_KEY));
 });
 
 test("profile hero scope modes round trip through storage and preset export", () => {

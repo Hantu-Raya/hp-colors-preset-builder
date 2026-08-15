@@ -33,7 +33,7 @@ import { HP_COLORS_MOD_VARIANTS } from '../hpModVariants.js';
 import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitCommitInfoRefresh.js';
 import { TARGET_MODE_CHOICES } from '../targetModeStore.js';
 import { copyText, downloadText } from '../download.js';
-import { cleanProfileName, createProfilePersistenceSnapshot, saveProfileState } from '../profileStore.js';
+import { cleanProfileName, createProfilePersistenceSnapshot, saveProfileState, V2_STORAGE_KEY } from '../profileStore.js';
 import {
   createProfilesJsonExport,
   createProfilesJsonFileName
@@ -355,6 +355,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     modePickerUpgrade,
     conditionalFieldId
   } = session;
+  const containsRewriteProfiles = profiles.some((profile) => Boolean(profile?.rewrite));
   const conditionalField = conditionalFieldId
     ? { id: conditionalFieldId, ...HP_FIELD_CATALOG.schema[conditionalFieldId] }
     : null;
@@ -413,14 +414,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
   useEffect(() => {
     const storage = typeof window !== 'undefined' ? window.localStorage : null;
-    setSession(loadPresetBuilderSession(storage, defaultState));
+    setSession(loadPresetBuilderSession(storage, defaultState, { profileStorageKey: V2_STORAGE_KEY }));
   }, [defaultState]);
 
   useEffect(() => {
     if (!profilesLoaded) return undefined;
     return scheduleIdleWork(() => {
       const storage = typeof window !== 'undefined' ? window.localStorage : null;
-      const saved = saveProfileState(storage, latestProfileSnapshot.current);
+      const saved = saveProfileState(storage, latestProfileSnapshot.current, V2_STORAGE_KEY);
       if (!saved.ok) dispatchSessionIntent({ type: 'SET_FEEDBACK', feedback: { type: 'error', message: saved.error } });
     });
   }, [activeProfileId, dispatchSessionIntent, profiles, profilesLoaded]);
@@ -428,7 +429,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   useEffect(() => {
     if (!profilesLoaded || typeof window === 'undefined') return;
     const flushProfileState = () => {
-      saveProfileState(window.localStorage, latestProfileSnapshot.current);
+      saveProfileState(window.localStorage, latestProfileSnapshot.current, V2_STORAGE_KEY);
     };
     window.addEventListener('pagehide', flushProfileState);
     return () => {
@@ -794,7 +795,13 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 </div>
               ) : null}
             </div>
-            <button type="button" className="build-action" onClick={openBuildWarning} disabled={busy}>
+            <button
+              type="button"
+              className="build-action"
+              onClick={openBuildWarning}
+              disabled={busy || containsRewriteProfiles}
+              title={containsRewriteProfiles ? 'Rewrite presets transfer by code and cannot be packaged as a legacy Anita VPK.' : undefined}
+            >
               <Download aria-hidden="true" />
               <span>{busyOperation === 'build' ? 'Building…' : 'Build VPK'}</span>
             </button>
@@ -846,9 +853,13 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     <p>{activeOverrideCount} override{activeOverrideCount === 1 ? '' : 's'} routed to {heroSelectionLabel.toLowerCase()}.</p>
                   </article>
                   <article className="preset-overview-card">
-                    <span className="panorama-kicker">BUILD TARGET</span>
-                    <strong>{targetModeDetails.title}</strong>
-                    <p>{profiles.length} profile{profiles.length === 1 ? '' : 's'} will be packaged as {presetVpkFileName}.</p>
+                    <span className="panorama-kicker">{containsRewriteProfiles ? 'REWRITE TRANSFER' : 'BUILD TARGET'}</span>
+                    <strong>{containsRewriteProfiles ? 'HPCRP1 / HPCR2' : targetModeDetails.title}</strong>
+                    <p>
+                      {containsRewriteProfiles
+                        ? 'Use the rewrite copy actions. Legacy Anita preset VPKs are disabled for imported rewrite profiles.'
+                        : `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will be packaged as ${presetVpkFileName}.`}
+                    </p>
                   </article>
                   <article className="preset-overview-card preset-overview-actions">
                     <span className="panorama-kicker">PRESET ACTIONS</span>
@@ -951,6 +962,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
             </DisclosurePanel>
 
+            {!containsRewriteProfiles ? (
             <DisclosurePanel title="Convert VPK" open={convertOpen} onOpenChange={(open) => dispatchSessionIntent({ type: 'SET_CONVERT_OPEN', open })}>
               <div className="convert-panel-body">
                 <label className="builder-file-control">
@@ -993,6 +1005,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 {convertStatus ? <p className="convert-status">{convertStatus}</p> : null}
               </div>
             </DisclosurePanel>
+            ) : null}
 
             <DisclosurePanel title="Export profiles" open={previewOpen} onOpenChange={(open) => dispatchSessionIntent({ type: 'SET_PREVIEW_OPEN', open })}>
               <div className="export-action-list">
@@ -1201,9 +1214,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <button
                 type="button"
                 className="primary-action build-confirm-action"
-                disabled={!canConfirmBuildVariant || busy}
+                disabled={!canConfirmBuildVariant || busy || containsRewriteProfiles}
                 onClick={() => {
-                  if (!canConfirmBuildVariant || busy) return;
+                  if (!canConfirmBuildVariant || busy || containsRewriteProfiles) return;
                   performBuild(targetMode);
                 }}
               >

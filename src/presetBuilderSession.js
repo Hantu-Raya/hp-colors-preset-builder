@@ -155,9 +155,9 @@ export function createPresetBuilderSession(defaultState) {
   };
 }
 
-export function loadPresetBuilderSession(storage, defaultState) {
-  const profileState = loadProfileState(storage, defaultState);
-  const targetModeState = loadTargetModeState(storage, { profileStorageKey: PROFILE_STORAGE_KEY });
+export function loadPresetBuilderSession(storage, defaultState, { profileStorageKey = PROFILE_STORAGE_KEY } = {}) {
+  const profileState = loadProfileState(storage, defaultState, profileStorageKey);
+  const targetModeState = loadTargetModeState(storage, { profileStorageKey });
   const storageError = profileState.error || targetModeState.error || null;
   return {
     ...createPresetBuilderSession(defaultState),

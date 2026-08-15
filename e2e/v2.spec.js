@@ -74,6 +74,9 @@ test('v2 imports rewrite presets, exports them, and adds or removes presets', as
   await page.getByRole('button', { name: 'Import codes' }).click();
   await expect(page.locator('#presetName')).toHaveValue('Shiv');
   await expect(page.locator('.hero-selector-value')).toHaveText(/Shiv/);
+  await expect(page.getByRole('button', { name: 'Build VPK' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Convert VPK' })).toHaveCount(0);
+  await expect(page.getByText('Legacy Anita preset VPKs are disabled for imported rewrite profiles.')).toBeVisible();
 
   await page.getByRole('button', { name: 'Export profiles' }).click();
   await page.getByRole('button', { name: 'Copy rewrite preset' }).click();
@@ -93,4 +96,23 @@ test('v2 imports rewrite presets, exports them, and adds or removes presets', as
   });
   expect(payload.records[0].values).toContainEqual([31, 'oracle']);
   expect(payload.records[0].values).toContainEqual([56, 440]);
+});
+
+test('rewrite imports remain in v2 and never replace v1 profiles', async ({ page }) => {
+  await page.goto('.');
+  await chooseMinimalTarget(page);
+  await page.locator('#presetName').fill('V1 only');
+  await page.locator('#presetName').press('Tab');
+  await page.waitForTimeout(900);
+
+  await page.goto('v2/');
+  await expect(page.locator('#presetName')).toHaveValue('Web Builder Preset');
+  await openV2Presets(page);
+  await page.getByRole('button', { name: 'Import game preset codes' }).click();
+  await page.locator('#importText').fill(REWRITE_PRESET);
+  await page.getByRole('button', { name: 'Import codes' }).click();
+  await expect(page.locator('#presetName')).toHaveValue('Shiv');
+
+  await page.goto('.');
+  await expect(page.locator('#presetName')).toHaveValue('V1 only');
 });
