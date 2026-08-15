@@ -59,9 +59,11 @@ import {
 import {
   commitPresetBuilderTargetMode,
   createBaseHudXmlLoader,
+  createRewritePresetTemplateLoader,
   runPresetBuildWorkflow,
   runPresetConvertWorkflow,
-  runPresetImportWorkflow
+  runPresetImportWorkflow,
+  runRewritePresetBuildWorkflow
 } from '../presetBuilderWorkflow.js';
 import { SchemaField } from './schema-field.jsx';
 import { SchemaTabs, SchemaTree } from './schema-tree-v2.jsx';
@@ -372,9 +374,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const operationLockRef = useRef(false);
   const [precisePipsOpen, setPrecisePipsOpen] = useState(false);
   const [precisePipsDialogMode, setPrecisePipsDialogMode] = useState('precise');
+  const [rewriteInstallValidated, setRewriteInstallValidated] = useState(false);
 
   const loadBaseHudXml = useMemo(
     () => createBaseHudXmlLoader({ baseUrl: import.meta.env.BASE_URL }),
+    []
+  );
+  const loadRewritePresetTemplate = useMemo(
+    () => createRewritePresetTemplateLoader({ baseUrl: import.meta.env.BASE_URL }),
     []
   );
 
@@ -580,6 +587,21 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
       operationLockRef.current = false;
     }
   }, [busy, dispatchSessionIntent, loadBaseHudXml, selectedSession, targetMode]);
+  const performRewriteBuild = useCallback(async () => {
+    if (busy || operationLockRef.current) return;
+    operationLockRef.current = true;
+    try {
+      await runRewritePresetBuildWorkflow({
+        profiles,
+        activeProfileId,
+        loadRewritePresetTemplate,
+        dispatch: dispatchSessionIntent
+      });
+    } finally {
+      operationLockRef.current = false;
+    }
+  }, [activeProfileId, busy, dispatchSessionIntent, loadRewritePresetTemplate, profiles]);
+
 
   const performConvert = useCallback(async (targetModVariant) => {
     if (busy || operationLockRef.current) return;
@@ -667,11 +689,16 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <Star aria-hidden="true" />
               <span>Star</span>
             </a>
-            <button type="button" className="target-mode-trigger" onClick={openTargetModePicker}>
+            <button
+              type="button"
+              className="target-mode-trigger"
+              onClick={containsRewriteProfiles ? undefined : openTargetModePicker}
+              aria-disabled={containsRewriteProfiles}
+            >
               <Layers3 aria-hidden="true" />
               <span className="target-mode-text">
                 <span>Preset target</span>
-                <strong>{targetModeDetails.label}</strong>
+                <strong>{containsRewriteProfiles ? 'Rewrite' : targetModeDetails.label}</strong>
               </span>
             </button>
             <div className="topbar-profile-controls" aria-label="Preset profiles">
@@ -807,22 +834,12 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             <button
               type="button"
               className="build-action"
-              onClick={containsRewriteProfiles
-                ? () => handleExport(
-                    'copy-all',
-                    () => copyText(createRewritePresetBundle(profiles, activeProfile?.id)),
-                    `Copied ${profiles.length} rewrite preset${profiles.length === 1 ? '' : 's'}.`
-                  )
-                : openBuildWarning}
+              onClick={openBuildWarning}
               disabled={busy}
-              title={containsRewriteProfiles ? 'Copy an HPCRP1 bundle for the HP Colors rewrite.' : undefined}
+              title={containsRewriteProfiles ? 'Build a pak96_dir.vpk for hp_colors_rewrite.' : undefined}
             >
-              {containsRewriteProfiles ? <Copy aria-hidden="true" /> : <Download aria-hidden="true" />}
-              <span>
-                {containsRewriteProfiles
-                  ? 'Copy Rewrite Presets'
-                  : busyOperation === 'build' ? 'Building…' : 'Build VPK'}
-              </span>
+              <Download aria-hidden="true" />
+              <span>{busyOperation === 'build' ? 'Building…' : 'Build VPK'}</span>
             </button>
           </div>
         </header>
@@ -876,7 +893,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     <strong>{containsRewriteProfiles ? 'HPCRP1 / HPCR2' : targetModeDetails.title}</strong>
                     <p>
                       {containsRewriteProfiles
-                        ? 'Use the rewrite copy actions. Legacy Anita preset VPKs are disabled for imported rewrite profiles.'
+                        ? `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will build ${presetVpkFileName} for hp_colors_rewrite. Code-copy actions remain available below.`
                         : `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will be packaged as ${presetVpkFileName}.`}
                     </p>
                   </article>
@@ -962,7 +979,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             <DisclosurePanel title="Import game preset codes" open={importOpen} onOpenChange={(open) => dispatchSessionIntent({ type: 'SET_IMPORT_OPEN', open })}>
               <div className="import-panel-body">
                 <p className="panel-helper">
-                  Paste an HPCRP1 preset or bundle from the rewrite menu. Existing Anita codes remain supported.
+                  Paste an HPCRP1 preset or bundle from the rewrite menu. HPCRP1 and HPCR2 copy-code actions remain supported.
                 </p>
                 <textarea
                   id="importText"
@@ -1067,7 +1084,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 <div><dt>SHA-256</dt><dd><code>{buildResult.sha256}</code></dd></div>
               </dl>
               <p>Move the file into <code>{buildResult.installDirectory || installDirectory}</code>.</p>
-              <p>Keep the selected {targetModeDetails.title.toLowerCase()} installed as the base runtime.</p>
+              <p>{buildResult.targetLabel === 'hp_colors_rewrite' ? 'Keep hp_colors_rewrite installed as the rewrite runtime.' : `Keep the selected ${targetModeDetails.title.toLowerCase()} installed as the base runtime.`}</p>
             </div>
           ) : null}
           <div className="status-card" role="status">
@@ -1142,14 +1159,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
         <div className="build-warning-modal" role="dialog" aria-modal="true" aria-labelledby="buildWarningTitle">
           <button type="button" className="build-warning-backdrop" onClick={closeBuildWarning} aria-label="Cancel" />
           <div ref={buildDialogRef} className="build-warning-panel" tabIndex={-1}>
-            <div className="build-warning-badge">Build target</div>
-            <h3 id="buildWarningTitle">Confirm {targetModeDetails.label} preset VPK</h3>
+            <div className="build-warning-badge">{containsRewriteProfiles ? 'Rewrite install' : 'Build target'}</div>
+            <h3 id="buildWarningTitle">{containsRewriteProfiles ? 'Confirm hp_colors_rewrite preset VPK' : `Confirm ${targetModeDetails.label} preset VPK`}</h3>
             <div className="build-warning-summary" aria-label="Build summary">
               <div className="build-warning-item">
                 <span className="build-warning-item-icon"><Layers3 aria-hidden="true" /></span>
                 <span className="build-warning-item-copy">
                   <span>Target / profiles</span>
-                  <strong>{targetModeDetails.title} / {profiles.length} total</strong>
+                  <strong>{containsRewriteProfiles ? `hp_colors_rewrite / ${profiles.length} total` : `${targetModeDetails.title} / ${profiles.length} total`}</strong>
                 </span>
               </div>
               <div className="build-warning-item">
@@ -1176,23 +1193,33 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
             </div>
             <div className="target-mode-summary-card">
-              <div>
-                <span className="target-mode-summary-label">Selected base mod</span>
-                <strong>{targetModeDetails.title}</strong>
-                <p>{targetModeDetails.summary}</p>
-                <a className="target-mode-summary-download-link" href={targetModeDetails.downloadHref} target="_blank" rel="noreferrer">
-                  Need the base mod? Download it first.
-                </a>
-              </div>
-              <div className="target-mode-summary-actions">
-                <button type="button" className="secondary-action" onClick={() => {
-                  closeBuildWarning();
-                  openTargetModePicker();
-                }}>
-                  <Layers3 aria-hidden="true" />
-                  <span>Change target</span>
-                </button>
-              </div>
+              {containsRewriteProfiles ? (
+                <div>
+                  <span className="target-mode-summary-label">Rewrite runtime</span>
+                  <strong>hp_colors_rewrite</strong>
+                  <p>Install the hp_colors_rewrite base package first. This VPK replaces its escape-menu layout and stores HPCRP1 in a hidden XML label.</p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <span className="target-mode-summary-label">Selected base mod</span>
+                    <strong>{targetModeDetails.title}</strong>
+                    <p>{targetModeDetails.summary}</p>
+                    <a className="target-mode-summary-download-link" href={targetModeDetails.downloadHref} target="_blank" rel="noreferrer">
+                      Need the base mod? Download it first.
+                    </a>
+                  </div>
+                  <div className="target-mode-summary-actions">
+                    <button type="button" className="secondary-action" onClick={() => {
+                      closeBuildWarning();
+                      openTargetModePicker();
+                    }}>
+                      <Layers3 aria-hidden="true" />
+                      <span>Change target</span>
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
             {allProfilesOff ? (
               <div className="build-mod-warning" role="alert">
@@ -1203,18 +1230,23 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 </span>
               </div>
             ) : null}
-            <div className={installValidated ? 'build-validation-card is-valid' : 'build-validation-card'}>
+            <div className={(containsRewriteProfiles ? rewriteInstallValidated : installValidated) ? 'build-validation-card is-valid' : 'build-validation-card'}>
               <div>
                 <span className="build-validation-label">Install check</span>
-                {installValidated ? null : <strong>Validate the base mod first</strong>}
+                {(containsRewriteProfiles ? rewriteInstallValidated : installValidated) ? null : <strong>{containsRewriteProfiles ? 'Validate hp_colors_rewrite first' : 'Validate the base mod first'}</strong>}
               </div>
               <button
                 type="button"
                 className="secondary-action build-validation-action"
-                onClick={() => dispatchSessionIntent({ type: 'TOGGLE_INSTALL_VALIDATION' })}
+                onClick={() => {
+                  if (containsRewriteProfiles) setRewriteInstallValidated((value) => !value);
+                  else dispatchSessionIntent({ type: 'TOGGLE_INSTALL_VALIDATION' });
+                }}
               >
                 <ShieldCheck aria-hidden="true" />
-                <span>{installValidated ? 'Undo install confirmation' : 'I installed the selected base mod'}</span>
+                <span>{containsRewriteProfiles
+                  ? rewriteInstallValidated ? 'Undo rewrite install confirmation' : 'I installed hp_colors_rewrite'
+                  : installValidated ? 'Undo install confirmation' : 'I installed the selected base mod'}</span>
               </button>
             </div>
             {buildVariantWarning ? (
@@ -1233,10 +1265,16 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <button
                 type="button"
                 className="primary-action build-confirm-action"
-                disabled={!canConfirmBuildVariant || busy || containsRewriteProfiles}
+                disabled={containsRewriteProfiles ? !rewriteInstallValidated || busy : !canConfirmBuildVariant || busy}
                 onClick={() => {
-                  if (!canConfirmBuildVariant || busy || containsRewriteProfiles) return;
-                  performBuild(targetMode);
+                  if (busy) return;
+                  if (containsRewriteProfiles) {
+                    if (!rewriteInstallValidated) return;
+                    performRewriteBuild();
+                  } else {
+                    if (!canConfirmBuildVariant) return;
+                    performBuild(targetMode);
+                  }
                 }}
               >
                 <Download aria-hidden="true" />

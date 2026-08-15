@@ -6,6 +6,9 @@ const v1IslandPath = new URL("../src/components/PresetBuilderIsland.jsx", import
 const v2IslandPath = new URL("../src/components/PresetBuilderV2Island.jsx", import.meta.url);
 const v2TreePath = new URL("../src/components/schema-tree-v2.jsx", import.meta.url);
 const v2PagePath = new URL("../src/pages/v2.astro", import.meta.url);
+const rewriteTemplatePath = new URL("../public/templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml", import.meta.url);
+const oldRewriteScriptPath = new URL("../public/templates/hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.js", import.meta.url);
+const oldRewriteCompiledPath = new URL("../public/templates/hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.vjs_c", import.meta.url);
 
 test("v1 and v2 link to separate GitHub Pages routes", async () => {
   const [v1Island, v2Island, v2Page] = await Promise.all([
@@ -50,12 +53,38 @@ test("rewrite transfer and preset actions stay isolated to v2", async () => {
   assert.match(v2Island, /createRewriteSettingsCode/);
   assert.match(v2Island, /createRewritePresetCode/);
   assert.match(v2Island, /createRewritePresetBundle/);
+  assert.match(v2Island, /runRewritePresetBuildWorkflow/);
+  assert.match(v2Island, /createRewritePresetTemplateLoader/);
+  assert.match(v2Island, /Build VPK/);
   assert.match(v2Island, />\s*Add preset\s*</);
   assert.match(v2Island, />\s*Remove selected\s*</);
   assert.match(v2Island, /Paste an HPCRP1 preset or bundle/);
-  assert.match(v2Island, /Copy Rewrite Presets/);
+  assert.match(v2Island, /Copy all rewrite presets/);
   assert.doesNotMatch(v1Island, /V2_STORAGE_KEY/);
   assert.match(v2Island, /migrateLegacyV2ProfileState\(storage, defaultState\)/);
   assert.match(v2Island, /loadPresetBuilderSession\(storage, defaultState, \{ profileStorageKey: V2_STORAGE_KEY \}\)/);
   assert.match(v2Island, /saveProfileState\(storage, latestProfileSnapshot\.current, V2_STORAGE_KEY\)/);
+});
+
+test("rewrite template is XML-only, strict, and stores the hidden HPCRP1 label", async () => {
+  const [template, packageBuilder] = await Promise.all([
+    readFile(rewriteTemplatePath, "utf8"),
+    readFile(new URL("../src/rewritePackageBuilder.js", import.meta.url), "utf8")
+  ]);
+  assert.match(template, /<root>/);
+  assert.match(template, /hp_colors_rewrite_preset_contract="HPCRP1"/);
+  assert.match(template, /hp_colors_rewrite_preset_version="1"/);
+  assert.match(template, /HPColorsRewritePresetStore/);
+  assert.match(template, /HPColorsRewritePreset_001/);
+  assert.match(template, /hp_colors_rewrite_preset_entry/);
+  assert.match(template, /hp_colors_state\.vjs_c/);
+  assert.match(template, /hp_colors_menu\.vjs_c/);
+  assert.doesNotMatch(template, /anita|hp_colors_builder_presets|base_hud/i);
+  assert.match(packageBuilder, /REWRITE_PRESET_ARCHIVE_PATH/);
+  assert.match(packageBuilder, /REWRITE_PRESET_CONTRACT_VERSION/);
+  assert.match(packageBuilder, /encodeUtf16Hex/);
+  assert.match(packageBuilder, /SOURCE2_RESOURCE_CODECS\.PANORAMA_LAYOUT/);
+  assert.doesNotMatch(packageBuilder, /REWRITE_PRESET_TEMPLATE_MARKER|SLOT_CODE_UNITS|VJS template/i);
+  await assert.rejects(() => readFile(oldRewriteScriptPath, "utf8"));
+  await assert.rejects(() => readFile(oldRewriteCompiledPath));
 });

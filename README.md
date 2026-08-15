@@ -1,6 +1,6 @@
 # HP Colors Preset Builder
 
-HP Colors Preset Builder is a browser-only tool for editing, importing, routing, and packaging HP Colors presets. It emits a deterministic `pak96_dir.vpk` containing the Source 2 `base_hud.vxml_c` preset store. It does not install files into Deadlock for you.
+HP Colors Preset Builder is a browser-only tool for editing, importing, routing, and packaging HP Colors presets. V1 packages contain the Source 2 `base_hud.vxml_c` preset store. V2 rewrite packages contain the hidden preset store in `hud_escape_menu.vxml_c`. Both downloads use the deterministic filename `pak96_dir.vpk`. The builder does not install files into Deadlock.
 
 ## Choose the matching target
 
@@ -8,34 +8,40 @@ Select the target that matches the base HP Colors runtime you installed:
 
 - **Minimal** — the lightweight runtime. It reads the shared preset store and supports static hero-targeted routing without the full Anita in-game menu.
 - **Full** — the full HP Colors runtime. It provides the Anita in-game menu, multiple profiles, and hero-targeted profiles.
+- **Rewrite** — V2 selects this target when profiles contain rewrite data. Its package stores the complete `HPCRP1` bundle, including rewrite-only settings and ability-tier conditions, inside the rewrite Escape-menu XML.
 
-Do not mix a Full preset package with the Minimal runtime (or vice versa). The target selector is saved in browser storage and can be changed from the top bar.
+Do not mix a Full preset package with the Minimal runtime or install either package beside Rewrite. The Minimal/Full selector is saved in browser storage; V2 switches to Rewrite automatically when the loaded profiles contain rewrite data.
 
 ## Install order
 
 1. Exit Deadlock completely.
-2. Install one matching HP Colors base-mod pair: its `pak96_dir.vpk` first, then its matching `pak97_dir.vpk`.
+2. Install the base runtime that matches the package:
+   - Minimal or Full: install its matching `pak96_dir.vpk` and `pak97_dir.vpk` pair.
+   - Rewrite: install the current `hp_colors_rewrite` `pak01_dir.vpk`.
 3. Use this exact add-on directory (replace `<SteamLibrary>` with the drive that contains Steam):
 
    ```text
    <SteamLibrary>/steamapps/common/Deadlock/game/citadel/addons
    ```
 
-4. Build a preset for the same target. The download is always named `pak96_dir.vpk`; replace the selected base mod's `pak96_dir.vpk` with this generated file. Keep the matching `pak97_dir.vpk` in place and do not rename either file.
-5. Start Deadlock only after both files are in the directory. Restart Deadlock after replacing either VPK; a live Panorama context can retain the old package.
+4. Build the preset. The download is always named `pak96_dir.vpk`.
+   - Minimal or Full: replace the selected base mod's `pak96_dir.vpk` and keep its matching `pak97_dir.vpk`.
+   - Rewrite: install the generated `pak96_dir.vpk` beside the rewrite's `pak01_dir.vpk`. The generated package overrides only `panorama/layout/hud_escape_menu.vxml_c`; do not install another mod that overrides that layout.
+5. Restart Deadlock after replacing any VPK. A live Panorama context can retain the previous package.
 
-Keep only one selected HP Colors target installed at a time. If you change targets, replace the complete pair before testing.
+Keep only one HP Colors runtime and one matching preset package active at a time.
 
 ## Preset data contract
 
 The builder's package contract is deliberately narrow and deterministic:
 
-- Each profile contains exactly **56 shared runtime fields**.
+- Minimal and Full profiles contain exactly **56 shared runtime fields**.
+- Rewrite profiles map those fields to the rewrite's **67 indexed settings** and retain rewrite-only values and ability-tier conditions.
 - `hp_precise_pips_enabled` is serialized for the Minimal runtime so its HP-number parser matches the copied pip convars. Full presets keep using the in-game global setting for this option.
-- The current runtime storage version is **99**. Builder output uses **v1** payloads, and the importer accepts legacy runtime **v97** (and **v25**) input.
-- Builder exports use payload **version 1**. Copied codes use the `[ANITA-v1-hp_colors]:` prefix, and downloaded profile JSON is a `version: 1` document.
+- The current Minimal/Full runtime storage version is **99**. Builder output uses **v1** payloads, and the importer accepts legacy runtime **v97** (and **v25**) input.
+- Minimal/Full copied codes use the `[ANITA-v1-hp_colors]:` prefix. Rewrite settings use `HPCR2`; rewrite presets and bundles use `HPCRP1`.
 
-Values are normalized before serialization. A generated package contains one validated `panorama/layout/base_hud.vxml_c` entry and no unrelated files.
+Values are normalized before serialization. A generated Minimal or Full package contains one validated `panorama/layout/base_hud.vxml_c` entry. A generated Rewrite package contains one validated `panorama/layout/hud_escape_menu.vxml_c` entry with the hidden `HPCRP1` store. Neither package contains unrelated files.
 
 ## Profiles and routing
 

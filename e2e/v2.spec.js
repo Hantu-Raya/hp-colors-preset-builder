@@ -1,6 +1,21 @@
 import { expect, test } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+import { extractSource2Resource, SOURCE2_RESOURCE_CODECS } from '../src/source2ResourceCodec.js';
+import { encodeUtf16Hex, readRewritePresetCode, REWRITE_PRESET_ARCHIVE_PATH, REWRITE_PRESET_TEMPLATE_PATH } from '../src/rewritePackageBuilder.js';
+import { readVpkArchive } from '../src/vpkArchive.js';
 
-const REWRITE_PRESET = 'HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Shiv","mode":"selected","heroes":["hero_shiv"],"values":[[7,"fixed"],[11,true],[12,true],[13,true],[30,167],[31,"oracle"],[34,"custom"],[37,"#FFFFFF"],[42,18],[45,18],[52,true],[53,true],[54,205],[56,440],[63,true],[64,18],[65,31]],"conditions":{"lowThreshold":{"slot":4,"minTier":3,"value":28},"enemyPulseThreshold":{"slot":4,"minTier":3,"value":28},"enemyKillMarkerThreshold":{"slot":4,"minTier":3,"value":28}}}],"selectedPresetId":"user_0001"}';
+const REWRITE_PRESET = 'HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Shiv 🚀","mode":"selected","heroes":["hero_shiv"],"values":[[7,"fixed"],[11,true],[12,true],[13,true],[30,167],[31,"oracle"],[34,"custom"],[37,"#FFFFFF"],[42,18],[45,18],[52,true],[53,true],[54,205],[56,440],[63,true],[64,18],[65,31]],"conditions":{"lowThreshold":{"slot":4,"minTier":3,"value":28},"enemyPulseThreshold":{"slot":4,"minTier":3,"value":28},"enemyKillMarkerThreshold":{"slot":4,"minTier":3,"value":28}}}],"selectedPresetId":"user_0001"}';
+
+const REWRITE_TEMPLATE_URL = new URL('../public/templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml', import.meta.url);
+
+async function routeRewriteTemplate(page) {
+  const template = await readFile(REWRITE_TEMPLATE_URL, 'utf8');
+  await page.route(`**/${REWRITE_PRESET_TEMPLATE_PATH}`, (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/xml',
+    body: template
+  }));
+}
 
 async function openV2Presets(page) {
   await page.getByRole('option', { name: /OVERVIEW/ }).click();
@@ -48,7 +63,7 @@ test('v2 mirrors the in-game category and page navigation', async ({ page }) => 
   await expect(page.getByRole('button', { name: 'Export profiles' })).toBeVisible();
 });
 
-test('v2 imports rewrite presets, exports them, and adds or removes presets', async ({ page }) => {
+test('v2 rewrite profiles build a rewrite-only pak96 and retain code-copy controls', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -59,6 +74,7 @@ test('v2 imports rewrite presets, exports them, and adds or removes presets', as
       }
     });
   });
+  await routeRewriteTemplate(page);
   await page.goto('v2/');
   await chooseMinimalTarget(page);
   await openV2Presets(page);
@@ -72,23 +88,20 @@ test('v2 imports rewrite presets, exports them, and adds or removes presets', as
   await page.getByRole('button', { name: 'Import game preset codes' }).click();
   await page.locator('#importText').fill(REWRITE_PRESET);
   await page.getByRole('button', { name: 'Import codes' }).click();
-  await expect(page.locator('#presetName')).toHaveValue('Shiv');
+  await expect(page.locator('#presetName')).toHaveValue('Shiv 🚀');
   await expect(page.locator('.hero-selector-value')).toHaveText(/Shiv/);
-  await expect(page.getByRole('button', { name: 'Build VPK' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Convert VPK' })).toHaveCount(0);
-  await expect(page.getByText('Legacy Anita preset VPKs are disabled for imported rewrite profiles.')).toBeVisible();
-  await page.getByRole('button', { name: 'Copy Rewrite Presets' }).click();
-  const topbarCopied = await page.evaluate(() => window.__rewritePresetClipboard);
-  expect(topbarCopied.startsWith('HPCRP1')).toBe(true);
+  await expect(page.getByRole('button', { name: 'Build VPK' })).toHaveCount(1);
+  await expect(page.getByText(/will build pak96_dir\.vpk for hp_colors_rewrite/)).toBeVisible();
 
   await page.getByRole('button', { name: 'Export profiles' }).click();
-  await page.getByRole('button', { name: 'Copy rewrite preset', exact: true }).click();
+  await page.getByRole('button', { name: 'Copy all rewrite presets' }).click();
   const copied = await page.evaluate(() => window.__rewritePresetClipboard);
   expect(copied.startsWith('HPCRP1')).toBe(true);
   const payload = JSON.parse(copied.slice(6));
   expect(payload.records).toHaveLength(1);
+  expect(payload.selectedPresetId).toBe(payload.records[0].id);
   expect(payload.records[0]).toMatchObject({
-    name: 'Shiv',
+    name: 'Shiv 🚀',
     mode: 'selected',
     heroes: ['hero_shiv'],
     conditions: {
@@ -97,8 +110,25 @@ test('v2 imports rewrite presets, exports them, and adds or removes presets', as
       enemyKillMarkerThreshold: { slot: 4, minTier: 3, value: 28 }
     }
   });
-  expect(payload.records[0].values).toContainEqual([31, 'oracle']);
-  expect(payload.records[0].values).toContainEqual([56, 440]);
+  await page.getByRole('button', { name: 'Build VPK' }).click();
+  const warning = page.getByRole('dialog', { name: 'Confirm hp_colors_rewrite preset VPK' });
+  await expect(warning).toBeVisible();
+  await warning.getByRole('button', { name: 'I installed hp_colors_rewrite' }).click();
+  const downloadPromise = page.waitForEvent('download');
+  await warning.getByRole('button', { name: 'Confirm build' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('pak96_dir.vpk');
+  const downloadedBytes = new Uint8Array(await readFile(await download.path()));
+  const archive = readVpkArchive(downloadedBytes);
+  expect(archive.files.map((file) => file.path)).toEqual([REWRITE_PRESET_ARCHIVE_PATH]);
+  const compiledXml = extractSource2Resource({ bytes: archive.files[0].bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  expect(compiledXml).toContain('HPColorsRewritePresetStore');
+  expect(compiledXml).toContain('hp_colors_rewrite_preset_contract="HPCRP1"');
+  expect(compiledXml).toContain('hp_colors_rewrite_preset_version="1"');
+  expect(compiledXml).toContain(`text="${encodeUtf16Hex(REWRITE_PRESET)}"`);
+  expect(compiledXml).not.toMatch(/base_hud|anita|hp_colors_builder_presets/i);
+  expect(readRewritePresetCode(archive.files[0].bytes)).toBe(REWRITE_PRESET);
+  await expect(page.locator('.status-card')).toContainText(/Built pak96_dir\.vpk for hp_colors_rewrite/);
 });
 
 test('rewrite imports remain in v2 and never replace v1 profiles', async ({ page }) => {
@@ -114,7 +144,7 @@ test('rewrite imports remain in v2 and never replace v1 profiles', async ({ page
   await page.getByRole('button', { name: 'Import game preset codes' }).click();
   await page.locator('#importText').fill(REWRITE_PRESET);
   await page.getByRole('button', { name: 'Import codes' }).click();
-  await expect(page.locator('#presetName')).toHaveValue('Shiv');
+  await expect(page.locator('#presetName')).toHaveValue('Shiv 🚀');
 
   await page.goto('.');
   await expect(page.locator('#presetName')).toHaveValue('V1 only');

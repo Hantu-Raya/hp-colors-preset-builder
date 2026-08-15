@@ -2,6 +2,12 @@ import { downloadBytes } from "./download.js";
 import { DEFAULT_HP_COLORS_MOD_VARIANT, HP_COLORS_MOD_VARIANTS } from "./hpModVariants.js";
 import { PRESET_VPK_FILE_NAME } from "./presetVpkFileName.js";
 import { HP_COLORS_PACKAGE_LIMITS } from "./packageArtifacts.js";
+import { createRewritePresetBundle } from "./rewritePresetCodec.js";
+import {
+  buildRewritePresetPackage,
+  REWRITE_PRESET_TEMPLATE_PATH,
+  REWRITE_PRESET_VPK_FILE_NAME
+} from "./rewritePackageBuilder.js";
 import { reducePresetBuilderSession } from "./presetBuilderSession.js";
 import { getTargetModeDetails, normalizeTargetMode, saveTargetModeState } from "./targetModeStore.js";
 
@@ -9,6 +15,7 @@ export const BASE_HUD_TEMPLATE_PATH = "templates/hp_colors/panorama/layout/base_
 export const PRESET_INSTALL_DIRECTORY = "game/citadel/addons";
 
 let buildInFlight = false;
+let rewriteBuildInFlight = false;
 let convertInFlight = false;
 
 export function createBaseHudXmlLoader({ baseUrl = "/", fetchImpl = globalThis.fetch } = {}) {
@@ -18,6 +25,23 @@ export function createBaseHudXmlLoader({ baseUrl = "/", fetchImpl = globalThis.f
       promise = Promise.resolve(fetchImpl(`${baseUrl}${BASE_HUD_TEMPLATE_PATH}`))
         .then((response) => { if (!response.ok) throw new Error(`Failed to load base_hud.xml (${response.status})`); return response.text(); })
         .catch((error) => { promise = null; throw error; });
+    }
+    return promise;
+  };
+}
+export function createRewritePresetTemplateLoader({ baseUrl = "/", fetchImpl = globalThis.fetch } = {}) {
+  let promise = null;
+  return function loadRewritePresetTemplate() {
+    if (!promise) {
+      promise = Promise.resolve(fetchImpl(`${baseUrl}${REWRITE_PRESET_TEMPLATE_PATH}`))
+        .then((response) => {
+          if (!response.ok) throw new Error(`Failed to load rewrite preset template (${response.status})`);
+          return response.text();
+        })
+        .catch((error) => {
+          promise = null;
+          throw error;
+        });
     }
     return promise;
   };
@@ -95,6 +119,54 @@ export async function runPresetBuildWorkflow({ selection, targetMode, loadBaseHu
     buildInFlight = false;
   }
 }
+export async function runRewritePresetBuildWorkflow({
+  profiles,
+  activeProfileId = null,
+  loadRewritePresetTemplate,
+  download = downloadBytes,
+  dispatch,
+  digest = null,
+  installDirectory = PRESET_INSTALL_DIRECTORY
+}) {
+  if (rewriteBuildInFlight) {
+    const message = "A rewrite preset build is already in progress.";
+    dispatch?.({ type: "BUILD_FAILED", message });
+    dispatchStatus(dispatch, "SET_STATUS", message);
+    return null;
+  }
+  rewriteBuildInFlight = true;
+  const buildProfiles = Array.isArray(profiles) ? profiles : [];
+  dispatch?.({ type: "BUILD_STARTED" });
+  dispatchStatus(dispatch, "SET_STATUS", `Building ${REWRITE_PRESET_VPK_FILE_NAME} for hp_colors_rewrite...`);
+  try {
+    const presetCode = createRewritePresetBundle(buildProfiles, activeProfileId);
+    const templateText = await loadRewritePresetTemplate();
+    const built = buildRewritePresetPackage({ presetCode, templateText });
+    await download(REWRITE_PRESET_VPK_FILE_NAME, built.vpkBytes);
+    const result = {
+      filename: REWRITE_PRESET_VPK_FILE_NAME,
+      byteLength: built.vpkBytes.byteLength,
+      sha256: await sha256Hex(built.vpkBytes, digest),
+      profileCount: buildProfiles.length,
+      target: "hp_colors_rewrite",
+      targetLabel: "hp_colors_rewrite",
+      installDirectory
+    };
+    dispatch?.({ type: "BUILD_SUCCEEDED", result });
+    dispatchStatus(dispatch, "SET_STATUS", `Built ${REWRITE_PRESET_VPK_FILE_NAME} for hp_colors_rewrite (${built.vpkBytes.byteLength.toLocaleString()} bytes, ${buildProfiles.length} profile${buildProfiles.length === 1 ? "" : "s"}).`);
+    return result;
+  } catch (error) {
+    const message = error?.message || String(error);
+    dispatch?.({ type: "BUILD_FAILED", message });
+    dispatchStatus(dispatch, "SET_STATUS", message);
+    return null;
+  } finally {
+    rewriteBuildInFlight = false;
+  }
+}
+
+export const runRewritePresetVpkWorkflow = runRewritePresetBuildWorkflow;
+
 
 export async function runPresetConvertWorkflow({ convertFile, targetModVariant, loadBaseHudXml, download = downloadBytes, dispatch, digest = null, installDirectory = PRESET_INSTALL_DIRECTORY }) {
   if (!convertFile) {
