@@ -38,3 +38,19 @@ test("v2 owns the in-game menu navigation without changing v1", async () => {
   assert.match(v2Tree, /export function SchemaTabs/);
   assert.match(v2Tree, /aria-label="HP Colors sections"/);
 });
+
+test("rewrite transfer and preset actions stay isolated to v2", async () => {
+  const [v1Island, v2Island] = await Promise.all([
+    readFile(v1IslandPath, "utf8"),
+    readFile(v2IslandPath, "utf8")
+  ]);
+
+  assert.doesNotMatch(v1Island, /rewritePresetCodec|HPCRP1|Copy rewrite preset/);
+  assert.match(v2Island, /decodeRewriteTransfer/);
+  assert.match(v2Island, /createRewriteSettingsCode/);
+  assert.match(v2Island, /createRewritePresetCode/);
+  assert.match(v2Island, /createRewritePresetBundle/);
+  assert.match(v2Island, />\s*Add preset\s*</);
+  assert.match(v2Island, />\s*Remove selected\s*</);
+  assert.match(v2Island, /Paste an HPCRP1 preset or bundle/);
+});

@@ -130,6 +130,46 @@ test("createProfile accepts compact values and hero keys", () => {
   assert.deepEqual(profile.heroes, ["hero_shiv", "hero_bebop"]);
 });
 
+test("rewrite metadata clones through profile creation and storage", () => {
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
+  const rewrite = {
+    values: { lowThreshold: 18, enemyPulseThreshold: 28 },
+    conditions: { enemyKillMarkerThreshold: { slot: 4, tier: 3 } },
+    unknown: ["preserve-me"]
+  };
+  const profile = createProfile({
+    id: "rewrite",
+    name: "Rewrite",
+    values: defaultState,
+    rewrite
+  });
+  const expectedRewrite = JSON.parse(JSON.stringify(rewrite));
+
+  rewrite.values.lowThreshold = 99;
+  rewrite.unknown.push("caller-mutation");
+  assert.deepEqual(profile.rewrite, expectedRewrite);
+
+  const storage = createMemoryStorage();
+  saveProfileState(storage, { profiles: [profile], activeProfileId: profile.id });
+  const stored = JSON.parse(storage.getItem(STORAGE_KEY));
+  assert.deepEqual(stored.profiles[0].rewrite, expectedRewrite);
+
+  const loaded = loadProfileState(storage, defaultState);
+  assert.deepEqual(loaded.profiles[0].rewrite, expectedRewrite);
+  assert.notStrictEqual(loaded.profiles[0].rewrite, stored.profiles[0].rewrite);
+});
+
+test("V1-style profiles omit rewrite metadata from profiles and storage", () => {
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
+  const profile = createProfile({ id: "v1", name: "V1", values: defaultState });
+  assert.equal(Object.hasOwn(profile, "rewrite"), false);
+
+  const storage = createMemoryStorage();
+  saveProfileState(storage, { profiles: [profile], activeProfileId: profile.id });
+  const stored = JSON.parse(storage.getItem(STORAGE_KEY));
+  assert.equal(Object.hasOwn(stored.profiles[0], "rewrite"), false);
+});
+
 test("profile hero scope modes round trip through storage and preset export", () => {
   const defaultState = HP_FIELD_CATALOG.createDefaultState();
   const storage = createMemoryStorage();
@@ -162,6 +202,22 @@ test("saveProfileState writes builder-only profile state to local storage", () =
 
   assert.equal(stored.activeProfileId, "second");
   assert.deepEqual(stored.profiles.map((profile) => profile.name), ["Lane", "Teamfight"]);
+});
+
+test("reorder preserves rewrite metadata and removing a profile removes its metadata", () => {
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
+  const profiles = [
+    createProfile({ id: "first", name: "First", values: defaultState, rewrite: { index: 1 } }),
+    createProfile({ id: "second", name: "Second", values: defaultState, rewrite: { index: 2 } })
+  ];
+
+  const reordered = reorderProfiles(profiles, 1, 0);
+  assert.deepEqual(reordered.map((profile) => profile.id), ["second", "first"]);
+  assert.deepEqual(reordered[0].rewrite, { index: 2 });
+
+  const removed = removeProfile(reordered, "second");
+  assert.deepEqual(removed.profiles.map((profile) => profile.id), ["first"]);
+  assert.deepEqual(removed.profiles[0].rewrite, { index: 1 });
 });
 
 test("profile add and remove update count but never remove the final profile", () => {

@@ -1098,6 +1098,21 @@
   line-height: 1.45;
 }
 
+.preset-overview-actions {
+  grid-column: 1 / -1;
+}
+
+.preset-overview-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.preset-overview-action-row .secondary-action {
+  flex: 1 1 160px;
+}
+
 .schema-field-row {
   display: grid;
   grid-template-columns: minmax(190px, 1fr) minmax(300px, 1.1fr);

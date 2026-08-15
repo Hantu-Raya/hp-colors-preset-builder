@@ -120,19 +120,57 @@ test("committing a target mode clears picker and validation state", () => {
 
 test("importing multiple profiles appends and activates the first imported profile", () => {
   const session = createPresetBuilderSession(defaultState);
+  const rewrite = { values: { lowThreshold: 18 }, conditions: { enemyPulseThreshold: 28 } };
   const next = reducePresetBuilderSession(session, {
     type: "IMPORT_PROFILES_SUCCEEDED",
     importedProfiles: [
-      { name: "Lane", values: { ...defaultState, hp_color_low: "#111111" }, heroMode: "selected", heroes: ["hero_shiv"] },
+      { name: "Lane", values: { ...defaultState, hp_color_low: "#111111" }, heroMode: "selected", heroes: ["hero_shiv"], rewrite },
       { name: "Global", values: { ...defaultState, hp_color_low: "#222222" }, heroMode: "all", heroes: [] }
     ]
   }, { defaultState, groups });
 
   assert.equal(next.profiles.length, 3);
   assert.deepEqual(next.profiles.slice(1).map((profile) => profile.name), ["Lane", "Global"]);
+  assert.deepEqual(next.profiles[1].rewrite, rewrite);
+  assert.notStrictEqual(next.profiles[1].rewrite, rewrite);
   assert.equal(next.activeProfileId, "profile-2");
   assert.equal(next.profileMenuOpen, true);
   assert.equal(next.status, "Imported 2 profiles from preset codes.");
+});
+
+test("single-profile rewrite metadata survives updates and is removed on replacement or deletion", () => {
+  const rewrite = { values: { lowThreshold: 18 }, conditions: { enemyPulseThreshold: 28 } };
+  let session = createPresetBuilderSession(defaultState);
+  session = reducePresetBuilderSession(session, {
+    type: "IMPORT_PROFILES_SUCCEEDED",
+    importedProfiles: [{ name: "Rewrite", values: defaultState, heroMode: "all", heroes: [], rewrite }]
+  }, { defaultState, groups });
+
+  assert.deepEqual(session.profiles[0].rewrite, rewrite);
+  assert.notStrictEqual(session.profiles[0].rewrite, rewrite);
+  session = reducePresetBuilderSession(session, { type: "RENAME_ACTIVE_PROFILE", name: "Renamed" });
+  session = reducePresetBuilderSession(session, { type: "UPDATE_FIELD", id: "hp_color_low", value: "#123456" });
+  assert.deepEqual(session.profiles[0].rewrite, rewrite);
+
+  session = reducePresetBuilderSession(session, { type: "ADD_PROFILE", defaultState });
+  session = reducePresetBuilderSession(session, { type: "MOVE_PROFILE", profileId: "profile-1", direction: 1 });
+  assert.deepEqual(session.profiles[1].rewrite, rewrite);
+  session = reducePresetBuilderSession(session, { type: "SELECT_PROFILE", profileId: "profile-1" });
+  session = reducePresetBuilderSession(session, {
+    type: "DELETE_ACTIVE_PROFILE"
+  }, { presetName: "Renamed" });
+  assert.equal(session.profiles.some((profile) => Object.hasOwn(profile, "rewrite")), false);
+
+  session = createPresetBuilderSession(defaultState);
+  session = reducePresetBuilderSession(session, {
+    type: "IMPORT_PROFILES_SUCCEEDED",
+    importedProfiles: [{ name: "Rewrite", values: defaultState, heroMode: "all", heroes: [], rewrite }]
+  }, { defaultState, groups });
+  session = reducePresetBuilderSession(session, {
+    type: "IMPORT_PROFILES_SUCCEEDED",
+    importedProfiles: [{ name: "V1", values: defaultState, heroMode: "all", heroes: [] }]
+  }, { defaultState, groups });
+  assert.equal(Object.hasOwn(session.profiles[0], "rewrite"), false);
 });
 
 test("failed imports keep existing profiles", () => {

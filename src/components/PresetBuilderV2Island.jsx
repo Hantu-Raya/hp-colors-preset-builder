@@ -35,11 +35,15 @@ import { TARGET_MODE_CHOICES } from '../targetModeStore.js';
 import { copyText, downloadText } from '../download.js';
 import { cleanProfileName, createProfilePersistenceSnapshot, saveProfileState } from '../profileStore.js';
 import {
-  createAllProfileCodes,
-  createProfileCode,
   createProfilesJsonExport,
   createProfilesJsonFileName
 } from '../presetBuilderExport.js';
+import {
+  createRewritePresetBundle,
+  createRewritePresetCode,
+  createRewriteSettingsCode,
+  decodeRewriteTransfer
+} from '../rewritePresetCodec.js';
 import {
   createPresetBuilderSession,
   loadPresetBuilderSession,
@@ -503,8 +507,19 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     operationLockRef.current = true;
     dispatchSessionIntent({ type: 'OPERATION_STARTED', operation: 'import' });
     try {
-      await runPresetImportWorkflow({ importText, defaultState, groups, activeKey, dispatch: dispatchSessionIntent });
+      const rewriteTransfer = decodeRewriteTransfer(importText, { defaultState });
+      if (rewriteTransfer) {
+        dispatchSessionIntent(
+          { type: 'IMPORT_PROFILES_SUCCEEDED', importedProfiles: rewriteTransfer.profiles },
+          { defaultState, groups, activeKey }
+        );
+        dispatchSessionIntent({ type: 'SET_IMPORT_TEXT', text: '' });
+      } else {
+        await runPresetImportWorkflow({ importText, defaultState, groups, activeKey, dispatch: dispatchSessionIntent });
+      }
       dispatchSessionIntent({ type: 'OPERATION_SUCCEEDED' });
+    } catch (error) {
+      dispatchSessionIntent({ type: 'IMPORT_FAILED', message: error?.message || String(error) });
     } finally {
       operationLockRef.current = false;
     }
@@ -835,6 +850,21 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     <strong>{targetModeDetails.title}</strong>
                     <p>{profiles.length} profile{profiles.length === 1 ? '' : 's'} will be packaged as {presetVpkFileName}.</p>
                   </article>
+                  <article className="preset-overview-card preset-overview-actions">
+                    <span className="panorama-kicker">PRESET ACTIONS</span>
+                    <strong>Add or remove presets</strong>
+                    <p>Create another preset or remove the currently selected one.</p>
+                    <div className="preset-overview-action-row">
+                      <button type="button" className="secondary-action" onClick={handleAddProfile} disabled={profiles.length >= profileLimit}>
+                        <Plus aria-hidden="true" />
+                        <span>Add preset</span>
+                      </button>
+                      <button type="button" className="secondary-action" onClick={handleDeleteProfile} disabled={profiles.length <= 1}>
+                        <Trash2 aria-hidden="true" />
+                        <span>Remove selected</span>
+                      </button>
+                    </div>
+                  </article>
                 </div>
               ) : (
               <div className="schema-field-list">
@@ -902,7 +932,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             <DisclosurePanel title="Import game preset codes" open={importOpen} onOpenChange={(open) => dispatchSessionIntent({ type: 'SET_IMPORT_OPEN', open })}>
               <div className="import-panel-body">
                 <p className="panel-helper">
-                  Paste COPY ALL from the in-game HP Colors menu, or paste several individual HP Colors codes. Bundles import as separate profiles for the selected target.
+                  Paste an HPCRP1 preset or bundle from the rewrite menu. Existing Anita codes remain supported.
                 </p>
                 <textarea
                   id="importText"
@@ -966,17 +996,21 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
             <DisclosurePanel title="Export profiles" open={previewOpen} onOpenChange={(open) => dispatchSessionIntent({ type: 'SET_PREVIEW_OPEN', open })}>
               <div className="export-action-list">
-                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('copy-current', () => copyText(createProfileCode(activeProfile, activeProfileIndex, session.targetMode)), `Copied ${presetName}.`)}>
+                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('copy-rewrite-settings', () => copyText(createRewriteSettingsCode(activeProfile)), 'Copied rewrite settings code.')}>
                   <Copy aria-hidden="true" />
-                  <span>Copy current profile code</span>
+                  <span>Copy rewrite settings</span>
                 </button>
-                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('copy-all', () => copyText(createAllProfileCodes(profiles, session.targetMode)), `Copied ${profiles.length} profile code${profiles.length === 1 ? '' : 's'}.`)}>
+                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('copy-current', () => copyText(createRewritePresetCode(activeProfile, activeProfileIndex)), `Copied ${presetName} for the rewrite.`)}>
                   <Copy aria-hidden="true" />
-                  <span>Copy all profile codes</span>
+                  <span>Copy rewrite preset</span>
+                </button>
+                <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('copy-all', () => copyText(createRewritePresetBundle(profiles, activeProfile?.id)), `Copied ${profiles.length} rewrite preset${profiles.length === 1 ? '' : 's'}.`)}>
+                  <Copy aria-hidden="true" />
+                  <span>Copy all rewrite presets</span>
                 </button>
                 <button type="button" className="secondary-action" disabled={busy} onClick={() => handleExport('export-json', () => downloadText(createProfilesJsonFileName(presetName), createProfilesJsonExport(profiles, session.targetMode), 'application/json;charset=utf-8'), 'Downloaded profile JSON.')}>
                   <FileJson aria-hidden="true" />
-                  <span>Download JSON</span>
+                  <span>Download builder JSON</span>
                 </button>
               </div>
             </DisclosurePanel>

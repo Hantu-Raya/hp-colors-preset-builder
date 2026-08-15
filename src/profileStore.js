@@ -11,6 +11,21 @@ export const DEFAULT_PRESET_NAME = DEFAULT_HP_PRESET_NAME;
 export const FIRST_PROFILE_ID = "profile-1";
 export const HP_PROFILE_LIMIT = 32;
 
+
+function cloneJsonSafe(value) {
+  return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+}
+
+function hasOwn(value, key) {
+  return Object.prototype.hasOwnProperty.call(value || {}, key);
+}
+
+function addRewriteMetadata(profile, source) {
+  if (!hasOwn(source, "rewrite") || source.rewrite === undefined) return profile;
+  profile.rewrite = cloneJsonSafe(source.rewrite);
+  return profile;
+}
+
 function defaultProfileName(index) {
   return defaultHpPresetName(index);
 }
@@ -31,7 +46,8 @@ export function createProfile(input = {}) {
     hs,
     hm,
     overrides,
-    o
+    o,
+    rewrite
   } = input || {};
   const has = (key) => Object.prototype.hasOwnProperty.call(input || {}, key);
   const rawHeroes = has("hs") ? hs : heroes;
@@ -44,15 +60,16 @@ export function createProfile(input = {}) {
     overrides: has("o") ? o : overrides
   }, { preserveBlankName: true });
 
-  return {
+  return addRewriteMetadata({
     id: String(id || FIRST_PROFILE_ID),
     name: normalized.name,
     values: normalized.values,
     heroMode: normalized.heroMode,
     heroes: normalized.heroes,
     overrides: normalized.overrides || {}
-  };
+  }, { rewrite });
 }
+
 
 export function createInitialProfile(defaultState) {
   return createProfile({
@@ -85,7 +102,8 @@ function normalizeProfiles(rawProfiles, defaultState) {
       values: rawProfile?.values || rawProfile?.vs || defaultState,
       heroMode: rawProfile?.heroMode ?? rawProfile?.hm ?? HP_HERO_SCOPE_ALL,
       heroes: rawProfile?.heroes || rawProfile?.hs || [],
-      overrides: rawProfile?.overrides || rawProfile?.o || {}
+      overrides: rawProfile?.overrides || rawProfile?.o || {},
+      rewrite: rawProfile?.rewrite
     });
   });
 }
@@ -127,7 +145,7 @@ export function saveProfileState(storage, state) {
       activeProfileId,
       profiles: profiles.map((profile, index) => {
         const normalized = normalizeHpPresetPayload(profile, { index });
-        return {
+        const persisted = {
           id: String(profile.id || `profile-${index + 1}`),
           name: normalized.name,
           values: normalized.values,
@@ -135,6 +153,7 @@ export function saveProfileState(storage, state) {
           heroes: normalized.heroes,
           overrides: normalized.overrides || {}
         };
+        return addRewriteMetadata(persisted, profile);
       })
     }));
     return { ok: true, error: null };

@@ -79,6 +79,11 @@ function nextImportedProfileId(usedIds) {
   return id;
 }
 
+function cloneImportedRewriteMetadata(profile) {
+  if (!Object.prototype.hasOwnProperty.call(profile || {}, "rewrite") || profile.rewrite === undefined) return undefined;
+  return JSON.parse(JSON.stringify(profile.rewrite));
+}
+
 function importedProfileMessage(imported, fallbackName, targetMode) {
   const name = cleanProfileName(imported.name, fallbackName);
   const features = imported.importFeatures;
@@ -111,7 +116,11 @@ function updateActiveProfile(session, updater) {
     profiles: profiles.map((profile) => {
       if (profile.id !== targetId) return profile;
       const patch = typeof updater === "function" ? updater(profile) : updater;
-      return { ...profile, ...patch };
+      const nextProfile = { ...profile, ...patch };
+      if (Object.prototype.hasOwnProperty.call(patch || {}, "rewrite") && patch.rewrite === undefined) {
+        delete nextProfile.rewrite;
+      }
+      return nextProfile;
     })
   };
 }
@@ -485,7 +494,8 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
             values: imported.values,
             heroMode: imported.heroMode,
             heroes: imported.heroes,
-            overrides: imported.overrides || {}
+            overrides: imported.overrides || {},
+            rewrite: cloneImportedRewriteMetadata(imported)
           }),
           busy: false,
           busyOperation: null,
@@ -513,7 +523,8 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
           values: profile.values,
           heroMode: profile.heroMode,
           heroes: profile.heroes,
-          overrides: profile.overrides || {}
+          overrides: profile.overrides || {},
+          rewrite: profile.rewrite
         }));
         const truncated = appendedProfiles.length < importedProfiles.length;
         const message = truncated
