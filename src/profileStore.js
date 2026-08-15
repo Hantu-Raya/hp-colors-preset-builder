@@ -166,6 +166,40 @@ export function saveProfileState(storage, state, storageKey = STORAGE_KEY) {
   }
 }
 
+export function migrateLegacyV2ProfileState(storage, defaultState) {
+  if (!storage?.getItem || !storage?.setItem) return { migrated: false, error: null };
+  try {
+    if (storage.getItem(V2_STORAGE_KEY)) return { migrated: false, error: null };
+    const rawLegacy = storage.getItem(STORAGE_KEY);
+    if (!rawLegacy) return { migrated: false, error: null };
+    const parsedLegacy = JSON.parse(rawLegacy);
+    if (!Array.isArray(parsedLegacy?.profiles) || !parsedLegacy.profiles.some((profile) => hasOwn(profile, "rewrite"))) {
+      return { migrated: false, error: null };
+    }
+
+    const legacy = loadProfileState(storage, defaultState);
+    const v2Save = saveProfileState(storage, legacy, V2_STORAGE_KEY);
+    if (!v2Save.ok) return { migrated: false, error: v2Save.error };
+
+    const v1Profiles = legacy.profiles.filter((profile) => !hasOwn(profile, "rewrite"));
+    const fallback = createInitialProfile(defaultState);
+    const nextV1Profiles = v1Profiles.length ? v1Profiles : [fallback];
+    const nextV1ActiveId = nextV1Profiles.some((profile) => profile.id === legacy.activeProfileId)
+      ? legacy.activeProfileId
+      : nextV1Profiles[0].id;
+    const v1Save = saveProfileState(storage, {
+      profiles: nextV1Profiles,
+      activeProfileId: nextV1ActiveId
+    });
+    return { migrated: v1Save.ok, error: v1Save.error };
+  } catch (error) {
+    return {
+      migrated: false,
+      error: `V2 profiles could not be isolated: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}
+
 export function addProfile(profiles, defaultState) {
   const current = normalizeProfiles(profiles, defaultState);
   if (current.length >= HP_PROFILE_LIMIT) {

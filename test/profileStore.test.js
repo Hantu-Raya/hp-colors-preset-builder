@@ -7,6 +7,7 @@ import {
   createInitialProfile,
   createProfile,
   loadProfileState,
+  migrateLegacyV2ProfileState,
   HP_PROFILE_LIMIT,
   profileToPreset,
   removeProfile,
@@ -188,6 +189,43 @@ test("V1 and V2 profile storage are isolated", () => {
   assert.equal(loadProfileState(storage, defaultState).profiles[0].name, "V1 only");
   assert.equal(loadProfileState(storage, defaultState, V2_STORAGE_KEY).profiles[0].name, "Rewrite only");
   assert.notEqual(storage.getItem(STORAGE_KEY), storage.getItem(V2_STORAGE_KEY));
+});
+
+test("legacy shared rewrite profiles migrate to V2 and leave V1 clean", () => {
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
+  const storage = createMemoryStorage();
+  const v1 = createProfile({ id: "v1", name: "V1 kept", values: defaultState });
+  const rewrite = createProfile({
+    id: "rewrite",
+    name: "Rewrite moved",
+    values: defaultState,
+    rewrite: { id: "user_0001", kind: "user", values: [] }
+  });
+  saveProfileState(storage, { profiles: [v1, rewrite], activeProfileId: rewrite.id });
+
+  assert.deepEqual(migrateLegacyV2ProfileState(storage, defaultState), { migrated: true, error: null });
+  assert.deepEqual(loadProfileState(storage, defaultState).profiles.map((profile) => profile.name), ["V1 kept"]);
+  assert.deepEqual(
+    loadProfileState(storage, defaultState, V2_STORAGE_KEY).profiles.map((profile) => profile.name),
+    ["V1 kept", "Rewrite moved"]
+  );
+  assert.deepEqual(migrateLegacyV2ProfileState(storage, defaultState), { migrated: false, error: null });
+});
+
+test("rewrite-only legacy state resets V1 to its default profile", () => {
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
+  const storage = createMemoryStorage();
+  const rewrite = createProfile({
+    id: "rewrite",
+    name: "Rewrite moved",
+    values: defaultState,
+    rewrite: { id: "user_0001", kind: "user", values: [] }
+  });
+  saveProfileState(storage, { profiles: [rewrite], activeProfileId: rewrite.id });
+
+  migrateLegacyV2ProfileState(storage, defaultState);
+  assert.equal(loadProfileState(storage, defaultState).profiles[0].name, "Web Builder Preset");
+  assert.equal(loadProfileState(storage, defaultState, V2_STORAGE_KEY).profiles[0].name, "Rewrite moved");
 });
 
 test("profile hero scope modes round trip through storage and preset export", () => {

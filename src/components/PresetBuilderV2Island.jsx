@@ -33,7 +33,13 @@ import { HP_COLORS_MOD_VARIANTS } from '../hpModVariants.js';
 import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitCommitInfoRefresh.js';
 import { TARGET_MODE_CHOICES } from '../targetModeStore.js';
 import { copyText, downloadText } from '../download.js';
-import { cleanProfileName, createProfilePersistenceSnapshot, saveProfileState, V2_STORAGE_KEY } from '../profileStore.js';
+import {
+  cleanProfileName,
+  createProfilePersistenceSnapshot,
+  migrateLegacyV2ProfileState,
+  saveProfileState,
+  V2_STORAGE_KEY
+} from '../profileStore.js';
 import {
   createProfilesJsonExport,
   createProfilesJsonFileName
@@ -414,7 +420,10 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
   useEffect(() => {
     const storage = typeof window !== 'undefined' ? window.localStorage : null;
-    setSession(loadPresetBuilderSession(storage, defaultState, { profileStorageKey: V2_STORAGE_KEY }));
+    const migration = migrateLegacyV2ProfileState(storage, defaultState);
+    const loaded = loadPresetBuilderSession(storage, defaultState, { profileStorageKey: V2_STORAGE_KEY });
+    if (migration.error) loaded.feedback = { type: 'error', message: migration.error };
+    setSession(loaded);
   }, [defaultState]);
 
   useEffect(() => {
