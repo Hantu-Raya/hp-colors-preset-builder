@@ -97,6 +97,36 @@ test('exports ordinary web profiles with canonical rewrite prefixes', () => {
   assert.ok(record.values.some(([index, value]) => index === 45 && value === 44));
 });
 
+test('All Heroes preset exports hide the baked default', () => {
+  const allHeroes = {
+    id: 'all-heroes',
+    name: 'All Heroes',
+    values: HP_FIELD_CATALOG.createDefaultState(),
+    heroMode: 'all',
+    heroes: [],
+    overrides: {}
+  };
+  const selectedHero = {
+    ...allHeroes,
+    id: 'shiv',
+    name: 'Shiv',
+    heroMode: 'selected',
+    heroes: ['hero_shiv']
+  };
+  assert.deepEqual(
+    payload(createRewritePresetCode(allHeroes), 'HPCRP1').hiddenBakedPresetIds,
+    ['baked_default']
+  );
+  assert.deepEqual(
+    payload(createRewritePresetBundle([selectedHero, allHeroes]), 'HPCRP1').hiddenBakedPresetIds,
+    ['baked_default']
+  );
+  assert.deepEqual(
+    payload(createRewritePresetCode(selectedHero), 'HPCRP1').hiddenBakedPresetIds,
+    []
+  );
+});
+
 test('copies multiple profiles with unique rewrite user IDs', () => {
   const profile = decodeRewriteTransfer(FIXTURE).profiles[0];
   const second = { ...profile, id: 'profile-2', name: 'Second' };

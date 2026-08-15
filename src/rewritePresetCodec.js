@@ -369,6 +369,12 @@ function userRecord(profile, index) {
   };
 }
 
+function hiddenBakedPresetIds(records) {
+  return records.some((record) => record.kind === 'user' && record.mode === HP_HERO_SCOPE_ALL)
+    ? ['baked_default']
+    : [];
+}
+
 export function createRewriteSettingsCode(profile) {
   const values = profileValues(profile);
   const conditions = webConditionsToRewrite(profile);
@@ -378,7 +384,12 @@ export function createRewriteSettingsCode(profile) {
 
 export function createRewritePresetCode(profile, index = 0) {
   const record = userRecord(profile, index);
-  return `${PRESET_PREFIX}${JSON.stringify({ records: [record], selectedPresetId: record.id })}`;
+  const payload = {
+    records: [record],
+    hiddenBakedPresetIds: hiddenBakedPresetIds([record]),
+    selectedPresetId: record.id
+  };
+  return `${PRESET_PREFIX}${JSON.stringify(payload)}`;
 }
 
 export function createRewritePresetBundle(profiles, activeProfileId = null) {
@@ -395,5 +406,10 @@ export function createRewritePresetBundle(profiles, activeProfileId = null) {
     used.add(record.id);
   }
   const selectedIndex = Math.max(0, profiles.findIndex((profile) => profile?.id === activeProfileId));
-  return `${PRESET_PREFIX}${JSON.stringify({ records, selectedPresetId: records[selectedIndex].id })}`;
+  const payload = {
+    records,
+    hiddenBakedPresetIds: hiddenBakedPresetIds(records),
+    selectedPresetId: records[selectedIndex].id
+  };
+  return `${PRESET_PREFIX}${JSON.stringify(payload)}`;
 }
