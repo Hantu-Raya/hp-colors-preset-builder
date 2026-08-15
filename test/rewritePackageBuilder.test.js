@@ -39,6 +39,23 @@ test("XML template has the stable rewrite layout contract and one empty hidden s
   assert.doesNotMatch(templateText, /hp_colors_builder_presets|base_hud/i);
 });
 
+test("rewrite template keeps the native menu entry and shared threshold ownership", () => {
+  const entryIndex = templateText.indexOf('<Button id="HPColorsMenuButton" class="nav_menu_item minor">');
+  const feedbackIndex = templateText.indexOf('id="PlayerFeedback"');
+  const settingsIndex = templateText.indexOf('<Panel class="SettingsRow">');
+
+  assert.ok(feedbackIndex >= 0 && feedbackIndex < entryIndex);
+  assert.ok(entryIndex >= 0 && entryIndex < settingsIndex);
+  assert.match(
+    templateText,
+    /<Button id="HPColorsMenuButton" class="nav_menu_item minor">\s*<Label text="HP COLORS" class="menuButtonLabel" \/>\s*<\/Button>/
+  );
+  assert.doesNotMatch(templateText, /HPColorsMenuAccent|HPColorsMenuSwatch|HPColorsMenuBinding/);
+  assert.match(templateText, /id="HPColorsSharedLowThresholdSliderHost"/);
+  assert.match(templateText, /id="HPColorsSharedHighThresholdSliderHost"/);
+  assert.doesNotMatch(templateText, /id="HPColorsLowThresholdSliderHost"|id="HPColorsHighThresholdSliderHost"/);
+});
+
 test("rewrite package compiles exactly one hud_escape_menu XML layout and round-trips HPCRP1", () => {
   const built = buildRewritePresetPackage({ templateText, presetCode: PRESET_CODE });
   const archive = readVpkArchive(built.vpkBytes);

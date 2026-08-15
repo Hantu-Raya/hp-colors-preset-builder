@@ -45,21 +45,15 @@
         <Button id="changehero" class="nav_menu_item primary" onactivate="CitadelEscapeMenuChangeHero()">
           <Label text="#menu_changehero" class="menuButtonLabel" />
         </Button>
-        <Button id="HPColorsMenuButton" class="nav_menu_item primary HPColorsMenuButton">
-          <Panel class="HPColorsMenuAccent" />
-          <Panel class="HPColorsMenuSwatch">
-            <Panel class="HPColorsMenuSwatchEnemy" />
-            <Panel class="HPColorsMenuSwatchSoul" />
-          </Panel>
-          <Label text="HP COLORS" class="menuButtonLabel" />
-          <Label id="HPColorsMenuBinding" class="HPColorsMenuBinding" />
-        </Button>
         <Panel id="SubOptions">
           <Panel class="FeedbackRow">
             <Button id="PlayerFeedback" class="nav_menu_item minor" onactivate="CitadelShowPlayerFeedbackPopup()">
               <Label text="#Citadel_PlayerFeedback_Title" class="menuButtonLabel" />
             </Button>
           </Panel>
+          <Button id="HPColorsMenuButton" class="nav_menu_item minor">
+            <Label text="HP COLORS" class="menuButtonLabel" />
+          </Button>
           <Panel class="SettingsRow">
             <Button id="settings" class="nav_menu_item minor" onactivate="CitadelSettings()">
               <Panel class="smallIcon GearIcon" />
@@ -176,8 +170,8 @@
                   </Panel>
                   <Panel class="HPColorsSettingRow">
                     <Panel class="HPColorsSettingCopy">
-                      <Label text="HORIZONTAL POSITION" class="HPColorsSettingTitle" />
-                      <Label text="Move the healthbar stack left or right. The unit icon stays in place." class="HPColorsSettingHelp" />
+                      <Label text="BAR X OFFSET" class="HPColorsSettingTitle" />
+                      <Label text="Move only the healthbar stack left or right. Unit and status icons stay in place." class="HPColorsSettingHelp" />
                     </Panel>
                     <Panel class="HPColorsSliderGroup">
                       <Panel id="HPColorsPositionXSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" />
@@ -187,8 +181,8 @@
                   </Panel>
                   <Panel class="HPColorsSettingRow">
                     <Panel class="HPColorsSettingCopy">
-                      <Label text="VERTICAL POSITION" class="HPColorsSettingTitle" />
-                      <Label text="Move the healthbar stack up or down without changing the surrounding layout." class="HPColorsSettingHelp" />
+                      <Label text="BAR Y OFFSET" class="HPColorsSettingTitle" />
+                      <Label text="Move only the healthbar stack up or down. Unit and status icons stay in place." class="HPColorsSettingHelp" />
                     </Panel>
                     <Panel class="HPColorsSliderGroup">
                       <Panel id="HPColorsPositionYSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" />
@@ -331,22 +325,6 @@
                       <Button id="HPColorsEnemyHighSwatch" class="HPColorsColorSwatch" />
                       <TextEntry id="HPColorsEnemyHighHex" class="HPColorsHexEntry" text="#00FF00" maxchars="7" />
                     </Panel>
-                    <Panel class="HPColorsSettingRow">
-                      <Panel class="HPColorsSettingCopy"><Label text="LOW THRESHOLD" class="HPColorsSettingTitle" /><Label text="Set where low health ends." class="HPColorsSettingHelp" /></Panel>
-                      <Panel class="HPColorsSliderGroup">
-                        <Panel id="HPColorsLowThresholdSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" />
-                        <TextEntry id="HPColorsLowThresholdEntry" class="HPColorsNumberEntry" text="25" />
-                        <Label text="%" class="HPColorsUnitLabel" />
-                      </Panel>
-                    </Panel>
-                    <Panel class="HPColorsSettingRow">
-                      <Panel class="HPColorsSettingCopy"><Label text="HIGH THRESHOLD" class="HPColorsSettingTitle" /><Label text="Set where high health begins." class="HPColorsSettingHelp" /></Panel>
-                      <Panel class="HPColorsSliderGroup">
-                        <Panel id="HPColorsHighThresholdSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" />
-                        <TextEntry id="HPColorsHighThresholdEntry" class="HPColorsNumberEntry" text="65" />
-                        <Label text="%" class="HPColorsUnitLabel" />
-                      </Panel>
-                    </Panel>
                   </Panel>
                 </Panel>
 
@@ -368,21 +346,6 @@
                     <Panel class="HPColorsSettingCopy"><Label text="BULLET SHIELD COLOR" class="HPColorsSettingTitle" /><Label text="Set the color of the bullet-shield indicator." class="HPColorsSettingHelp" /></Panel>
                     <Button id="HPColorsEnemyShieldSwatch" class="HPColorsColorSwatch" />
                     <TextEntry id="HPColorsEnemyShieldHex" class="HPColorsHexEntry" text="#FFFFFF" maxchars="7" />
-                  </Panel>
-                  <Panel class="HPColorsSettingRow">
-                    <Panel class="HPColorsSettingCopy">
-                      <Label text="ULTIMATE ICON COLOR" class="HPColorsSettingTitle" />
-                      <Label text="Match the final bar color or choose one custom icon color." class="HPColorsSettingHelp" />
-                    </Panel>
-                    <Panel class="HPColorsSegment">
-                      <Button id="HPColorsUltModeFollow" class="HPColorsSegmentButton"><Label text="FOLLOW BAR" /></Button>
-                      <Button id="HPColorsUltModeCustom" class="HPColorsSegmentButton"><Label text="CUSTOM" /></Button>
-                    </Panel>
-                  </Panel>
-                  <Panel id="HPColorsUltCustomRow" class="HPColorsSettingRow HPColorsColorRow HPColorsConditionalRow">
-                    <Panel class="HPColorsSettingCopy"><Label text="CUSTOM ICON COLOR" class="HPColorsSettingTitle" /><Label text="Set a separate color for the ultimate icon." class="HPColorsSettingHelp" /></Panel>
-                    <Button id="HPColorsUltCustomSwatch" class="HPColorsColorSwatch" />
-                    <TextEntry id="HPColorsUltCustomHex" class="HPColorsHexEntry" text="#E16161" maxchars="7" />
                   </Panel>
                 </Panel>
 
@@ -473,19 +436,19 @@
                       <Button id="HPColorsReadoutModeGradient" class="HPColorsSegmentButton"><Label text="GRADIENT" /></Button>
                     </Panel>
                   </Panel>
-                  <Panel id="HPColorsReadoutLowThresholdRow" class="HPColorsSettingRow HPColorsFollowedRow">
-                    <Panel class="HPColorsSettingCopy"><Label text="LOW THRESHOLD" class="HPColorsSettingTitle" /><Label text="Use the enemy bar's low-health threshold for health text." class="HPColorsSettingHelp" /></Panel>
+                  <Panel id="HPColorsSharedLowThresholdRow" class="HPColorsSettingRow">
+                    <Panel class="HPColorsSettingCopy"><Label text="SHARED LOW THRESHOLD" class="HPColorsSettingTitle" /><Label text="One threshold used by enemy bars, ally bars, and custom HP text." class="HPColorsSettingHelp" /></Panel>
                     <Panel class="HPColorsSliderGroup">
-                      <Panel id="HPColorsReadoutLowThresholdSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" />
-                      <TextEntry id="HPColorsReadoutLowThresholdEntry" class="HPColorsNumberEntry" text="25" />
+                      <Panel id="HPColorsSharedLowThresholdSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" />
+                      <TextEntry id="HPColorsSharedLowThresholdEntry" class="HPColorsNumberEntry" text="25" />
                       <Label text="%" class="HPColorsUnitLabel" />
                     </Panel>
                   </Panel>
-                  <Panel id="HPColorsReadoutHighThresholdRow" class="HPColorsSettingRow HPColorsFollowedRow">
-                    <Panel class="HPColorsSettingCopy"><Label text="HIGH THRESHOLD" class="HPColorsSettingTitle" /><Label text="Use the enemy bar's high-health threshold for health text." class="HPColorsSettingHelp" /></Panel>
+                  <Panel id="HPColorsSharedHighThresholdRow" class="HPColorsSettingRow">
+                    <Panel class="HPColorsSettingCopy"><Label text="SHARED HIGH THRESHOLD" class="HPColorsSettingTitle" /><Label text="One threshold used by enemy bars, ally bars, and custom HP text." class="HPColorsSettingHelp" /></Panel>
                     <Panel class="HPColorsSliderGroup">
-                      <Panel id="HPColorsReadoutHighThresholdSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" />
-                      <TextEntry id="HPColorsReadoutHighThresholdEntry" class="HPColorsNumberEntry" text="65" />
+                      <Panel id="HPColorsSharedHighThresholdSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" />
+                      <TextEntry id="HPColorsSharedHighThresholdEntry" class="HPColorsNumberEntry" text="65" />
                       <Label text="%" class="HPColorsUnitLabel" />
                     </Panel>
                   </Panel>
@@ -536,6 +499,21 @@
                     </Panel>
                     <Button id="HPColorsLevelsVisibleToggle" class="HPColorsToggle"><Panel class="HPColorsToggleKnob" /></Button>
                   </Panel>
+                  <Panel class="HPColorsSettingRow">
+                    <Panel class="HPColorsSettingCopy">
+                      <Label text="ULTIMATE ICONS" class="HPColorsSettingTitle" />
+                      <Label text="Use one shared color rule for customized enemy and ally ultimate-ready icons." class="HPColorsSettingHelp" />
+                    </Panel>
+                    <Panel class="HPColorsSegment">
+                      <Button id="HPColorsUltModeFollow" class="HPColorsSegmentButton"><Label text="FOLLOW BAR" /></Button>
+                      <Button id="HPColorsUltModeCustom" class="HPColorsSegmentButton"><Label text="CUSTOM" /></Button>
+                    </Panel>
+                  </Panel>
+                  <Panel id="HPColorsUltCustomRow" class="HPColorsSettingRow HPColorsColorRow HPColorsConditionalRow">
+                    <Panel class="HPColorsSettingCopy"><Label text="SHARED CUSTOM ICON COLOR" class="HPColorsSettingTitle" /><Label text="Use this color for both enemy and ally ultimate-ready icons." class="HPColorsSettingHelp" /></Panel>
+                    <Button id="HPColorsUltCustomSwatch" class="HPColorsColorSwatch" />
+                    <TextEntry id="HPColorsUltCustomHex" class="HPColorsHexEntry" text="#E16161" maxchars="7" />
+                  </Panel>
                 </Panel>
 
                 <Panel id="HPColorsSettingsEnemyPulse" class="HPColorsSettingsPage">
@@ -552,7 +530,7 @@
                     <Panel class="HPColorsSliderGroup"><Panel id="HPColorsEnemyPulseBpmSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" /><TextEntry id="HPColorsEnemyPulseBpmEntry" class="HPColorsNumberEntry" text="75" /><Label text="BPM" class="HPColorsUnitLabel" /></Panel>
                   </Panel>
                   <Panel class="HPColorsSettingRow">
-                    <Panel class="HPColorsSettingCopy"><Label text="PULSE INTENSITY" class="HPColorsSettingTitle" /><Label text="Choose a subtle, medium, or intense pulse." class="HPColorsSettingHelp" /></Panel>
+                    <Panel class="HPColorsSettingCopy"><Label text="PULSE INTENSITY" class="HPColorsSettingTitle" /><Label text="Choose how strongly the pulse changes the bar." class="HPColorsSettingHelp" /></Panel>
                     <Panel class="HPColorsSegment">
                       <Button id="HPColorsEnemyPulseIntensitySubtle" class="HPColorsSegmentButton"><Label text="SUBTLE" /></Button>
                       <Button id="HPColorsEnemyPulseIntensityMedium" class="HPColorsSegmentButton"><Label text="MEDIUM" /></Button>
@@ -635,7 +613,7 @@
                     <Panel class="HPColorsSliderGroup"><Panel id="HPColorsAllyPulseBpmSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" /><TextEntry id="HPColorsAllyPulseBpmEntry" class="HPColorsNumberEntry" text="75" /><Label text="BPM" class="HPColorsUnitLabel" /></Panel>
                   </Panel>
                   <Panel class="HPColorsSettingRow">
-                    <Panel class="HPColorsSettingCopy"><Label text="PULSE INTENSITY" class="HPColorsSettingTitle" /><Label text="Choose a subtle, medium, or intense ally pulse." class="HPColorsSettingHelp" /></Panel>
+                    <Panel class="HPColorsSettingCopy"><Label text="PULSE INTENSITY" class="HPColorsSettingTitle" /><Label text="Choose how strongly the pulse changes the ally bar." class="HPColorsSettingHelp" /></Panel>
                     <Panel class="HPColorsSegment">
                       <Button id="HPColorsAllyPulseIntensitySubtle" class="HPColorsSegmentButton"><Label text="SUBTLE" /></Button>
                       <Button id="HPColorsAllyPulseIntensityMedium" class="HPColorsSegmentButton"><Label text="MEDIUM" /></Button>
