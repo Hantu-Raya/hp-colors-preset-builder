@@ -85,6 +85,13 @@ test('exports ordinary web profiles with canonical rewrite prefixes', () => {
   const preset = createRewritePresetCode(profile);
   assert.match(settings, /^HPCR2/);
   assert.match(preset, /^HPCRP1/);
+  const settingsPayload = payload(settings, 'HPCR2');
+  assert.ok(Array.isArray(settingsPayload.v));
+  assert.deepEqual(
+    settingsPayload.c,
+    {},
+    'condition-free settings exports must explicitly clear conditions on import'
+  );
   const record = payload(preset, 'HPCRP1').records[0];
   assert.ok(record.values.some(([index, value]) => index === 7 && value === 'fixed'));
   assert.ok(record.values.some(([index, value]) => index === 45 && value === 44));

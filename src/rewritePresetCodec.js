@@ -372,7 +372,7 @@ function userRecord(profile, index) {
 export function createRewriteSettingsCode(profile) {
   const values = profileValues(profile);
   const conditions = webConditionsToRewrite(profile);
-  const payload = conditions ? { v: pairsFor(values), c: conditions } : pairsFor(values);
+  const payload = { v: pairsFor(values), c: conditions || {} };
   return `${SETTINGS_PREFIX}${JSON.stringify(payload)}`;
 }
 

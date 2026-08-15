@@ -207,7 +207,7 @@
                       </Panel>
                       <Label text="SESSION ONLY" class="HPColorsHeroSessionFlag" />
                     </Panel>
-                    <Label text="Save and organize presets for this session. They disappear when Deadlock restarts." class="HPColorsHeroCardHelp" />
+                    <Label text="Create presets from your current settings. Select a session preset to update it." class="HPColorsHeroCardHelp" />
 
                     <Panel class="HPColorsPresetHeroContext">
                       <Label text="ACTIVE HERO" class="HPColorsPresetContextLabel" />
@@ -218,31 +218,36 @@
                     <Panel class="HPColorsPresetCreateBlock">
                       <Panel class="HPColorsPresetCreateHeader">
                         <Panel class="HPColorsPresetCreateHeading">
-                          <Label text="SAVE CURRENT SETTINGS" class="HPColorsHeroFieldLabel" />
-                          <Label id="HPColorsPresetSaveMode" text="NEW PRESET" class="HPColorsPresetSaveMode" />
+                          <Label text="PRESET EDITOR" class="HPColorsHeroFieldLabel" />
+                          <Label id="HPColorsPresetSaveMode" text="CREATE A NEW PRESET" class="HPColorsPresetSaveMode" />
                         </Panel>
                         <Button id="HPColorsPresetNewButton" class="HPColorsSecondaryAction HPColorsPresetNewButton"><Label text="NEW PRESET" /></Button>
                       </Panel>
-                      <Panel class="HPColorsHeroScopeBlock">
-                        <Panel class="HPColorsHeroScopeHeader">
-                          <Label text="TARGET" class="HPColorsHeroFieldLabel" />
-                          <Label id="HPColorsCurrentScopeSummary" text="ALL HEROES" class="HPColorsCurrentScopeSummary" />
+                      <Panel id="HPColorsPresetForm" class="HPColorsPresetForm">
+                        <Panel class="HPColorsPresetSaveControls">
+                          <TextEntry id="HPColorsPresetNameInput" class="HPColorsPresetNameInput" multiline="false" maxchars="48" placeholder="PRESET NAME" />
                         </Panel>
-                        <Panel class="HPColorsSegment HPColorsCurrentScopeSegment">
-                          <Button id="HPColorsCurrentScopeAll" class="HPColorsSegmentButton"><Label text="ALL HEROES" /></Button>
-                          <Button id="HPColorsCurrentScopeSelected" class="HPColorsSegmentButton"><Label text="SELECT HEROES" /></Button>
+                        <Panel class="HPColorsHeroScopeBlock">
+                          <Panel class="HPColorsHeroScopeHeader">
+                            <Label text="APPLIES TO" class="HPColorsHeroFieldLabel" />
+                            <Label id="HPColorsCurrentScopeSummary" text="ALL HEROES" class="HPColorsCurrentScopeSummary" />
+                          </Panel>
+                          <Panel class="HPColorsSegment HPColorsCurrentScopeSegment">
+                            <Button id="HPColorsCurrentScopeAll" class="HPColorsSegmentButton"><Label text="ALL HEROES" /></Button>
+                            <Button id="HPColorsCurrentScopeSelected" class="HPColorsSegmentButton"><Label text="SELECT HEROES" /></Button>
+                          </Panel>
                         </Panel>
-                      </Panel>
-                      <Panel class="HPColorsPresetSaveControls">
-                        <TextEntry id="HPColorsPresetNameInput" class="HPColorsPresetNameInput" multiline="false" maxchars="48" placeholder="PRESET NAME" />
-                        <Button id="HPColorsPresetSaveButton" class="HPColorsPrimaryAction HPColorsPresetSaveButton"><Label text="SAVE" /></Button>
+                        <Panel class="HPColorsPresetFormActions">
+                          <Button id="HPColorsPresetSaveButton" class="HPColorsPrimaryAction HPColorsPresetSaveButton"><Label id="HPColorsPresetSaveButtonLabel" text="CREATE PRESET" /></Button>
+                          <Button id="HPColorsPresetCancelEditButton" class="HPColorsSecondaryAction HPColorsPresetCancelEditButton"><Label text="CANCEL" /></Button>
+                        </Panel>
                       </Panel>
                     </Panel>
 
                     <Label id="HPColorsPresetFeedback" text="" class="HPColorsPresetFeedback" />
                     <Panel class="HPColorsPresetLibraryHeader">
                       <Label text="PRESETS" class="HPColorsHeroFieldLabel" />
-                      <Label text="SELECT edits a preset. APPLY loads its settings." class="HPColorsPresetLibraryHint" />
+                      <Label text="APPLY loads a preset. Click a session preset to update it." class="HPColorsPresetLibraryHint" />
                       <Button id="HPColorsPresetCopyAllButton" class="HPColorsSecondaryAction HPColorsPresetLibraryAction"><Label text="COPY ALL" /></Button>
                       <Button id="HPColorsPresetImportButton" class="HPColorsSecondaryAction HPColorsPresetLibraryAction"><Label text="IMPORT" /></Button>
                       <Button id="HPColorsPresetRestoreBakedButton" class="HPColorsSecondaryAction HPColorsPresetLibraryAction"><Label text="RESTORE BAKED" /></Button>
