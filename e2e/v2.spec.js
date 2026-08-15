@@ -100,6 +100,7 @@ test('v2 rewrite profiles build a rewrite-only pak96 and retain code-copy contro
   const payload = JSON.parse(copied.slice(6));
   expect(payload.records).toHaveLength(1);
   expect(payload.selectedPresetId).toBe(payload.records[0].id);
+  expect(payload.hiddenBakedPresetIds).toEqual([]);
   expect(payload.records[0]).toMatchObject({
     name: 'Shiv 🚀',
     mode: 'selected',
@@ -125,9 +126,9 @@ test('v2 rewrite profiles build a rewrite-only pak96 and retain code-copy contro
   expect(compiledXml).toContain('HPColorsRewritePresetStore');
   expect(compiledXml).toContain('hp_colors_rewrite_preset_contract="HPCRP1"');
   expect(compiledXml).toContain('hp_colors_rewrite_preset_version="1"');
-  expect(compiledXml).toContain(`text="${encodeUtf16Hex(REWRITE_PRESET)}"`);
+  expect(compiledXml).toContain(`text="${encodeUtf16Hex(copied)}"`);
   expect(compiledXml).not.toMatch(/base_hud|anita|hp_colors_builder_presets/i);
-  expect(readRewritePresetCode(archive.files[0].bytes)).toBe(REWRITE_PRESET);
+  expect(readRewritePresetCode(archive.files[0].bytes)).toBe(copied);
   await expect(page.locator('.status-card')).toContainText(/Built pak96_dir\.vpk for hp_colors_rewrite/);
 });
 
