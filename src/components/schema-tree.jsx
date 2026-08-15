@@ -23,22 +23,14 @@ function buildTreeStats(groups, state, defaultState) {
   return statsByKey;
 }
 
-function getActiveCategory(groups, activeKey) {
-  return groups.find((category) => (
-    category.children?.some((page) => HP_FIELD_CATALOG.getCategoryKey(page) === activeKey)
-  )) || groups[0] || null;
-}
-
-function moveFocus(event, refs, currentIndex, itemCount, onSelect) {
-  let nextIndex = null;
-  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = Math.min(itemCount - 1, currentIndex + 1);
-  if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = Math.max(0, currentIndex - 1);
-  if (event.key === 'Home') nextIndex = 0;
-  if (event.key === 'End') nextIndex = itemCount - 1;
-  if (nextIndex === null) return;
-  event.preventDefault();
-  onSelect(nextIndex);
-  refs.current[nextIndex]?.focus();
+function flattenTree(groups) {
+  const items = [];
+  const visit = (group, depth) => {
+    items.push({ group, depth });
+    for (const child of group.children || []) visit(child, depth + 1);
+  };
+  for (const group of groups || []) visit(group, 0);
+  return items;
 }
 
 export function SchemaTree({ groups, activeKey, state, defaultState = {}, onSelect }) {
@@ -46,75 +38,56 @@ export function SchemaTree({ groups, activeKey, state, defaultState = {}, onSele
     () => buildTreeStats(groups, state, defaultState),
     [defaultState, groups, state]
   );
+  const items = useMemo(() => flattenTree(groups), [groups]);
   const itemRefs = useRef([]);
-  const activeCategory = getActiveCategory(groups, activeKey);
-  const activeIndex = Math.max(0, groups.indexOf(activeCategory));
+  const activeIndex = Math.max(0, items.findIndex(({ group }) => HP_FIELD_CATALOG.getCategoryKey(group) === activeKey));
 
   useEffect(() => {
-    itemRefs.current = itemRefs.current.slice(0, groups.length);
-  }, [groups.length]);
+    itemRefs.current = itemRefs.current.slice(0, items.length);
+  }, [items.length]);
+
+  const handleKeyDown = (event, index) => {
+    let nextIndex = null;
+    if (event.key === 'ArrowDown') nextIndex = Math.min(items.length - 1, index + 1);
+    if (event.key === 'ArrowUp') nextIndex = Math.max(0, index - 1);
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = items.length - 1;
+    if (nextIndex === null) return;
+    event.preventDefault();
+    onSelect(items[nextIndex].group);
+    itemRefs.current[nextIndex]?.focus();
+  };
 
   return (
-    <aside id="builderCategories" className="anita-tree" aria-label="HP Colors sections">
-      <div className="anita-tree-header">SETTINGS</div>
-      <div className="anita-tree-list" role="listbox" aria-label="HP Colors sections">
-        {groups.map((category, index) => {
-          const key = HP_FIELD_CATALOG.getCategoryKey(category);
-          const isActive = category === activeCategory;
-          const stats = statsByKey.get(key) || { isModified: false, visibleCount: 0 };
-          return (
-            <button
-              key={key}
-              ref={(node) => { itemRefs.current[index] = node; }}
-              type="button"
-              role="option"
-              tabIndex={index === activeIndex ? 0 : -1}
-              className={`anita-tree-item anita-tree-item--main${isActive ? ' is-active' : ''}${stats.isModified ? ' is-modified' : ''}`}
-              aria-selected={isActive}
-              onClick={() => onSelect(category.children[0])}
-              onKeyDown={(event) => moveFocus(event, itemRefs, index, groups.length, (nextIndex) => onSelect(groups[nextIndex].children[0]))}
-            >
-              <span className="anita-category-index">{String(index + 1).padStart(2, '0')}</span>
-              <span className="anita-tree-label">{category.name}</span>
-              {stats.isModified ? <span className="anita-mod-dot" aria-label="Modified" /> : null}
-            </button>
-          );
-        })}
+    <aside id="builderCategories" className="anita-tree" aria-label="Schema categories">
+      <div className="anita-tree-header">Categories</div>
+      <div className="tree-scroll">
+        <div className="anita-tree-list" role="listbox" aria-label="Schema categories">
+          {items.map(({ group, depth }, index) => {
+            const key = HP_FIELD_CATALOG.getCategoryKey(group);
+            const isActive = key === activeKey;
+            const stats = statsByKey.get(key) || { isModified: false, visibleCount: 0 };
+            const depthClass = depth === 0 ? 'anita-tree-item--main' : 'anita-tree-item--sub';
+            return (
+              <button
+                key={key}
+                ref={(node) => { itemRefs.current[index] = node; }}
+                type="button"
+                role="option"
+                tabIndex={index === activeIndex ? 0 : -1}
+                className={`anita-tree-item ${depthClass}${isActive ? ' is-active' : ''}${stats.isModified ? ' is-modified' : ''}`}
+                aria-selected={isActive}
+                onClick={() => onSelect(group)}
+                onKeyDown={(event) => handleKeyDown(event, index)}
+              >
+                <span className="anita-tree-label" style={{ '--tree-depth': depth }}>{group.name}</span>
+                {stats.isModified && <span className="anita-mod-dot" aria-label="Modified" />}
+                <span className="anita-count">{stats.visibleCount}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </aside>
-  );
-}
-
-export function SchemaTabs({ groups, activeKey, onSelect }) {
-  const activeCategory = getActiveCategory(groups, activeKey);
-  const pages = activeCategory?.children || [];
-  const itemRefs = useRef([]);
-
-  useEffect(() => {
-    itemRefs.current = itemRefs.current.slice(0, pages.length);
-  }, [pages.length]);
-
-  return (
-    <nav className="anita-tab-strip" role="tablist" aria-label={`${activeCategory?.name || 'Settings'} pages`}>
-      {pages.map((page, index) => {
-        const key = HP_FIELD_CATALOG.getCategoryKey(page);
-        const isActive = key === activeKey;
-        return (
-          <button
-            key={key}
-            ref={(node) => { itemRefs.current[index] = node; }}
-            type="button"
-            role="tab"
-            tabIndex={isActive ? 0 : -1}
-            className={isActive ? 'anita-tab is-active' : 'anita-tab'}
-            aria-selected={isActive}
-            onClick={() => onSelect(page)}
-            onKeyDown={(event) => moveFocus(event, itemRefs, index, pages.length, (nextIndex) => onSelect(pages[nextIndex]))}
-          >
-            {page.name}
-          </button>
-        );
-      })}
-    </nav>
   );
 }

@@ -1,7 +1,7 @@
 ---
-import PresetBuilderIsland from '../components/PresetBuilderIsland.jsx';
+import PresetBuilderV2Island from '../components/PresetBuilderV2Island.jsx';
 import { getGitCommitInfo } from '../gitCommitInfo.js';
-import '../styles/global.css';
+import '../styles/v2.css';
 
 const gitCommitInfo = getGitCommitInfo();
 ---
@@ -10,22 +10,22 @@ const gitCommitInfo = getGitCommitInfo();
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>HP Colors Game Menu Builder</title>
+    <title>HP Colors Preset Builder V2</title>
     <meta
       name="description"
-      content="Build HP Colors presets with the same navigation used by the in-game menu."
+      content="Build HP Colors presets with the V2 in-game menu navigation."
     />
-    <meta property="og:title" content="HP Colors Game Menu Builder" />
+    <meta property="og:title" content="HP Colors Preset Builder V2" />
     <meta
       property="og:description"
-      content="Build HP Colors presets with the same navigation used by the in-game menu."
+      content="Build HP Colors presets with the V2 in-game menu navigation."
     />
     <link rel="icon" href="data:," />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
     <main id="main-content" class="shell">
-      <PresetBuilderIsland gitCommitInfo={gitCommitInfo} client:load />
+      <PresetBuilderV2Island gitCommitInfo={gitCommitInfo} client:load />
     </main>
   </body>
 </html>

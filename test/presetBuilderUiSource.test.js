@@ -6,7 +6,6 @@ const islandPath = new URL("../src/components/PresetBuilderIsland.jsx", import.m
 const fieldPath = new URL("../src/components/schema-field.jsx", import.meta.url);
 const treePath = new URL("../src/components/schema-tree.jsx", import.meta.url);
 const cssPath = new URL("../src/styles/global.css", import.meta.url);
-const gameMenuPagePath = new URL("../src/pages/game-menu.astro", import.meta.url);
 
 test("transient UI state routes through reducer intents", async () => {
   const source = await readFile(islandPath, "utf8");
@@ -55,7 +54,7 @@ test("full target exposes precise pips convars while minimal uses a direct prese
   assert.match(source, /HP Colors cannot apply or verify these game settings/);
   assert.match(source, /citadel_unit_status_health_per_minor_pip/);
   assert.match(source, /copyText\(command\)/);
-  assert.match(source, /currentGroup\?\.pageId === 'health-pips-levels'/);
+  assert.match(source, /currentGroup\?\.name === 'Number Overlay'/);
   assert.match(source, /id: 'hp_precise_pips_enabled'[\s\S]*type: 'toggle'/);
   assert.match(source, /field=\{PRECISE_PIPS_FIELD\}/);
   assert.match(source, /value=\{state\.hp_precise_pips_enabled\}/);
@@ -71,15 +70,4 @@ test("full target exposes precise pips convars while minimal uses a direct prese
   assert.match(source, /createProfileCode\(activeProfile, activeProfileIndex, session\.targetMode\)/);
   assert.match(source, /createAllProfileCodes\(profiles, session\.targetMode\)/);
   assert.match(source, /createProfilesJsonExport\(profiles, session\.targetMode\)/);
-});
-
-test("game menu builder has a GitHub Pages route and internal link", async () => {
-  const [island, page] = await Promise.all([
-    readFile(islandPath, "utf8"),
-    readFile(gameMenuPagePath, "utf8")
-  ]);
-  assert.match(island, /import\.meta\.env\.BASE_URL\}game-menu\//);
-  assert.match(island, />\s*Game menu builder\s*</);
-  assert.match(page, /<PresetBuilderIsland gitCommitInfo=\{gitCommitInfo\} client:load \/>/);
-  assert.match(page, /<title>HP Colors Game Menu Builder<\/title>/);
 });

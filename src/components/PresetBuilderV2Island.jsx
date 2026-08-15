@@ -22,6 +22,7 @@ import {
   Upload
 } from 'lucide-preact';
 import { HP_FIELD_CATALOG } from '../hpSchema.js';
+import { createHpMenuGroups } from '../hpMenuNavigation.js';
 import {
   getHpHeroById,
   HP_HEROES,
@@ -53,7 +54,7 @@ import {
   runPresetImportWorkflow
 } from '../presetBuilderWorkflow.js';
 import { SchemaField } from './schema-field.jsx';
-import { SchemaTree } from './schema-tree.jsx';
+import { SchemaTabs, SchemaTree } from './schema-tree-v2.jsx';
 
 const PRECISE_PIPS_COMMAND = [
   '"citadel_unit_status_health_per_minor_pip" "10"',
@@ -288,7 +289,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const [freshGitCommitInfo, setFreshGitCommitInfo] = useState(gitCommitInfo);
   const [session, setSession] = useState(() => createPresetBuilderSession(defaultState));
   const latestProfileSnapshot = useRef(createProfilePersistenceSnapshot(session));
-  const groups = useMemo(() => HP_FIELD_CATALOG.splitCategoryGroups(), []);
+  const groups = useMemo(() => createHpMenuGroups(HP_FIELD_CATALOG.schema), []);
   const initialSelection = useMemo(
     () => selectPresetBuilderSession(session, defaultState, groups, null),
     [defaultState, groups, session]
@@ -353,7 +354,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const conditionalField = conditionalFieldId
     ? { id: conditionalFieldId, ...HP_FIELD_CATALOG.schema[conditionalFieldId] }
     : null;
-  const showPrecisePipsControl = currentGroup?.name === 'Number Overlay';
+  const showPrecisePipsControl = currentGroup?.pageId === 'health-pips-levels';
+  const showPresetTools = currentGroup?.pageId === 'overview-presets';
   const profileOptionRefs = useRef([]);
   const heroOptionRefs = useRef([]);
   const operationLockRef = useRef(false);
@@ -784,33 +786,57 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
           </div>
         </header>
         <nav className="mobile-workspace-nav" aria-label="Mobile builder navigation">
-          <a href="#builderCategories">Categories</a>
-          <a href="#builderBuild">Build &amp; export</a>
+          <a href="#builderCategories">Sections</a>
+          <a href="#builderSettings">Current page</a>
         </nav>
 
         <div className="panorama-workspace">
           <SchemaTree groups={groups} activeKey={activeKey} state={state} defaultState={defaultState} onSelect={handleSelectGroup} />
+          <div id="builderSettings" className="anita-menu-content">
+            <SchemaTabs groups={groups} activeKey={activeKey} onSelect={handleSelectGroup} />
+            <div className={showPresetTools ? 'anita-page-body has-tools' : 'anita-page-body'}>
 
           <section className="anita-detail-panel">
             <div className="anita-detail-header-row">
-              <div>
-                <h2>{HP_FIELD_CATALOG.getCategoryPathLabel(currentGroup)}</h2>
-                <p className="anita-detail-hint">
-                  {visibleCount + (showPrecisePipsControl ? 1 : 0)} visible controls / {profiles.length} profile{profiles.length === 1 ? '' : 's'}
-                </p>
+              <div className="anita-page-heading">
+                <span className="anita-page-eyebrow">{currentGroup?.path?.[0] || 'SETTINGS'}</span>
+                <h2>{currentGroup?.title || currentGroup?.name}</h2>
+                <div className="anita-page-rule" />
+                <p className="anita-page-description">{currentGroup?.description}</p>
+                {!showPresetTools ? (
+                  <p className="anita-detail-hint">
+                    {visibleCount + (showPrecisePipsControl ? 1 : 0)} visible controls / {profiles.length} profile{profiles.length === 1 ? '' : 's'}
+                  </p>
+                ) : null}
               </div>
-              <div className="reset-actions">
-                <button type="button" className="quiet-action" onClick={handleResetPage}>
-                  <RotateCcw aria-hidden="true" />
-                  <span>Page</span>
-                </button>
-                <button type="button" className="quiet-action" onClick={handleResetAll}>
-                  <RotateCcw aria-hidden="true" />
-                  <span>All</span>
-                </button>
-              </div>
+              {!showPresetTools ? (
+                <div className="reset-actions">
+                  <button type="button" className="quiet-action" onClick={handleResetPage}>
+                    <RotateCcw aria-hidden="true" />
+                    <span>Reset Section</span>
+                  </button>
+                  <button type="button" className="quiet-action" onClick={handleResetAll}>
+                    <RotateCcw aria-hidden="true" />
+                    <span>Reset All</span>
+                  </button>
+                </div>
+              ) : null}
             </div>
             <div className="detail-scroll">
+              {showPresetTools ? (
+                <div className="preset-overview">
+                  <article className="preset-overview-card">
+                    <span className="panorama-kicker">CURRENT PRESET</span>
+                    <strong>{presetName}</strong>
+                    <p>{activeOverrideCount} override{activeOverrideCount === 1 ? '' : 's'} routed to {heroSelectionLabel.toLowerCase()}.</p>
+                  </article>
+                  <article className="preset-overview-card">
+                    <span className="panorama-kicker">BUILD TARGET</span>
+                    <strong>{targetModeDetails.title}</strong>
+                    <p>{profiles.length} profile{profiles.length === 1 ? '' : 's'} will be packaged as {presetVpkFileName}.</p>
+                  </article>
+                </div>
+              ) : (
               <div className="schema-field-list">
                 {visibleFields.map((field) => (
                   <Fragment key={field.id}>
@@ -863,9 +889,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                   </div>
                 ) : null}
               </div>
+              )}
             </div>
           </section>
 
+          {showPresetTools ? (
           <aside className="anita-right-rail" id="builderBuild">
             <div className="rail-heading">
               <span className="panorama-kicker">Tools</span>
@@ -953,30 +981,33 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
             </DisclosurePanel>
 
-            {feedback ? (
-              <div className={`operation-feedback is-${feedback.type}`} role={feedback.type === 'error' ? 'alert' : 'status'}>
-                {feedback.type === 'error' ? <AlertTriangle aria-hidden="true" /> : <Check aria-hidden="true" />}
-                <span>{feedback.message}</span>
-              </div>
-            ) : null}
-
-            {buildResult ? (
-              <div className="build-result-card" role="status">
-                <strong>{buildResult.filename}</strong>
-                <dl>
-                  <div><dt>Size</dt><dd>{Number(buildResult.byteLength || 0).toLocaleString()} bytes</dd></div>
-                  <div><dt>SHA-256</dt><dd><code>{buildResult.sha256}</code></dd></div>
-                </dl>
-                <p>Move the file into <code>{buildResult.installDirectory || installDirectory}</code>.</p>
-                <p>Keep the selected {targetModeDetails.title.toLowerCase()} installed as the base runtime.</p>
-              </div>
-            ) : null}
-
-            <div className="status-card" role="status">
-              <Braces aria-hidden="true" />
-              <span>{status}</span>
-            </div>
           </aside>
+          ) : null}
+            </div>
+          </div>
+        </div>
+        <div className="builder-status-dock" aria-label="Builder status">
+          {feedback ? (
+            <div className={`operation-feedback is-${feedback.type}`} role={feedback.type === 'error' ? 'alert' : 'status'}>
+              {feedback.type === 'error' ? <AlertTriangle aria-hidden="true" /> : <Check aria-hidden="true" />}
+              <span>{feedback.message}</span>
+            </div>
+          ) : null}
+          {buildResult ? (
+            <div className="build-result-card" role="status">
+              <strong>{buildResult.filename}</strong>
+              <dl>
+                <div><dt>Size</dt><dd>{Number(buildResult.byteLength || 0).toLocaleString()} bytes</dd></div>
+                <div><dt>SHA-256</dt><dd><code>{buildResult.sha256}</code></dd></div>
+              </dl>
+              <p>Move the file into <code>{buildResult.installDirectory || installDirectory}</code>.</p>
+              <p>Keep the selected {targetModeDetails.title.toLowerCase()} installed as the base runtime.</p>
+            </div>
+          ) : null}
+          <div className="status-card" role="status">
+            <Braces aria-hidden="true" />
+            <span>{status}</span>
+          </div>
         </div>
       </div>
 

@@ -36,16 +36,6 @@ async function openBuilder(page) {
   return errors;
 }
 
-async function openHealthInfoPage(page, tabName) {
-  await page.getByRole('option', { name: /HEALTH INFO/ }).click();
-  await page.getByRole('tab', { name: tabName, exact: true }).click();
-}
-
-async function openPresetTools(page) {
-  await page.getByRole('option', { name: /OVERVIEW/ }).click();
-  await page.getByRole('tab', { name: 'PRESETS', exact: true }).click();
-}
-
 function makeCompactV97Token() {
   const payload = JSON.stringify({ v: 97, c: 1, hm: 'all', name: 'Recovered', values: { e: false, cl: '#123456' } });
   return `[ANITA-v1-hp_colors]:${Buffer.from(payload).toString('base64url')}`;
@@ -67,11 +57,13 @@ async function expectPrecisePipsFieldOrder(page) {
   await expect(page.locator('.schema-field-list .schema-field-label', { hasText: 'More Precise HP Pips' })).toHaveCount(1);
   const labels = await pipVisibilityRow.evaluate((row) => {
     const nextRow = row.nextElementSibling;
-    return [row, nextRow].map((item) => item?.querySelector('.schema-field-label')?.textContent?.trim());
+    const followingRow = nextRow?.nextElementSibling;
+    return [row, nextRow, followingRow].map((item) => item?.querySelector('.schema-field-label')?.textContent?.trim());
   });
   expect(labels).toEqual([
     'Show pip HP segments',
-    'More Precise HP Pips'
+    'More Precise HP Pips',
+    'Low HP number color'
   ]);
 }
 
@@ -95,7 +87,8 @@ test.describe('desktop builder workflow', () => {
     test(`orders precise pips directly after pip visibility for the ${target} target`, async ({ page }) => {
       const errors = await openBuilder(page);
       await chooseTarget(page);
-      await openHealthInfoPage(page, 'PIPS & LEVELS');
+      await page.getByRole('option', { name: /^Number Overlay/ }).click();
+      await page.getByRole('radiogroup', { name: 'HP number color source' }).getByRole('radio', { name: 'Custom' }).click();
       await expectPrecisePipsFieldOrder(page);
       expect(errors).toEqual([]);
     });
@@ -104,7 +97,7 @@ test.describe('desktop builder workflow', () => {
   test('copies precise and default pip convars for the full target', async ({ page }) => {
     const errors = await openBuilder(page);
     await chooseFullTarget(page);
-    await openHealthInfoPage(page, 'PIPS & LEVELS');
+    await page.getByRole('option', { name: /^Number Overlay/ }).click();
     await page.getByRole('button', { name: 'Configure' }).click();
 
     const dialog = page.getByRole('dialog', { name: 'More Precise HP Pips' });
@@ -139,7 +132,6 @@ test.describe('desktop builder workflow', () => {
     await page.locator('.hero-selector-trigger').click();
     await expect(page.locator('.hero-selector-menu')).toBeHidden();
 
-    await openPresetTools(page);
     const importTrigger = page.getByRole('button', { name: 'Import game preset codes' });
     if (!(await page.locator('#importText').isVisible())) await importTrigger.click();
     await expect(page.locator('#importText')).toBeVisible();
@@ -182,7 +174,7 @@ test.describe('desktop builder workflow', () => {
   test('builds, downloads, decodes, and converts the fixed VPK output', async ({ page }) => {
     await openBuilder(page);
     await chooseMinimalTarget(page);
-    await openHealthInfoPage(page, 'PIPS & LEVELS');
+    await page.getByRole('option', { name: /^Number Overlay/ }).click();
     await expect(page.getByRole('button', { name: 'Configure' })).toHaveCount(0);
     await expect(page.getByText('Stored in this Minimal preset.')).toBeVisible();
     const precisePipsToggle = page.getByRole('checkbox', { name: 'More Precise HP Pips' });
@@ -226,7 +218,6 @@ test.describe('desktop builder workflow', () => {
     expect(decodedPresets[0].values.hp_precise_pips_enabled).toBe(false);
     await expect(page.locator('.build-result-card')).toContainText('pak96_dir.vpk');
 
-    await openPresetTools(page);
     await page.getByRole('button', { name: 'Convert VPK' }).click();
     await page.locator('input[type="file"]').setInputFiles({
       name: 'pak96_dir.vpk',
