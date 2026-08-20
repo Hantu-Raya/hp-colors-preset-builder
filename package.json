@@ -8,6 +8,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "lint": "oxlint",
     "test": "node --test",
     "test:e2e": "playwright test",
     "verify:artifact": "node scripts/verify-generated-artifact.js"
@@ -19,7 +20,9 @@
     "preact": "^10.29.3"
   },
   "devDependencies": {
+    "@oxlint/plugins": "^1.79.0",
     "@playwright/test": "^1.61.1",
+    "oxlint": "^1.79.0",
     "playwright": "^1.61.1"
   }
 }
