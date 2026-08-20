@@ -19,6 +19,7 @@ export const REWRITE_PRESET_STYLE_INCLUDES = Object.freeze([
   "s2r://panorama/styles/hp_colors_menu.vcss_c"
 ]);
 export const REWRITE_PRESET_SCRIPT_INCLUDES = Object.freeze([
+  "s2r://panorama/scripts/hp_colors_contract.vjs_c",
   "s2r://panorama/scripts/hp_colors_state.vjs_c",
   "s2r://panorama/scripts/hp_colors_menu.vjs_c"
 ]);
@@ -157,6 +158,12 @@ function requireMenuContract(root) {
   var escapeMenus = directChildren(root, "CitadelHudEscapeMenu");
   if (escapeMenus.length !== 1) {
     throw new Error("Rewrite XML must contain exactly one CitadelHudEscapeMenu");
+  }
+  if (
+    escapeMenus[0].attrs.onload !== "$.HPColorsMenuBoot()" ||
+    escapeMenus[0].attrs.oncancel !== "if (!$.HPColorsMenuCancel()) CitadelResumePlaying()"
+  ) {
+    throw new Error("Rewrite XML menu lifecycle contract is stale or incompatible");
   }
   var ids = new Set();
   var walk = (node) => {

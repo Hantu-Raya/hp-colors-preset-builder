@@ -32,11 +32,23 @@ test("XML template has the stable rewrite layout contract and one empty hidden s
   assert.match(inspected.labelClass, new RegExp(`\\b${REWRITE_PRESET_STORE_LABEL_CLASS}\\b`));
   assert.equal(inspected.labelText, "");
   assert.deepEqual(inspected.scriptIncludes, [
+    "s2r://panorama/scripts/hp_colors_contract.vjs_c",
     "s2r://panorama/scripts/hp_colors_state.vjs_c",
     "s2r://panorama/scripts/hp_colors_menu.vjs_c"
   ]);
   assert.doesNotMatch(templateText, /anita/i);
   assert.doesNotMatch(templateText, /hp_colors_builder_presets|base_hud/i);
+});
+
+test("rewrite template loads the shared settings contract and preserves native Escape fallback", () => {
+  assert.match(
+    templateText,
+    /<include src="s2r:\/\/panorama\/scripts\/hp_colors_contract\.vjs_c" \/>\s*<include src="s2r:\/\/panorama\/scripts\/hp_colors_state\.vjs_c" \/>/
+  );
+  assert.match(
+    templateText,
+    /<CitadelHudEscapeMenu onload="\$\.HPColorsMenuBoot\(\)" oncancel="if \(!\$\.HPColorsMenuCancel\(\)\) CitadelResumePlaying\(\)">/
+  );
 });
 
 test("rewrite template keeps the native menu entry and shared threshold ownership", () => {
@@ -81,6 +93,15 @@ test("rewrite package rejects stale, malformed, populated, and incompatible XML 
   assert.throws(() => validateRewritePresetTemplate(templateText.replace("hp_colors_rewrite_preset_version=\"1\"", "hp_colors_rewrite_preset_version=\"2\"")), /stale or incompatible/);
   assert.throws(() => validateRewritePresetTemplate(templateText.replace("hp_colors_menu.vjs_c", "hp_colors_builder_presets.vjs_c")), /stale or incompatible/);
   assert.throws(() => validateRewritePresetTemplate(templateText.replace("HPColorsRewritePresetStore", "OtherStore")), /exactly one HPColorsRewritePresetStore/);
+  assert.throws(
+    () => validateRewritePresetTemplate(
+      templateText.replace(
+        'oncancel="if (!$.HPColorsMenuCancel()) CitadelResumePlaying()"',
+        'oncancel="$.HPColorsMenuCancel()"'
+      )
+    ),
+    /lifecycle contract is stale or incompatible/
+  );
   assert.throws(
     () => validateRewritePresetTemplate(
       templateText.replace(
