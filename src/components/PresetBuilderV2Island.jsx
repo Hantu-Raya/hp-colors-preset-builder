@@ -31,7 +31,7 @@ import {
 } from '../hpHeroData.js';
 import { HP_COLORS_MOD_VARIANTS } from '../hpModVariants.js';
 import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitCommitInfoRefresh.js';
-import { TARGET_MODE_CHOICES } from '../targetModeStore.js';
+import { TARGET_MODE_CHOICES, isRewriteQollockTarget } from '../targetModeStore.js';
 import { copyText, downloadText } from '../download.js';
 import {
   cleanProfileName,
@@ -60,10 +60,12 @@ import {
   commitPresetBuilderTargetMode,
   createBaseHudXmlLoader,
   createRewritePresetTemplateLoader,
+  createRewriteQollockPresetTemplateLoader,
   runPresetBuildWorkflow,
   runPresetConvertWorkflow,
   runPresetImportWorkflow,
-  runRewritePresetBuildWorkflow
+  runRewritePresetBuildWorkflow,
+  runRewriteQollockPresetBuildWorkflow
 } from '../presetBuilderWorkflow.js';
 import { SchemaField } from './schema-field.jsx';
 import { SchemaTabs, SchemaTree } from './schema-tree-v2.jsx';
@@ -364,6 +366,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     conditionalFieldId
   } = session;
   const containsRewriteProfiles = profiles.some((profile) => Boolean(profile?.rewrite));
+  const rewriteQollockTarget = isRewriteQollockTarget(targetMode);
+  const rewriteBuildTarget = containsRewriteProfiles || rewriteQollockTarget;
   const conditionalField = conditionalFieldId
     ? { id: conditionalFieldId, ...HP_FIELD_CATALOG.schema[conditionalFieldId] }
     : null;
@@ -384,6 +388,13 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     () => createRewritePresetTemplateLoader({ baseUrl: import.meta.env.BASE_URL }),
     []
   );
+  const loadRewriteQollockPresetTemplate = useMemo(
+    () => createRewriteQollockPresetTemplateLoader({ baseUrl: import.meta.env.BASE_URL }),
+    []
+  );
+  useEffect(() => {
+    setRewriteInstallValidated(false);
+  }, [rewriteBuildTarget, targetMode]);
 
   const dispatchSessionIntent = useCallback((intent, context) => {
     setSession((prev) => reducePresetBuilderSession(prev, intent, context));
@@ -587,20 +598,29 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
       operationLockRef.current = false;
     }
   }, [busy, dispatchSessionIntent, loadBaseHudXml, selectedSession, targetMode]);
-  const performRewriteBuild = useCallback(async () => {
+  const performRewriteBuild = useCallback(async (qollock = false) => {
     if (busy || operationLockRef.current) return;
     operationLockRef.current = true;
     try {
-      await runRewritePresetBuildWorkflow({
-        profiles,
-        activeProfileId,
-        loadRewritePresetTemplate,
-        dispatch: dispatchSessionIntent
-      });
+      if (qollock) {
+        await runRewriteQollockPresetBuildWorkflow({
+          profiles,
+          activeProfileId,
+          loadRewriteQollockPresetTemplate,
+          dispatch: dispatchSessionIntent
+        });
+      } else {
+        await runRewritePresetBuildWorkflow({
+          profiles,
+          activeProfileId,
+          loadRewritePresetTemplate,
+          dispatch: dispatchSessionIntent
+        });
+      }
     } finally {
       operationLockRef.current = false;
     }
-  }, [activeProfileId, busy, dispatchSessionIntent, loadRewritePresetTemplate, profiles]);
+  }, [activeProfileId, busy, dispatchSessionIntent, loadRewritePresetTemplate, loadRewriteQollockPresetTemplate, profiles]);
 
 
   const performConvert = useCallback(async (targetModVariant) => {
@@ -692,13 +712,13 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             <button
               type="button"
               className="target-mode-trigger"
-              onClick={containsRewriteProfiles ? undefined : openTargetModePicker}
-              aria-disabled={containsRewriteProfiles}
+              onClick={containsRewriteProfiles && !rewriteQollockTarget ? undefined : openTargetModePicker}
+              aria-disabled={containsRewriteProfiles && !rewriteQollockTarget}
             >
               <Layers3 aria-hidden="true" />
               <span className="target-mode-text">
                 <span>Preset target</span>
-                <strong>{containsRewriteProfiles ? 'Rewrite' : targetModeDetails.label}</strong>
+                <strong>{containsRewriteProfiles && !rewriteQollockTarget ? 'Rewrite' : targetModeDetails.label}</strong>
               </span>
             </button>
             <div className="topbar-profile-controls" aria-label="Preset profiles">
@@ -836,7 +856,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               className="build-action"
               onClick={openBuildWarning}
               disabled={busy}
-              title={containsRewriteProfiles ? 'Build a pak96_dir.vpk for hp_colors_rewrite.' : undefined}
+              title={rewriteBuildTarget ? `Build ${presetVpkFileName} for ${rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}.` : undefined}
             >
               <Download aria-hidden="true" />
               <span>{busyOperation === 'build' ? 'Building…' : 'Build VPK'}</span>
@@ -889,11 +909,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     <p>{activeOverrideCount} override{activeOverrideCount === 1 ? '' : 's'} routed to {heroSelectionLabel.toLowerCase()}.</p>
                   </article>
                   <article className="preset-overview-card">
-                    <span className="panorama-kicker">{containsRewriteProfiles ? 'REWRITE TRANSFER' : 'BUILD TARGET'}</span>
-                    <strong>{containsRewriteProfiles ? 'HPCRP1 / HPCR2' : targetModeDetails.title}</strong>
+                    <span className="panorama-kicker">{rewriteBuildTarget ? 'REWRITE TRANSFER' : 'BUILD TARGET'}</span>
+                    <strong>{rewriteBuildTarget ? 'HPCRP1 / HPCR2' : targetModeDetails.title}</strong>
                     <p>
-                      {containsRewriteProfiles
-                        ? `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will build ${presetVpkFileName} for hp_colors_rewrite. Code-copy actions remain available below.`
+                      {rewriteBuildTarget
+                        ? `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will build ${presetVpkFileName} for ${rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}. Code-copy actions remain available below.`
                         : `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will be packaged as ${presetVpkFileName}.`}
                     </p>
                   </article>
@@ -998,7 +1018,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
             </DisclosurePanel>
 
-            {!containsRewriteProfiles ? (
+            {!rewriteBuildTarget ? (
             <DisclosurePanel title="Convert VPK" open={convertOpen} onOpenChange={(open) => dispatchSessionIntent({ type: 'SET_CONVERT_OPEN', open })}>
               <div className="convert-panel-body">
                 <label className="builder-file-control">
@@ -1084,7 +1104,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 <div><dt>SHA-256</dt><dd><code>{buildResult.sha256}</code></dd></div>
               </dl>
               <p>Move the file into <code>{buildResult.installDirectory || installDirectory}</code>.</p>
-              <p>{buildResult.targetLabel === 'hp_colors_rewrite' ? 'Keep hp_colors_rewrite installed as the rewrite runtime.' : `Keep the selected ${targetModeDetails.title.toLowerCase()} installed as the base runtime.`}</p>
+              <p>{buildResult.targetLabel === 'hp_colors_rewrite_qollock'
+                ? 'Keep hp_colors_rewrite_qollock pak02 and pinned QOLLOCK pak03 installed beside this generated pak01.'
+                : buildResult.targetLabel === 'hp_colors_rewrite'
+                  ? 'Keep hp_colors_rewrite installed as the rewrite runtime.'
+                  : `Keep the selected ${targetModeDetails.title.toLowerCase()} installed as the base runtime.`}</p>
             </div>
           ) : null}
           <div className="status-card" role="status">
@@ -1159,14 +1183,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
         <div className="build-warning-modal" role="dialog" aria-modal="true" aria-labelledby="buildWarningTitle">
           <button type="button" className="build-warning-backdrop" onClick={closeBuildWarning} aria-label="Cancel" />
           <div ref={buildDialogRef} className="build-warning-panel" tabIndex={-1}>
-            <div className="build-warning-badge">{containsRewriteProfiles ? 'Rewrite install' : 'Build target'}</div>
-            <h3 id="buildWarningTitle">{containsRewriteProfiles ? 'Confirm hp_colors_rewrite preset VPK' : `Confirm ${targetModeDetails.label} preset VPK`}</h3>
+            <div className="build-warning-badge">{rewriteBuildTarget ? 'Rewrite install' : 'Build target'}</div>
+            <h3 id="buildWarningTitle">{rewriteBuildTarget ? `Confirm ${rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'} preset VPK` : `Confirm ${targetModeDetails.label} preset VPK`}</h3>
             <div className="build-warning-summary" aria-label="Build summary">
               <div className="build-warning-item">
                 <span className="build-warning-item-icon"><Layers3 aria-hidden="true" /></span>
                 <span className="build-warning-item-copy">
                   <span>Target / profiles</span>
-                  <strong>{containsRewriteProfiles ? `hp_colors_rewrite / ${profiles.length} total` : `${targetModeDetails.title} / ${profiles.length} total`}</strong>
+                  <strong>{rewriteBuildTarget ? `${rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'} / ${profiles.length} total` : `${targetModeDetails.title} / ${profiles.length} total`}</strong>
                 </span>
               </div>
               <div className="build-warning-item">
@@ -1193,11 +1217,26 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
             </div>
             <div className="target-mode-summary-card">
-              {containsRewriteProfiles ? (
+              {rewriteBuildTarget ? (
                 <div>
-                  <span className="target-mode-summary-label">Rewrite runtime</span>
-                  <strong>hp_colors_rewrite</strong>
-                  <p>Install the hp_colors_rewrite base package first. This VPK replaces its escape-menu layout and stores HPCRP1 in a hidden XML label.</p>
+                  <span className="target-mode-summary-label">{rewriteQollockTarget ? 'Rewrite + QOLLOCK runtime' : 'Rewrite runtime'}</span>
+                  <strong>{rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}</strong>
+                  <p>
+                    {rewriteQollockTarget
+                      ? 'Install the hp_colors_rewrite_qollock support pak02 and pinned QOLLOCK pak03 first. This generated pak01 contains only the composite Escape-menu layout with the HPCRP1 preset.'
+                      : 'Install the hp_colors_rewrite base package first. This VPK replaces its escape-menu layout and stores HPCRP1 in a hidden XML label.'}
+                  </p>
+                  {rewriteQollockTarget ? (
+                    <div className="target-mode-summary-actions">
+                      <button type="button" className="secondary-action" onClick={() => {
+                        closeBuildWarning();
+                        openTargetModePicker();
+                      }}>
+                        <Layers3 aria-hidden="true" />
+                        <span>Change target</span>
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <>
@@ -1230,22 +1269,28 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 </span>
               </div>
             ) : null}
-            <div className={(containsRewriteProfiles ? rewriteInstallValidated : installValidated) ? 'build-validation-card is-valid' : 'build-validation-card'}>
+            <div className={(rewriteBuildTarget ? rewriteInstallValidated : installValidated) ? 'build-validation-card is-valid' : 'build-validation-card'}>
               <div>
                 <span className="build-validation-label">Install check</span>
-                {(containsRewriteProfiles ? rewriteInstallValidated : installValidated) ? null : <strong>{containsRewriteProfiles ? 'Validate hp_colors_rewrite first' : 'Validate the base mod first'}</strong>}
+                {(rewriteBuildTarget ? rewriteInstallValidated : installValidated)
+                  ? null
+                  : <strong>{rewriteBuildTarget
+                    ? rewriteQollockTarget ? 'Validate the Rewrite + QOLLOCK install order first' : 'Validate hp_colors_rewrite first'
+                    : 'Validate the base mod first'}</strong>}
               </div>
               <button
                 type="button"
                 className="secondary-action build-validation-action"
                 onClick={() => {
-                  if (containsRewriteProfiles) setRewriteInstallValidated((value) => !value);
+                  if (rewriteBuildTarget) setRewriteInstallValidated((value) => !value);
                   else dispatchSessionIntent({ type: 'TOGGLE_INSTALL_VALIDATION' });
                 }}
               >
                 <ShieldCheck aria-hidden="true" />
-                <span>{containsRewriteProfiles
-                  ? rewriteInstallValidated ? 'Undo rewrite install confirmation' : 'I installed hp_colors_rewrite'
+                <span>{rewriteBuildTarget
+                  ? rewriteInstallValidated
+                    ? 'Undo Rewrite install confirmation'
+                    : rewriteQollockTarget ? 'I installed Rewrite + QOLLOCK pak02 and pak03' : 'I installed hp_colors_rewrite'
                   : installValidated ? 'Undo install confirmation' : 'I installed the selected base mod'}</span>
               </button>
             </div>
@@ -1265,12 +1310,12 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <button
                 type="button"
                 className="primary-action build-confirm-action"
-                disabled={containsRewriteProfiles ? !rewriteInstallValidated || busy : !canConfirmBuildVariant || busy}
+                disabled={rewriteBuildTarget ? !rewriteInstallValidated || busy : !canConfirmBuildVariant || busy}
                 onClick={() => {
                   if (busy) return;
-                  if (containsRewriteProfiles) {
+                  if (rewriteBuildTarget) {
                     if (!rewriteInstallValidated) return;
-                    performRewriteBuild();
+                    performRewriteBuild(rewriteQollockTarget);
                   } else {
                     if (!canConfirmBuildVariant) return;
                     performBuild(targetMode);

@@ -22,7 +22,8 @@ import {
   reorderProfiles,
   STORAGE_KEY as PROFILE_STORAGE_KEY
 } from "./profileStore.js";
-import { getTargetModeDetails, isFullTargetMode, loadTargetModeState } from "./targetModeStore.js";
+import { getTargetModeDetails, isFullTargetMode, isRewriteQollockTarget, loadTargetModeState } from "./targetModeStore.js";
+import { PRESET_VPK_FILE_NAME, REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME } from "./presetVpkFileName.js";
 
 const DEFAULT_PRESET_NAME = "Web Builder Preset";
 const BUILD_VARIANTS = new Set(Object.values(HP_COLORS_MOD_VARIANTS));
@@ -229,7 +230,7 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
     fullTargetMode: isFullTargetMode(session.targetMode),
     buildProfilePresets,
     canConfirmBuildVariant: !session.busy && canConfirmBuild({ installValidated: session.installValidated, buildVariant: session.targetMode }),
-    presetVpkFileName: "pak96_dir.vpk",
+    presetVpkFileName: isRewriteQollockTarget(session.targetMode) ? REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME : PRESET_VPK_FILE_NAME,
     installDirectory: "Deadlock/game/citadel/addons",
     topPresetName,
     buildVariantWarning: getBuildVariantWarning({

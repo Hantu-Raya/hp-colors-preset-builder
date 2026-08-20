@@ -1,12 +1,14 @@
 import { downloadBytes } from "./download.js";
 import { DEFAULT_HP_COLORS_MOD_VARIANT, HP_COLORS_MOD_VARIANTS } from "./hpModVariants.js";
-import { PRESET_VPK_FILE_NAME } from "./presetVpkFileName.js";
+import { PRESET_VPK_FILE_NAME, REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME } from "./presetVpkFileName.js";
 import { HP_COLORS_PACKAGE_LIMITS } from "./packageArtifacts.js";
 import { createRewritePresetBundle } from "./rewritePresetCodec.js";
 import {
   buildRewritePresetPackage,
+  buildRewriteQollockPresetPackage,
   REWRITE_PRESET_TEMPLATE_PATH,
-  REWRITE_PRESET_VPK_FILE_NAME
+  REWRITE_PRESET_VPK_FILE_NAME,
+  REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH
 } from "./rewritePackageBuilder.js";
 import { reducePresetBuilderSession } from "./presetBuilderSession.js";
 import { getTargetModeDetails, normalizeTargetMode, saveTargetModeState } from "./targetModeStore.js";
@@ -36,6 +38,24 @@ export function createRewritePresetTemplateLoader({ baseUrl = "/", fetchImpl = g
       promise = Promise.resolve(fetchImpl(`${baseUrl}${REWRITE_PRESET_TEMPLATE_PATH}`))
         .then((response) => {
           if (!response.ok) throw new Error(`Failed to load rewrite preset template (${response.status})`);
+          return response.text();
+        })
+        .catch((error) => {
+          promise = null;
+          throw error;
+        });
+    }
+    return promise;
+  };
+}
+
+export function createRewriteQollockPresetTemplateLoader({ baseUrl = "/", fetchImpl = globalThis.fetch } = {}) {
+  let promise = null;
+  return function loadRewriteQollockPresetTemplate() {
+    if (!promise) {
+      promise = Promise.resolve(fetchImpl(`${baseUrl}${REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH}`))
+        .then((response) => {
+          if (!response.ok) throw new Error(`Failed to load rewrite QOLLOCK preset template (${response.status})`);
           return response.text();
         })
         .catch((error) => {
@@ -154,6 +174,52 @@ export async function runRewritePresetBuildWorkflow({
     };
     dispatch?.({ type: "BUILD_SUCCEEDED", result });
     dispatchStatus(dispatch, "SET_STATUS", `Built ${REWRITE_PRESET_VPK_FILE_NAME} for hp_colors_rewrite (${built.vpkBytes.byteLength.toLocaleString()} bytes, ${buildProfiles.length} profile${buildProfiles.length === 1 ? "" : "s"}).`);
+    return result;
+  } catch (error) {
+    const message = error?.message || String(error);
+    dispatch?.({ type: "BUILD_FAILED", message });
+    dispatchStatus(dispatch, "SET_STATUS", message);
+    return null;
+  } finally {
+    rewriteBuildInFlight = false;
+  }
+}
+
+export async function runRewriteQollockPresetBuildWorkflow({
+  profiles,
+  activeProfileId = null,
+  loadRewriteQollockPresetTemplate,
+  download = downloadBytes,
+  dispatch,
+  digest = null,
+  installDirectory = PRESET_INSTALL_DIRECTORY
+}) {
+  if (rewriteBuildInFlight) {
+    const message = "A rewrite preset build is already in progress.";
+    dispatch?.({ type: "BUILD_FAILED", message });
+    dispatchStatus(dispatch, "SET_STATUS", message);
+    return null;
+  }
+  rewriteBuildInFlight = true;
+  const buildProfiles = Array.isArray(profiles) ? profiles : [];
+  dispatch?.({ type: "BUILD_STARTED" });
+  dispatchStatus(dispatch, "SET_STATUS", `Building ${REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME} for hp_colors_rewrite_qollock...`);
+  try {
+    const presetCode = createRewritePresetBundle(buildProfiles, activeProfileId);
+    const templateText = await loadRewriteQollockPresetTemplate();
+    const built = buildRewriteQollockPresetPackage({ presetCode, templateText });
+    await download(REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME, built.vpkBytes);
+    const result = {
+      filename: REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME,
+      byteLength: built.vpkBytes.byteLength,
+      sha256: await sha256Hex(built.vpkBytes, digest),
+      profileCount: buildProfiles.length,
+      target: "hp_colors_rewrite_qollock",
+      targetLabel: "hp_colors_rewrite_qollock",
+      installDirectory
+    };
+    dispatch?.({ type: "BUILD_SUCCEEDED", result });
+    dispatchStatus(dispatch, "SET_STATUS", `Built ${REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME} for hp_colors_rewrite_qollock (${built.vpkBytes.byteLength.toLocaleString()} bytes, ${buildProfiles.length} profile${buildProfiles.length === 1 ? "" : "s"}).`);
     return result;
   } catch (error) {
     const message = error?.message || String(error);

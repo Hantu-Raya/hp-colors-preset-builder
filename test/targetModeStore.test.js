@@ -54,7 +54,19 @@ test("loadTargetModeState restores a saved full target without opening the picke
   });
 });
 
-test("saveTargetModeState writes only normalized full or minimal values", () => {
+test("loadTargetModeState restores Rewrite QOLLOCK without opening the picker", () => {
+  const state = loadTargetModeState(createStorage({
+    [TARGET_MODE_STORAGE_KEY]: HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK
+  }));
+
+  assert.deepEqual(state, {
+    targetMode: HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK,
+    shouldShowPicker: false,
+    isUpgradePrompt: false
+  });
+});
+
+test("saveTargetModeState writes only normalized known target values", () => {
   const storage = createStorage();
 
   saveTargetModeState(storage, "bad-value");
@@ -62,10 +74,13 @@ test("saveTargetModeState writes only normalized full or minimal values", () => 
 
   saveTargetModeState(storage, HP_COLORS_MOD_VARIANTS.FULL);
   assert.equal(storage.getItem(TARGET_MODE_STORAGE_KEY), HP_COLORS_MOD_VARIANTS.FULL);
+
+  saveTargetModeState(storage, HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
+  assert.equal(storage.getItem(TARGET_MODE_STORAGE_KEY), HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
 });
 
 test("normalizeTargetMode falls back to minimal for unknown values", () => {
-  assert.equal(normalizeTargetMode(HP_COLORS_MOD_VARIANTS.FULL), HP_COLORS_MOD_VARIANTS.FULL);
+  assert.equal(normalizeTargetMode(HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK), HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
   assert.equal(normalizeTargetMode(HP_COLORS_MOD_VARIANTS.MINIMAL), HP_COLORS_MOD_VARIANTS.MINIMAL);
   assert.equal(normalizeTargetMode(null), HP_COLORS_MOD_VARIANTS.MINIMAL);
   assert.equal(normalizeTargetMode("full-mod"), HP_COLORS_MOD_VARIANTS.MINIMAL);
@@ -74,6 +89,7 @@ test("normalizeTargetMode falls back to minimal for unknown values", () => {
 test("getTargetModeDetails exposes choice copy and download links", () => {
   const minimal = getTargetModeDetails(HP_COLORS_MOD_VARIANTS.MINIMAL);
   const full = getTargetModeDetails(HP_COLORS_MOD_VARIANTS.FULL);
+  const qollock = getTargetModeDetails(HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
 
   assert.equal(minimal.id, HP_COLORS_MOD_VARIANTS.MINIMAL);
   assert.match(minimal.description, /preset/i);
@@ -81,8 +97,10 @@ test("getTargetModeDetails exposes choice copy and download links", () => {
   assert.equal(full.id, HP_COLORS_MOD_VARIANTS.FULL);
   assert.match(full.description, /Anita UI/i);
   assert.match(full.downloadHref, /^https:\/\//);
+  assert.equal(qollock.id, HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
+  assert.match(qollock.description, /pak01|pak02|pak03/);
+  assert.match(qollock.downloadHref, /^https:\/\//);
 });
-
 
 test("target mode storage failures are surfaced", () => {
   const loaded = loadTargetModeState({

@@ -29,6 +29,57 @@ const REWRITE_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   REWRITE_PRESET_STORE_PANEL_ID
 ]);
 
+export const REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME = "pak01_dir.vpk";
+export const REWRITE_QOLLOCK_PRESET_TEMPLATE_SOURCE_PATH = "templates/hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml";
+export const REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH = REWRITE_QOLLOCK_PRESET_TEMPLATE_SOURCE_PATH;
+export const REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES = Object.freeze([
+  "s2r://panorama/styles/citadel_base_styles.vcss_c",
+  "s2r://panorama/styles/hud_escape_menu.vcss_c",
+  "s2r://panorama/styles/ql_settings.vcss_c",
+  "s2r://panorama/styles/hp_colors_menu.vcss_c"
+]);
+export const REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES = Object.freeze([
+  "s2r://panorama/scripts/ql_utils.vjs_c",
+  "s2r://panorama/scripts/ql_shared_presets.vjs_c",
+  "s2r://panorama/scripts/ql_bridge.vjs_c",
+  "s2r://panorama/scripts/ql_config.vjs_c",
+  "s2r://panorama/scripts/ql_custom_announcer_pack_meta.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_en.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_ko.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_it.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_tr.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_ru.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_uk.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_pl.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_bg.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_by.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_ja.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_zh.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_fr.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_pt.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_pt_br.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_es.vjs_c",
+  "s2r://panorama/scripts/ql_arcade_games.vjs_c",
+  "s2r://panorama/scripts/ql_settings_previews.vjs_c",
+  "s2r://panorama/scripts/ql_settings_tooltips.vjs_c",
+  "s2r://panorama/scripts/ql_settings_persistence.vjs_c",
+  "s2r://panorama/scripts/ql_update_checker.vjs_c",
+  "s2r://panorama/scripts/ql_settings.vjs_c",
+  "s2r://panorama/scripts/qollock_settings_guard.vjs_c",
+  "s2r://panorama/scripts/hp_colors_contract.vjs_c",
+  "s2r://panorama/scripts/hp_colors_state.vjs_c",
+  "s2r://panorama/scripts/hp_colors_menu.vjs_c",
+  "s2r://panorama/scripts/qollock_hp_colors_bridge.vjs_c"
+]);
+export const REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
+  "SettingsWindow",
+  "SettingsList",
+  "ModSettingsBtn",
+  "HPColorsMenuButton",
+  "HPColorsEditorRoot",
+  REWRITE_PRESET_STORE_PANEL_ID
+]);
+
 const XML_TOKEN = /<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<![\s\S]*?>|<[^>]*>|[^<]+/g;
 const XML_NAME = /^[A-Za-z_:][A-Za-z0-9_.:-]*$/;
 const HEX = /^[0-9A-F]+$/;
@@ -154,25 +205,29 @@ function requireIncludes(root, name, expected, label) {
   }
   return values;
 }
-function requireMenuContract(root) {
-  var escapeMenus = directChildren(root, "CitadelHudEscapeMenu");
+function requireMenuContract(
+  root,
+  {
+    expectedOnload = "$.HPColorsMenuBoot()",
+    expectedOncancel = "if (!$.HPColorsMenuCancel()) CitadelResumePlaying()",
+    requiredPanelIds = REWRITE_PRESET_REQUIRED_PANEL_IDS
+  } = {}
+) {
+  const escapeMenus = directChildren(root, "CitadelHudEscapeMenu");
   if (escapeMenus.length !== 1) {
     throw new Error("Rewrite XML must contain exactly one CitadelHudEscapeMenu");
   }
-  if (
-    escapeMenus[0].attrs.onload !== "$.HPColorsMenuBoot()" ||
-    escapeMenus[0].attrs.oncancel !== "if (!$.HPColorsMenuCancel()) CitadelResumePlaying()"
-  ) {
+  if (escapeMenus[0].attrs.onload !== expectedOnload || escapeMenus[0].attrs.oncancel !== expectedOncancel) {
     throw new Error("Rewrite XML menu lifecycle contract is stale or incompatible");
   }
-  var ids = new Set();
-  var walk = (node) => {
+  const ids = new Set();
+  const walk = (node) => {
     if (!node) return;
     if (node.attrs.id) ids.add(node.attrs.id);
     node.children.forEach(walk);
   };
   walk(escapeMenus[0]);
-  if (REWRITE_PRESET_REQUIRED_PANEL_IDS.some((id) => !ids.has(id))) {
+  if (requiredPanelIds.some((id) => !ids.has(id))) {
     throw new Error("Rewrite XML menu panel contract is stale or incompatible");
   }
   return escapeMenus[0];
@@ -210,14 +265,24 @@ function requireStoreLabel(root, { requireEmpty = true } = {}) {
   return { panel, label, textRange };
 }
 
-function inspectRewriteXml(source, { requireEmpty = true } = {}) {
+function inspectRewriteXml(
+  source,
+  {
+    requireEmpty = true,
+    styleIncludes = REWRITE_PRESET_STYLE_INCLUDES,
+    scriptIncludes = REWRITE_PRESET_SCRIPT_INCLUDES,
+    requiredPanelIds = REWRITE_PRESET_REQUIRED_PANEL_IDS,
+    expectedOnload = "$.HPColorsMenuBoot()",
+    expectedOncancel = "if (!$.HPColorsMenuCancel()) CitadelResumePlaying()"
+  } = {}
+) {
   const text = asText(source);
   if (/anita/i.test(text)) throw new Error("Rewrite XML must not reference Anita assets");
   const parsed = parseRewriteXml(text);
-  const styles = requireIncludes(parsed.root, "styles", REWRITE_PRESET_STYLE_INCLUDES, "style");
-  const scripts = requireIncludes(parsed.root, "scripts", REWRITE_PRESET_SCRIPT_INCLUDES, "script");
+  const styles = requireIncludes(parsed.root, "styles", styleIncludes, "style");
+  const scripts = requireIncludes(parsed.root, "scripts", scriptIncludes, "script");
   const store = requireStoreLabel(parsed.root, { requireEmpty });
-  requireMenuContract(parsed.root);
+  requireMenuContract(parsed.root, { expectedOnload, expectedOncancel, requiredPanelIds });
   let code = "";
   if (store.label.attrs.text) {
     code = decodeUtf16Hex(store.label.attrs.text);
@@ -270,6 +335,7 @@ function validatePresetCode(rawCode) {
   } catch {
     throw new Error("Invalid HPCRP1 code");
   }
+
   return code;
 }
 
@@ -282,6 +348,19 @@ export function inspectRewritePresetTemplate(templateText) {
 export function validateRewritePresetTemplate(templateText) {
   return inspectRewritePresetTemplate(templateText);
 }
+
+export function inspectRewriteQollockPresetTemplate(templateText) {
+  return inspectRewriteXml(templateText, {
+    requireEmpty: true,
+    styleIncludes: REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES,
+    scriptIncludes: REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES,
+    requiredPanelIds: REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS,
+    expectedOnload: "$.HPColorsMenuBoot()",
+    expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { CitadelResumePlaying(); }"
+  });
+}
+
+export const validateRewriteQollockPresetTemplate = inspectRewriteQollockPresetTemplate;
 
 function sourceTextFromResource(input) {
   if (typeof input === "string") return input;
@@ -308,6 +387,47 @@ export function patchRewritePresetTemplate({ templateText, templateXml, template
   if (reread.presetCode !== normalizedCode) throw new Error("Rewrite XML store patch failed payload round-trip");
   if (inspected.text.slice(0, inspected.labelTextStart) !== patchedText.slice(0, inspected.labelTextStart) || inspected.text.slice(inspected.labelTextEnd) !== patchedText.slice(inspected.labelTextStart + encoded.length)) {
     throw new Error("Rewrite XML patch changed bytes outside the store label");
+  }
+  return {
+    text: patchedText,
+    xmlText: patchedText,
+    code: normalizedCode,
+    presetCode: normalizedCode,
+    template: reread
+  };
+}
+
+export function readRewriteQollockPresetCode(input) {
+  const source = sourceTextFromResource(input);
+  const inspected = inspectRewriteXml(source, {
+    requireEmpty: false,
+    styleIncludes: REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES,
+    scriptIncludes: REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES,
+    requiredPanelIds: REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS,
+    expectedOnload: "$.HPColorsMenuBoot()",
+    expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { CitadelResumePlaying(); }"
+  });
+  if (!inspected.presetCode) throw new Error("Rewrite QOLLOCK XML store is empty");
+  return validatePresetCode(inspected.presetCode);
+}
+
+export function patchRewriteQollockPresetTemplate({ templateText, templateXml, template, presetCode, code = presetCode } = {}) {
+  const source = templateText ?? templateXml ?? template;
+  const normalizedCode = validatePresetCode(code);
+  const inspected = inspectRewriteQollockPresetTemplate(source);
+  const encoded = encodeUtf16Hex(normalizedCode);
+  const patchedText = inspected.text.slice(0, inspected.labelTextStart) + encoded + inspected.text.slice(inspected.labelTextEnd);
+  const reread = inspectRewriteXml(patchedText, {
+    requireEmpty: false,
+    styleIncludes: REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES,
+    scriptIncludes: REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES,
+    requiredPanelIds: REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS,
+    expectedOnload: "$.HPColorsMenuBoot()",
+    expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { CitadelResumePlaying(); }"
+  });
+  if (reread.presetCode !== normalizedCode) throw new Error("Rewrite QOLLOCK XML store patch failed payload round-trip");
+  if (inspected.text.slice(0, inspected.labelTextStart) !== patchedText.slice(0, inspected.labelTextStart) || inspected.text.slice(inspected.labelTextEnd) !== patchedText.slice(inspected.labelTextStart + encoded.length)) {
+    throw new Error("Rewrite QOLLOCK XML patch changed bytes outside the store label");
   }
   return {
     text: patchedText,
@@ -355,5 +475,59 @@ export function buildRewritePresetPackage(input, positionalTemplateText = null) 
     archive: rereadArchive
   };
 }
+
+export function validateRewriteQollockPresetVpk(vpkBytes) {
+  const archive = readVpkArchive(vpkBytes);
+  if (archive.files.length !== 1) throw new Error("Rewrite QOLLOCK preset VPK must contain exactly one file");
+  const [file] = archive.files;
+  if (normalizeVpkPath(file.path) !== REWRITE_PRESET_ARCHIVE_PATH) throw new Error("Rewrite QOLLOCK preset VPK contains an unexpected file");
+  if (!(file.bytes instanceof Uint8Array)) throw new Error("Rewrite QOLLOCK preset VPK contains invalid bytes");
+  const sourceText = extractSource2Resource({ bytes: file.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  const inspected = inspectRewriteXml(sourceText, {
+    requireEmpty: false,
+    styleIncludes: REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES,
+    scriptIncludes: REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES,
+    requiredPanelIds: REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS,
+    expectedOnload: "$.HPColorsMenuBoot()",
+    expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { CitadelResumePlaying(); }"
+  });
+  if (!inspected.presetCode) throw new Error("Rewrite QOLLOCK preset VPK store is empty");
+  return archive;
+}
+
+export function buildRewriteQollockPresetPackage(input, positionalTemplateText = null) {
+  const options = typeof input === "string"
+    ? { presetCode: input, templateText: positionalTemplateText }
+    : (input || {});
+  const presetCode = options.presetCode ?? options.code;
+  const templateText = options.templateText ?? options.templateXml ?? options.template;
+  const patched = patchRewriteQollockPresetTemplate({ templateText, presetCode });
+  const bytes = compileSource2Resource({ sourceText: patched.text, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  const archive = createVpkArchive([{ path: REWRITE_PRESET_ARCHIVE_PATH, bytes }]);
+  const vpkBytes = writeVpkArchive(archive);
+  const rereadArchive = validateRewriteQollockPresetVpk(vpkBytes);
+  const file = rereadArchive.files[0];
+  const rereadText = extractSource2Resource({ bytes: file.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  const rereadCode = readRewriteQollockPresetCode(rereadText);
+  if (rereadCode !== patched.code) throw new Error("Rewrite QOLLOCK preset VPK payload failed round-trip");
+  return {
+    vpkBytes,
+    bytes: file.bytes,
+    sourceText: rereadText,
+    xmlText: rereadText,
+    presetCode: patched.code,
+    template: inspectRewriteXml(rereadText, {
+      requireEmpty: false,
+      styleIncludes: REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES,
+      scriptIncludes: REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES,
+      requiredPanelIds: REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS,
+      expectedOnload: "$.HPColorsMenuBoot()",
+      expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { CitadelResumePlaying(); }"
+    }),
+    archive: rereadArchive
+  };
+}
+
+export const buildRewriteQollockPresetVpk = buildRewriteQollockPresetPackage;
 
 export const buildRewritePresetVpk = buildRewritePresetPackage;

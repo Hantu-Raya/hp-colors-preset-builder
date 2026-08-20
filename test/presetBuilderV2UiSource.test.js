@@ -7,6 +7,7 @@ const v2IslandPath = new URL("../src/components/PresetBuilderV2Island.jsx", impo
 const v2TreePath = new URL("../src/components/schema-tree-v2.jsx", import.meta.url);
 const v2PagePath = new URL("../src/pages/v2.astro", import.meta.url);
 const rewriteTemplatePath = new URL("../public/templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml", import.meta.url);
+const rewriteQollockTemplatePath = new URL("../public/templates/hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml", import.meta.url);
 const oldRewriteScriptPath = new URL("../public/templates/hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.js", import.meta.url);
 const oldRewriteCompiledPath = new URL("../public/templates/hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.vjs_c", import.meta.url);
 
@@ -87,4 +88,25 @@ test("rewrite template is XML-only, strict, and stores the hidden HPCRP1 label",
   assert.doesNotMatch(packageBuilder, /REWRITE_PRESET_TEMPLATE_MARKER|SLOT_CODE_UNITS|VJS template/i);
   await assert.rejects(() => readFile(oldRewriteScriptPath, "utf8"));
   await assert.rejects(() => readFile(oldRewriteCompiledPath));
+});
+
+test("Rewrite QOLLOCK is a separate selectable target with a composite template", async () => {
+  const [island, targetMode, workflow, template] = await Promise.all([
+    readFile(v2IslandPath, "utf8"),
+    readFile(new URL("../src/targetModeStore.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/presetBuilderWorkflow.js", import.meta.url), "utf8"),
+    readFile(rewriteQollockTemplatePath, "utf8")
+  ]);
+  assert.match(island, /isRewriteQollockTarget/);
+  assert.match(island, /runRewriteQollockPresetBuildWorkflow/);
+  assert.match(island, /createRewriteQollockPresetTemplateLoader/);
+  assert.match(targetMode, /REWRITE_QOLLOCK/);
+  assert.match(workflow, /REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH/);
+  assert.match(workflow, /REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME/);
+  const qolIndex = template.indexOf('<Button id="ModSettingsBtn"');
+  const hpIndex = template.indexOf('<Button id="HPColorsMenuButton"');
+  assert.ok(qolIndex >= 0 && qolIndex < hpIndex);
+  assert.match(template, /<Panel id="SettingsWindow"/);
+  assert.match(template, /<Panel id="HPColorsEditorRoot"/);
+  assert.doesNotMatch(template, /panorama\/scripts\/.*\.js\b|panorama\/styles\/.*\.css\b/);
 });

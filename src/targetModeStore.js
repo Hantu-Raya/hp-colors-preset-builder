@@ -18,21 +18,37 @@ export const TARGET_MODE_CHOICES = Object.freeze([
     summary: "Preset VPK for the full HP Colors in-game menu.",
     description: "Use this when you installed full HP Colors. It supports the full Anita UI menu, multi-profile preset routing, and hero-targeted profiles.",
     downloadHref: "https://gamebanana.com/mods/download/603113#FileInfo_1701236"
+  }),
+  Object.freeze({
+    id: HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK,
+    title: "Rewrite + QOLLOCK",
+    label: "Rewrite QOLLOCK",
+    summary: "Preset VPK for the hp_colors_rewrite and QOLLOCK composite runtime.",
+    description: "Use this with the fixed pak01/pak02/pak03 Rewrite + QOLLOCK install order. It writes only the composite Escape-menu layout and embeds the HPCRP1 preset bundle.",
+    downloadHref: "https://github.com/Predi-i/qollock-updates"
   })
 ]);
 
 const TARGET_MODE_BY_ID = new Map(TARGET_MODE_CHOICES.map((choice) => [choice.id, choice]));
+function isKnownTargetMode(targetMode) {
+  return TARGET_MODE_BY_ID.has(targetMode);
+}
+
 
 export function normalizeTargetMode(targetMode) {
   if (targetMode === HP_COLORS_MOD_VARIANTS.FULL) return HP_COLORS_MOD_VARIANTS.FULL;
   if (targetMode === HP_COLORS_MOD_VARIANTS.MINIMAL) return HP_COLORS_MOD_VARIANTS.MINIMAL;
+  if (targetMode === HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK) return HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK;
   return DEFAULT_HP_COLORS_MOD_VARIANT;
 }
 
+export function isRewriteQollockTarget(targetMode) {
+  return normalizeTargetMode(targetMode) === HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK;
+}
 function readSavedTargetMode(storage) {
   const raw = storage?.getItem?.(TARGET_MODE_STORAGE_KEY);
   if (!raw) return null;
-  if (raw === HP_COLORS_MOD_VARIANTS.FULL || raw === HP_COLORS_MOD_VARIANTS.MINIMAL) return raw;
+  if (isKnownTargetMode(raw)) return raw;
   try {
     const parsed = JSON.parse(raw);
     return parsed?.targetMode || parsed?.mode || null;
@@ -44,7 +60,7 @@ function readSavedTargetMode(storage) {
 export function loadTargetModeState(storage, { profileStorageKey = null } = {}) {
   try {
     const saved = readSavedTargetMode(storage);
-    if (saved === HP_COLORS_MOD_VARIANTS.FULL || saved === HP_COLORS_MOD_VARIANTS.MINIMAL) {
+    if (isKnownTargetMode(saved)) {
       return {
         targetMode: saved,
         shouldShowPicker: false,

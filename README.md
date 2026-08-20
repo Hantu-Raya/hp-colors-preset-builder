@@ -1,32 +1,35 @@
 # HP Colors Preset Builder
 
-HP Colors Preset Builder is a browser-only tool for editing, importing, routing, and packaging HP Colors presets. V1 packages contain the Source 2 `base_hud.vxml_c` preset store. V2 rewrite packages contain the hidden preset store in `hud_escape_menu.vxml_c`. Both downloads use the deterministic filename `pak96_dir.vpk`. The builder does not install files into Deadlock.
+HP Colors Preset Builder is a browser-only tool for editing, importing, routing, and packaging HP Colors presets. Minimal and Full packages contain the Source 2 `base_hud.vxml_c` preset store. Rewrite packages contain the hidden preset store in `hud_escape_menu.vxml_c`; the Rewrite + QOLLOCK target uses the composite Escape-menu layout. Downloads use the deterministic filename for their target: `pak96_dir.vpk` for Minimal, Full, and standalone Rewrite, or `pak01_dir.vpk` for Rewrite + QOLLOCK. The builder does not install files into Deadlock.
 
 ## Choose the matching target
 
-Select the target that matches the base HP Colors runtime you installed:
+Select the target that matches the runtime you installed:
 
 - **Minimal** — the lightweight runtime. It reads the shared preset store and supports static hero-targeted routing without the full Anita in-game menu.
 - **Full** — the full HP Colors runtime. It provides the Anita in-game menu, multiple profiles, and hero-targeted profiles.
 - **Rewrite** — V2 selects this target when profiles contain rewrite data. Its package stores the complete `HPCRP1` bundle, including rewrite-only settings and ability-tier conditions, inside the rewrite Escape-menu XML.
+- **Rewrite + QOLLOCK** — an explicit target for the composite runtime. It builds `pak01_dir.vpk` with only `panorama/layout/hud_escape_menu.vxml_c`, and expects the support runtime in `pak02_dir.vpk` plus the pinned QOLLOCK package in `pak03_dir.vpk`.
 
-Do not mix a Full preset package with the Minimal runtime or install either package beside Rewrite. The Minimal/Full selector is saved in browser storage; V2 switches to Rewrite automatically when the loaded profiles contain rewrite data.
+Do not mix Minimal or Full packages with the other base runtime, or install standalone Rewrite beside Rewrite + QOLLOCK. The selected target is saved in browser storage; V2 still switches to standalone Rewrite automatically when loaded profiles contain rewrite data.
 
 ## Install order
 
 1. Exit Deadlock completely.
-2. Install the base runtime that matches the package:
+2. Install the runtime packages that match the target:
    - Minimal or Full: install its matching `pak96_dir.vpk` and `pak97_dir.vpk` pair.
    - Rewrite: install the current `hp_colors_rewrite` `pak01_dir.vpk`.
+   - Rewrite + QOLLOCK: install the support runtime as `pak02_dir.vpk`, then the pinned QOLLOCK package as `pak03_dir.vpk`.
 3. Use this exact add-on directory (replace `<SteamLibrary>` with the drive that contains Steam):
 
    ```text
    <SteamLibrary>/steamapps/common/Deadlock/game/citadel/addons
    ```
 
-4. Build the preset. The download is always named `pak96_dir.vpk`.
+4. Build the preset and place it in the same directory:
    - Minimal or Full: replace the selected base mod's `pak96_dir.vpk` and keep its matching `pak97_dir.vpk`.
    - Rewrite: install the generated `pak96_dir.vpk` beside the rewrite's `pak01_dir.vpk`. The generated package overrides only `panorama/layout/hud_escape_menu.vxml_c`; do not install another mod that overrides that layout.
+   - Rewrite + QOLLOCK: install the generated `pak01_dir.vpk` beside `pak02_dir.vpk` and `pak03_dir.vpk`. It overrides only `panorama/layout/hud_escape_menu.vxml_c`.
 5. Restart Deadlock after replacing any VPK. A live Panorama context can retain the previous package.
 
 Keep only one HP Colors runtime and one matching preset package active at a time.
@@ -41,7 +44,7 @@ The builder's package contract is deliberately narrow and deterministic:
 - The current Minimal/Full runtime storage version is **99**. Builder output uses **v1** payloads, and the importer accepts legacy runtime **v97** (and **v25**) input.
 - Minimal/Full copied codes use the `[ANITA-v1-hp_colors]:` prefix. Rewrite settings use `HPCR2`; rewrite presets and bundles use `HPCRP1`.
 
-Values are normalized before serialization. A generated Minimal or Full package contains one validated `panorama/layout/base_hud.vxml_c` entry. A generated Rewrite package contains one validated `panorama/layout/hud_escape_menu.vxml_c` entry with the hidden `HPCRP1` store. Neither package contains unrelated files.
+Values are normalized before serialization. A generated Minimal or Full package contains one validated `panorama/layout/base_hud.vxml_c` entry. A generated standalone Rewrite or Rewrite + QOLLOCK package contains one validated `panorama/layout/hud_escape_menu.vxml_c` entry with the hidden `HPCRP1` store. Neither package contains unrelated files.
 
 ## Profiles and routing
 
@@ -62,7 +65,7 @@ Use the profile controls to reorder profiles, and the hero selector to maintain 
 
 ## Rebuilds and game updates
 
-When Deadlock or the HP Colors base mod changes, install the matching updated base pair and rebuild the preset package before testing. Treat an old generated `pak96_dir.vpk` as stale after a template/runtime update. Re-run the build and replace only `pak96_dir.vpk`; retain the matching `pak97_dir.vpk`. Never hand-edit the generated VPK.
+When Deadlock or a runtime changes, install the matching updated packages and rebuild before testing. Treat an old generated package as stale after a template or runtime update. Re-run the target build, replace only its generated VPK, and retain the runtime packages: `pak97_dir.vpk` for Minimal/Full, standalone Rewrite's `pak01_dir.vpk`, or Rewrite + QOLLOCK's `pak02_dir.vpk` and `pak03_dir.vpk`. Never hand-edit a generated VPK.
 
 ## Supported browsers
 
