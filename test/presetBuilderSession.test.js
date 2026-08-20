@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { HP_FIELD_CATALOG } from "../src/hpSchema.js";
+import { HP_FIELD_CATALOG, REWRITE_FIELD_CATALOG } from "../src/hpSchema.js";
 import { HP_COLORS_MOD_VARIANTS } from "../src/hpModVariants.js";
 import {
   createPresetBuilderSession,
@@ -35,6 +35,27 @@ test("new session profiles apply all-hero defaults without overriding imported o
 
   assert.equal(imported.profiles[0].heroMode, "off");
   assert.deepEqual(imported.profiles[0].heroes, []);
+});
+
+test("Rewrite targets add profiles from the complete Rewrite defaults", () => {
+  const rewriteDefaultState = REWRITE_FIELD_CATALOG.createDefaultState();
+  let session = createPresetBuilderSession(defaultState);
+  session = reducePresetBuilderSession(
+    session,
+    { type: "ENSURE_REWRITE_PROFILES" },
+    { catalog: REWRITE_FIELD_CATALOG, defaultState: rewriteDefaultState }
+  );
+
+  session = reducePresetBuilderSession(
+    session,
+    { type: "ADD_PROFILE", defaultState: rewriteDefaultState },
+    { catalog: REWRITE_FIELD_CATALOG, defaultState: rewriteDefaultState }
+  );
+
+  assert.equal(session.profiles.length, 2);
+  assert.equal(session.activeProfileId, "profile-2");
+  assert.equal(session.profileMenuOpen, true);
+  assert.deepEqual(session.profiles[1].rewrite.webValues, rewriteDefaultState);
 });
 
 test("hero toggle switches all heroes to a selected hero", () => {

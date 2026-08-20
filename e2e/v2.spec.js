@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import { createHpMenuGroups } from '../src/hpMenuNavigation.js';
+import { REWRITE_FIELD_CATALOG } from '../src/hpSchema.js';
 import { extractSource2Resource, SOURCE2_RESOURCE_CODECS } from '../src/source2ResourceCodec.js';
 import { encodeUtf16Hex, readRewritePresetCode, REWRITE_PRESET_ARCHIVE_PATH, REWRITE_PRESET_TEMPLATE_PATH } from '../src/rewritePackageBuilder.js';
 import { readVpkArchive } from '../src/vpkArchive.js';
@@ -28,6 +30,43 @@ async function chooseMinimalTarget(page) {
   await dialog.locator('.target-mode-choice-select').filter({ hasText: 'Minimal mod' }).click();
   await expect(dialog).toBeHidden();
 }
+
+async function chooseRewriteQollockTarget(page) {
+  const dialog = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });
+  await expect(dialog).toBeVisible();
+  await dialog.locator('.target-mode-choice-select').filter({ hasText: 'Rewrite + QOLLOCK' }).click();
+  await expect(dialog).toBeHidden();
+}
+
+test('v2 Rewrite target adds presets from the topbar and Presets tab', async ({ page }) => {
+  await page.goto('v2/');
+  await chooseRewriteQollockTarget(page);
+
+  await page.getByRole('button', { name: 'Add preset' }).click();
+  await expect(page.locator('.profile-selector-meta')).toContainText('/ 2');
+
+  await openV2Presets(page);
+  const actions = page.locator('.preset-overview-actions');
+  await actions.getByRole('button', { name: 'Add preset' }).click();
+  await expect(page.locator('.profile-selector-meta')).toContainText('/ 3');
+  await expect(page.locator('#presetName')).toHaveValue('Profile 3');
+
+  await page.keyboard.press('Escape');
+  const renderedFieldIds = [];
+  for (const group of createHpMenuGroups(REWRITE_FIELD_CATALOG)) {
+    await page.getByRole('option', { name: new RegExp(group.name) }).click();
+    for (const menuPage of group.children) {
+      if (menuPage.fields.length === 0) continue;
+      await page.getByRole('tab', { name: menuPage.name, exact: true }).click();
+      renderedFieldIds.push(...await page.locator('.schema-field-label[id$="-label"]').evaluateAll(
+        (labels) => labels.map((label) => label.id.replace(/-label$/, ''))
+      ));
+    }
+  }
+  expect([...new Set(renderedFieldIds)].sort()).toEqual(
+    REWRITE_FIELD_CATALOG.bindings.map((binding) => binding.webId).sort()
+  );
+});
 
 test('keeps v1 original and exposes v2 as a separate route', async ({ page }) => {
   await page.goto('.');

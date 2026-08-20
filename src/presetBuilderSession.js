@@ -465,8 +465,10 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
     }
     case "ADD_PROFILE": {
       const catalog = context.catalog || HP_FIELD_CATALOG;
+      const rewriteCatalog = isRewriteCatalog(catalog);
       const profileDefaultState = intent.defaultState || context.defaultState || getCatalogDefaultState(catalog, HP_FIELD_CATALOG.createDefaultState());
-      const next = addProfile(session.profiles, profileDefaultState);
+      const storedDefaultState = rewriteCatalog ? HP_FIELD_CATALOG.createDefaultState() : profileDefaultState;
+      const next = addProfile(session.profiles, storedDefaultState);
       if (next.limitReached) {
         return {
           ...session,
@@ -475,8 +477,8 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
         };
       }
       const addedRaw = next.profiles[next.profiles.length - 1];
-      const added = isRewriteCatalog(catalog)
-        ? updateRewriteProfile(addedRaw, getProfileEditorState(addedRaw, catalog))
+      const added = rewriteCatalog
+        ? updateRewriteProfile(addedRaw, profileDefaultState)
         : addedRaw;
       const profiles = [...next.profiles.slice(0, -1), added];
       return {
