@@ -712,8 +712,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             <button
               type="button"
               className="target-mode-trigger"
-              onClick={containsRewriteProfiles && !rewriteQollockTarget ? undefined : openTargetModePicker}
-              aria-disabled={containsRewriteProfiles && !rewriteQollockTarget}
+              onClick={openTargetModePicker}
             >
               <Layers3 aria-hidden="true" />
               <span className="target-mode-text">
