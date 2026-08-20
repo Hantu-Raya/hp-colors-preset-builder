@@ -20,8 +20,9 @@ async function routeRewriteTemplate(page) {
 }
 
 async function openV2Presets(page) {
-  await page.getByRole('option', { name: /OVERVIEW/ }).click();
-  await page.getByRole('tab', { name: 'PRESETS' }).click();
+  const presetsTab = page.getByRole('tab', { name: 'PRESETS' });
+  await presetsTab.focus();
+  await presetsTab.press('Enter');
 }
 
 async function chooseMinimalTarget(page) {
