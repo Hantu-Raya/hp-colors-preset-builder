@@ -2333,7 +2333,42 @@
   }
 }
 
-@media (max-width: 1600px) {
+@media (min-width: 1541px) {
+  .panorama-topbar {
+    grid-template-columns: max-content minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    row-gap: 5px;
+  }
+
+  .panorama-brand-block {
+    display: contents;
+  }
+
+  .panorama-kicker {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: end;
+  }
+
+  .panorama-title-row {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+  }
+
+  .similar-tools {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    padding-top: 5px;
+  }
+
+  .panorama-header-actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+
+@media (max-width: 1540px) {
   .panorama-topbar {
     grid-template-columns: 1fr;
     align-items: start;
