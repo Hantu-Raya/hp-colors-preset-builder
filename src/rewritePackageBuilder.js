@@ -4,21 +4,20 @@ import { createVpkArchive, normalizeVpkPath, readVpkArchive, writeVpkArchive } f
 
 export const REWRITE_PRESET_ARCHIVE_PATH = "panorama/layout/hud_escape_menu.vxml_c";
 export const REWRITE_PRESET_VPK_FILE_NAME = "pak96_dir.vpk";
-export const REWRITE_PRESET_TEMPLATE_SOURCE_PATH = "templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml";
-export const REWRITE_PRESET_TEMPLATE_PATH = REWRITE_PRESET_TEMPLATE_SOURCE_PATH;
+export const REWRITE_PRESET_TEMPLATE_PATH = "templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml";
 export const REWRITE_PRESET_CONTRACT = "HPCRP1";
 export const REWRITE_PRESET_CONTRACT_VERSION = "1";
 export const REWRITE_PRESET_STORE_PANEL_ID = "HPColorsRewritePresetStore";
 export const REWRITE_PRESET_STORE_LABEL_ID = "HPColorsRewritePreset_001";
 export const REWRITE_PRESET_STORE_LABEL_CLASS = "hp_colors_rewrite_preset_entry";
-export const REWRITE_PRESET_MAX_CODE_BYTES = 64 * 1024;
+const REWRITE_PRESET_MAX_CODE_BYTES = 64 * 1024;
 
-export const REWRITE_PRESET_STYLE_INCLUDES = Object.freeze([
+const REWRITE_PRESET_STYLE_INCLUDES = Object.freeze([
   "s2r://panorama/styles/citadel_base_styles.vcss_c",
   "s2r://panorama/styles/hud_escape_menu.vcss_c",
   "s2r://panorama/styles/hp_colors_menu.vcss_c"
 ]);
-export const REWRITE_PRESET_SCRIPT_INCLUDES = Object.freeze([
+const REWRITE_PRESET_SCRIPT_INCLUDES = Object.freeze([
   "s2r://panorama/scripts/hp_colors_contract.vjs_c",
   "s2r://panorama/scripts/hp_colors_state.vjs_c",
   "s2r://panorama/scripts/hp_colors_menu.vjs_c"
@@ -30,8 +29,7 @@ const REWRITE_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
 ]);
 
 export const REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME = "pak01_dir.vpk";
-export const REWRITE_QOLLOCK_PRESET_TEMPLATE_SOURCE_PATH = "templates/hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml";
-export const REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH = REWRITE_QOLLOCK_PRESET_TEMPLATE_SOURCE_PATH;
+export const REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH = "templates/hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml";
 export const REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES = Object.freeze([
   "s2r://panorama/styles/citadel_base_styles.vcss_c",
   "s2r://panorama/styles/hud_escape_menu.vcss_c",
@@ -341,7 +339,7 @@ function validatePresetCode(rawCode) {
   return code;
 }
 
-export { decodeUtf16Hex, encodeUtf16Hex };
+export { encodeUtf16Hex };
 
 export function inspectRewritePresetTemplate(templateText) {
   return inspectRewriteXml(templateText, { requireEmpty: true });
@@ -379,7 +377,7 @@ export function readRewritePresetCode(input) {
   return validatePresetCode(inspected.presetCode);
 }
 
-export function patchRewritePresetTemplate({ templateText, templateXml, template, presetCode, code = presetCode } = {}) {
+function patchRewritePresetTemplate({ templateText, templateXml, template, presetCode, code = presetCode } = {}) {
   const source = templateText ?? templateXml ?? template;
   const normalizedCode = validatePresetCode(code);
   const inspected = inspectRewritePresetTemplate(source);
@@ -413,7 +411,7 @@ export function readRewriteQollockPresetCode(input) {
   return validatePresetCode(inspected.presetCode);
 }
 
-export function patchRewriteQollockPresetTemplate({ templateText, templateXml, template, presetCode, code = presetCode } = {}) {
+function patchRewriteQollockPresetTemplate({ templateText, templateXml, template, presetCode, code = presetCode } = {}) {
   const source = templateText ?? templateXml ?? template;
   const normalizedCode = validatePresetCode(code);
   const inspected = inspectRewriteQollockPresetTemplate(source);
@@ -530,6 +528,3 @@ export function buildRewriteQollockPresetPackage(input, positionalTemplateText =
   };
 }
 
-export const buildRewriteQollockPresetVpk = buildRewriteQollockPresetPackage;
-
-export const buildRewritePresetVpk = buildRewritePresetPackage;
