@@ -48,7 +48,7 @@ test("Rewrite QOLLOCK template mirrors the composite include and panel contract"
   }
   assert.match(
     templateText,
-    /<Panel class="SettingsRow">[\s\S]*?<Button id="ModSettingsBtn"[\s\S]*?<Button id="HPColorsMenuButton"[\s\S]*?<\/Panel>/
+    /<Panel class="SettingsRow">\s*<Button id="ModSettingsBtn"[\s\S]*?<\/Button>\s*<\/Panel>\s*<Panel class="SettingsRow">\s*<Button id="HPColorsMenuButton"[\s\S]*?<\/Button>\s*<\/Panel>/
   );
   assert.doesNotMatch(templateText, /qollock_settings_guard\.vjs_c/);
   assert.doesNotMatch(templateText, /anita|hp_colors_builder_presets|base_hud/i);
