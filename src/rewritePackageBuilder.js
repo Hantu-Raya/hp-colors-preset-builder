@@ -65,7 +65,6 @@ export const REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES = Object.freeze([
   "s2r://panorama/scripts/ql_settings_persistence.vjs_c",
   "s2r://panorama/scripts/ql_update_checker.vjs_c",
   "s2r://panorama/scripts/ql_settings.vjs_c",
-  "s2r://panorama/scripts/qollock_settings_guard.vjs_c",
   "s2r://panorama/scripts/hp_colors_contract.vjs_c",
   "s2r://panorama/scripts/hp_colors_state.vjs_c",
   "s2r://panorama/scripts/hp_colors_menu.vjs_c",
@@ -75,6 +74,9 @@ export const REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   "SettingsWindow",
   "SettingsList",
   "ModSettingsBtn",
+  "newgame",
+  "watchgame",
+  "guides",
   "HPColorsMenuButton",
   "HPColorsEditorRoot",
   REWRITE_PRESET_STORE_PANEL_ID
@@ -356,7 +358,7 @@ export function inspectRewriteQollockPresetTemplate(templateText) {
     scriptIncludes: REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES,
     requiredPanelIds: REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS,
     expectedOnload: "$.HPColorsMenuBoot()",
-    expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { CitadelResumePlaying(); }"
+    expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { $.DispatchEvent('CitadelResumePlaying', $.GetContextPanel()); }"
   });
 }
 
@@ -405,7 +407,7 @@ export function readRewriteQollockPresetCode(input) {
     scriptIncludes: REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES,
     requiredPanelIds: REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS,
     expectedOnload: "$.HPColorsMenuBoot()",
-    expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { CitadelResumePlaying(); }"
+    expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { $.DispatchEvent('CitadelResumePlaying', $.GetContextPanel()); }"
   });
   if (!inspected.presetCode) throw new Error("Rewrite QOLLOCK XML store is empty");
   return validatePresetCode(inspected.presetCode);
@@ -423,7 +425,7 @@ export function patchRewriteQollockPresetTemplate({ templateText, templateXml, t
     scriptIncludes: REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES,
     requiredPanelIds: REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS,
     expectedOnload: "$.HPColorsMenuBoot()",
-    expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { CitadelResumePlaying(); }"
+    expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { $.DispatchEvent('CitadelResumePlaying', $.GetContextPanel()); }"
   });
   if (reread.presetCode !== normalizedCode) throw new Error("Rewrite QOLLOCK XML store patch failed payload round-trip");
   if (inspected.text.slice(0, inspected.labelTextStart) !== patchedText.slice(0, inspected.labelTextStart) || inspected.text.slice(inspected.labelTextEnd) !== patchedText.slice(inspected.labelTextStart + encoded.length)) {
@@ -489,7 +491,7 @@ export function validateRewriteQollockPresetVpk(vpkBytes) {
     scriptIncludes: REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES,
     requiredPanelIds: REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS,
     expectedOnload: "$.HPColorsMenuBoot()",
-    expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { CitadelResumePlaying(); }"
+    expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { $.DispatchEvent('CitadelResumePlaying', $.GetContextPanel()); }"
   });
   if (!inspected.presetCode) throw new Error("Rewrite QOLLOCK preset VPK store is empty");
   return archive;
@@ -522,7 +524,7 @@ export function buildRewriteQollockPresetPackage(input, positionalTemplateText =
       scriptIncludes: REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES,
       requiredPanelIds: REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS,
       expectedOnload: "$.HPColorsMenuBoot()",
-      expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { CitadelResumePlaying(); }"
+      expectedOncancel: "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { $.DispatchEvent('CitadelResumePlaying', $.GetContextPanel()); }"
     }),
     archive: rereadArchive
   };

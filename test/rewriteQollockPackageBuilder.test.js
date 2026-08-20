@@ -43,6 +43,14 @@ test("Rewrite QOLLOCK template mirrors the composite include and panel contract"
   assert.match(templateText, /<Label text="HP COLORS" class="menuButtonLabel" \/>/);
   assert.match(templateText, /<Panel id="SettingsWindow"/);
   assert.match(templateText, /<Panel id="HPColorsEditorRoot"/);
+  for (const id of ["newgame", "watchgame", "guides"]) {
+    assert.match(templateText, new RegExp(`id="${id}"`), id);
+  }
+  assert.match(
+    templateText,
+    /<Panel class="SettingsRow">[\s\S]*?<Button id="ModSettingsBtn"[\s\S]*?<Button id="HPColorsMenuButton"[\s\S]*?<\/Panel>/
+  );
+  assert.doesNotMatch(templateText, /qollock_settings_guard\.vjs_c/);
   assert.doesNotMatch(templateText, /anita|hp_colors_builder_presets|base_hud/i);
 });
 
