@@ -37,6 +37,18 @@ test("new session profiles apply all-hero defaults without overriding imported o
   assert.deepEqual(imported.profiles[0].heroes, []);
 });
 
+test("hero toggle switches all heroes to a selected hero", () => {
+  const session = createPresetBuilderSession(defaultState);
+  const selected = reducePresetBuilderSession(session, { type: "TOGGLE_HERO", heroId: "Warden" });
+
+  assert.equal(selected.profiles[0].heroMode, "selected");
+  assert.deepEqual(selected.profiles[0].heroes, ["hero_warden"]);
+
+  const disabled = reducePresetBuilderSession(selected, { type: "TOGGLE_HERO", heroId: "Warden" });
+  assert.equal(disabled.profiles[0].heroMode, "off");
+  assert.deepEqual(disabled.profiles[0].heroes, []);
+});
+
 test("minimal import feedback identifies omitted precise pips and signature conditions", () => {
   const session = {
     ...createPresetBuilderSession(defaultState),

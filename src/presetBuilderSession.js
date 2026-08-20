@@ -444,6 +444,25 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
     }
     case "RENAME_ACTIVE_PROFILE":
       return updateActiveProfile(session, { name: intent.name });
+    case "TOGGLE_HERO": {
+      const normalized = normalizeHeroIds([intent.heroId])[0];
+      if (!normalized) return session;
+      return updateActiveProfile(session, (profile) => {
+        const currentMode = normalizeHeroScopeMode(profile.heroMode || profile.hm, profile.heroes || profile.hs);
+        const current = currentMode === HP_HERO_SCOPE_SELECTED ? normalizeHeroIds(profile.heroes) : [];
+        const currentSet = new Set(current);
+        if (currentSet.has(normalized)) {
+          currentSet.delete(normalized);
+        } else {
+          currentSet.add(normalized);
+        }
+        const heroes = HP_HEROES.map((hero) => hero.id).filter((id) => currentSet.has(id));
+        return {
+          heroMode: heroes.length ? HP_HERO_SCOPE_SELECTED : HP_HERO_SCOPE_OFF,
+          heroes
+        };
+      });
+    }
     case "ADD_PROFILE": {
       const catalog = context.catalog || HP_FIELD_CATALOG;
       const profileDefaultState = intent.defaultState || context.defaultState || getCatalogDefaultState(catalog, HP_FIELD_CATALOG.createDefaultState());
