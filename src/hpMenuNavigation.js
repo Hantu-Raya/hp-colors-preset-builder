@@ -54,6 +54,8 @@ const MENU_DEFINITION = Object.freeze([
           "enemyLow",
           "enemyMid",
           "enemyHigh",
+          "lowThreshold",
+          "highThreshold",
           "enemyTeamHigh",
           "excludeBuildings",
           "excludeBosses"
@@ -194,8 +196,6 @@ const MENU_DEFINITION = Object.freeze([
           "readoutFont",
           "readoutColorMode",
           "readoutMode",
-          "lowThreshold",
-          "highThreshold",
           "readoutLow",
           "readoutMid",
           "readoutHigh"
