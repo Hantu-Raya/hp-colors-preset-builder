@@ -2492,6 +2492,23 @@
     grid-column: 2;
     grid-row: 1 / span 2;
   }
+
+  .target-mode-trigger {
+    min-width: 130px;
+  }
+
+  .topbar-profile-controls {
+    flex-basis: 245px;
+    min-width: 245px;
+  }
+
+  .profile-selector {
+    min-width: 0;
+  }
+
+  .hero-selector {
+    min-width: 180px;
+  }
 }
 
 @media (max-width: 1540px) {
