@@ -22,6 +22,7 @@ import {
   reorderProfiles,
   STORAGE_KEY as PROFILE_STORAGE_KEY
 } from "./profileStore.js";
+import { createRewriteProfileMetadata, getRewriteEditorState } from "./rewritePresetCodec.js";
 import { getTargetModeDetails, isFullTargetMode, isRewriteQollockTarget, loadTargetModeState } from "./targetModeStore.js";
 import { PRESET_VPK_FILE_NAME, REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME } from "./presetVpkFileName.js";
 
@@ -68,8 +69,35 @@ function flattenGroups(groups) {
   return out;
 }
 
-function getVisibleFields(group, state) {
-  return (group?.fields || []).filter((field) => field.id !== 'hp_precise_pips_enabled' && HP_FIELD_CATALOG.isFieldVisible(field, state));
+function isRewriteCatalog(catalog) {
+  return catalog?.variant === "rewrite";
+}
+
+function getProfileEditorState(profile, catalog) {
+  return isRewriteCatalog(catalog)
+    ? getRewriteEditorState(profile)
+    : catalog.sanitizeState(profile?.values || {});
+}
+
+function getCatalogDefaultState(catalog, defaultState) {
+  return isRewriteCatalog(catalog) ? catalog.createDefaultState() : defaultState;
+}
+
+function updateRewriteProfile(
+  profile,
+  nextValues,
+  nextOverrides = profile?.rewrite?.webOverrides || profile?.overrides || {}
+) {
+  const rewrite = createRewriteProfileMetadata({
+    ...profile,
+    values: nextValues,
+    overrides: nextOverrides
+  }, { valuesAreRewrite: true });
+  return { ...profile, rewrite };
+}
+
+function getVisibleFields(group, state, catalog) {
+  return (group?.fields || []).filter((field) => field.id !== 'hp_precise_pips_enabled' && catalog.isFieldVisible(field, state));
 }
 
 function nextImportedProfileId(usedIds) {
@@ -175,22 +203,23 @@ export function loadPresetBuilderSession(storage, defaultState, { profileStorage
   };
 }
 
-export function selectPresetBuilderSession(session, defaultState, groups, activeKey) {
+export function selectPresetBuilderSession(session, defaultState, groups, activeKey, catalog = HP_FIELD_CATALOG) {
   const profiles = Array.isArray(session.profiles) && session.profiles.length
     ? session.profiles
     : [createInitialProfile(defaultState)];
   const activeProfile = profiles.find((profile) => profile.id === session.activeProfileId) || profiles[0] || createInitialProfile(defaultState);
   const activeProfileIndex = Math.max(0, profiles.findIndex((profile) => profile.id === activeProfile.id));
+  const activeDefaultState = getCatalogDefaultState(catalog, defaultState);
   const presetName = cleanProfileName(activeProfile.name, activeProfileIndex);
-  const state = activeProfile.values;
+  const state = getProfileEditorState(activeProfile, catalog);
   const activeHeroMode = normalizeHeroScopeMode(activeProfile.heroMode || activeProfile.hm, activeProfile.heroes || activeProfile.hs);
   const selectedHeroIds = activeHeroMode === HP_HERO_SCOPE_SELECTED ? normalizeHeroIds(activeProfile.heroes) : [];
   const selectedHeroSet = new Set(selectedHeroIds);
   const heroSelectionLabel = formatHeroSelection(activeHeroMode, selectedHeroIds);
   const flatGroups = flattenGroups(groups);
-  const firstLeafKey = HP_FIELD_CATALOG.getCategoryKey(flatGroups.find((group) => !group.children?.length) || flatGroups[0]);
-  const currentGroup = flatGroups.find((group) => HP_FIELD_CATALOG.getCategoryKey(group) === activeKey) || flatGroups[0];
-  const visibleFields = getVisibleFields(currentGroup, state);
+  const firstLeafKey = catalog.getCategoryKey(flatGroups.find((group) => !group.children?.length) || flatGroups[0]);
+  const currentGroup = flatGroups.find((group) => catalog.getCategoryKey(group) === activeKey) || flatGroups[0];
+  const visibleFields = getVisibleFields(currentGroup, state, catalog);
   const buildProfilePresets = profiles.map(profileToPreset);
   const targetModeDetails = getTargetModeDetails(session.targetMode);
   const topPresetName = cleanProfileName(profiles[0]?.name, 0);
@@ -201,7 +230,7 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
   }, { all: 0, selected: 0, off: 0 });
   const changedSettingCount = profiles.reduce(
     (total, profile) => total
-      + HP_FIELD_CATALOG.countOverrides(profile.values, defaultState)
+      + catalog.countOverrides(getProfileEditorState(profile, catalog), activeDefaultState)
       + Object.keys(profile.overrides || {}).length,
     0
   );
@@ -214,14 +243,14 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
     activeHeroMode,
     selectedHeroIds,
     selectedHeroSet,
-    activeOverrides: activeProfile.overrides || {},
+    activeOverrides: isRewriteCatalog(catalog) ? activeProfile.rewrite?.webOverrides || {} : activeProfile.overrides || {},
     heroSelectionLabel,
     flatGroups,
     firstLeafKey,
     currentGroup,
     visibleFields,
     visibleCount: visibleFields.length,
-    activeOverrideCount: HP_FIELD_CATALOG.countOverrides(state, defaultState) + Object.keys(activeProfile.overrides || {}).length,
+    activeOverrideCount: catalog.countOverrides(state, activeDefaultState) + Object.keys(activeProfile.overrides || {}).length,
     changedSettingCount,
     profileScopeCounts,
     allProfilesOff: profiles.length > 0 && profileScopeCounts.off === profiles.length,
@@ -233,6 +262,8 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
     presetVpkFileName: isRewriteQollockTarget(session.targetMode) ? REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME : PRESET_VPK_FILE_NAME,
     installDirectory: "Deadlock/game/citadel/addons",
     topPresetName,
+    catalog,
+    defaultState: activeDefaultState,
     buildVariantWarning: getBuildVariantWarning({
       buildVariant: session.targetMode,
       profileCount: buildProfilePresets.length,
@@ -349,13 +380,29 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
       return { ...session, conditionalFieldId: null };
     case "SET_SIGNATURE_CONDITION":
       return {
-        ...updateActiveProfile(session, (profile) => ({
-          overrides: intent.rule
-            ? { ...(profile.overrides || {}), [intent.id]: intent.rule }
-            : Object.fromEntries(Object.entries(profile.overrides || {}).filter(([id]) => id !== intent.id))
-        })),
+        ...updateActiveProfile(session, (profile) => {
+          const currentOverrides = isRewriteCatalog(context.catalog)
+            ? profile.rewrite?.webOverrides || {}
+            : profile.overrides || {};
+          const overrides = intent.rule
+            ? { ...currentOverrides, [intent.id]: intent.rule }
+            : Object.fromEntries(Object.entries(currentOverrides).filter(([id]) => id !== intent.id));
+          return isRewriteCatalog(context.catalog)
+            ? updateRewriteProfile(profile, getProfileEditorState(profile, context.catalog), overrides)
+            : { overrides };
+        }),
         conditionalFieldId: null
       };
+    case "ENSURE_REWRITE_PROFILES": {
+      const profiles = Array.isArray(session.profiles) ? session.profiles : [];
+      if (profiles.every((profile) => profile?.rewrite)) return session;
+      return {
+        ...session,
+        profiles: profiles.map((profile) => profile?.rewrite
+          ? profile
+          : updateRewriteProfile(profile, getRewriteEditorState(profile)))
+      };
+    }
     case "OPEN_BUILD_WARNING":
       if (session.busy) return session;
       return { ...session, installValidated: false, warningOpen: true };
@@ -382,37 +429,25 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
       }
       return { ...session, installValidated: false };
     }
-    case "UPDATE_FIELD":
-      return updateActiveProfile(session, (profile) => ({
-        values: { ...profile.values, [intent.id]: HP_FIELD_CATALOG.coerceValue(intent.id, intent.value) }
-      }));
-    case "RENAME_ACTIVE_PROFILE":
-      return updateActiveProfile(session, { name: intent.name });
-    case "TOGGLE_HERO": {
-      const normalized = normalizeHeroIds([intent.heroId])[0];
-      if (!normalized) return session;
+    case "UPDATE_FIELD": {
+      const catalog = context.catalog || HP_FIELD_CATALOG;
       return updateActiveProfile(session, (profile) => {
-        const currentMode = normalizeHeroScopeMode(profile.heroMode || profile.hm, profile.heroes || profile.hs);
-        const current = currentMode === HP_HERO_SCOPE_SELECTED ? normalizeHeroIds(profile.heroes) : [];
-        const currentSet = new Set(current);
-        if (currentSet.has(normalized)) {
-          currentSet.delete(normalized);
-        } else {
-          currentSet.add(normalized);
-        }
-        const heroes = HP_HEROES.map((hero) => hero.id).filter((id) => currentSet.has(id));
-        return {
-          heroMode: heroes.length ? HP_HERO_SCOPE_SELECTED : HP_HERO_SCOPE_OFF,
-          heroes
+        const current = getProfileEditorState(profile, catalog);
+        const nextValues = {
+          ...current,
+          [intent.id]: catalog.coerceValue(intent.id, intent.value)
         };
+        return isRewriteCatalog(catalog)
+          ? updateRewriteProfile(profile, nextValues)
+          : { values: { ...profile.values, [intent.id]: nextValues[intent.id] } };
       });
     }
-    case "CLEAR_HEROES":
-      return updateActiveProfile(session, { heroMode: HP_HERO_SCOPE_ALL, heroes: [] });
-    case "DISABLE_HERO_SELECTION":
-      return updateActiveProfile(session, { heroMode: HP_HERO_SCOPE_OFF, heroes: [] });
+    case "RENAME_ACTIVE_PROFILE":
+      return updateActiveProfile(session, { name: intent.name });
     case "ADD_PROFILE": {
-      const next = addProfile(session.profiles, intent.defaultState || context.defaultState || {});
+      const catalog = context.catalog || HP_FIELD_CATALOG;
+      const profileDefaultState = intent.defaultState || context.defaultState || getCatalogDefaultState(catalog, HP_FIELD_CATALOG.createDefaultState());
+      const next = addProfile(session.profiles, profileDefaultState);
       if (next.limitReached) {
         return {
           ...session,
@@ -420,15 +455,23 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
           status: `Profile limit reached (${HP_PROFILE_LIMIT}).`
         };
       }
-      const added = next.profiles[next.profiles.length - 1];
+      const addedRaw = next.profiles[next.profiles.length - 1];
+      const added = isRewriteCatalog(catalog)
+        ? updateRewriteProfile(addedRaw, getProfileEditorState(addedRaw, catalog))
+        : addedRaw;
+      const profiles = [...next.profiles.slice(0, -1), added];
       return {
         ...session,
-        profiles: next.profiles,
+        profiles,
         activeProfileId: next.activeProfileId,
         profileMenuOpen: true,
-        status: `Added ${cleanProfileName(added.name, next.profiles.length - 1)}.`
+        status: `Added ${cleanProfileName(added.name, profiles.length - 1)}.`
       };
     }
+    case "CLEAR_HEROES":
+      return updateActiveProfile(session, { heroMode: HP_HERO_SCOPE_ALL, heroes: [] });
+    case "DISABLE_HERO_SELECTION":
+      return updateActiveProfile(session, { heroMode: HP_HERO_SCOPE_OFF, heroes: [] });
     case "DELETE_ACTIVE_PROFILE": {
       if ((session.profiles || []).length <= 1) return session;
       const presetName = context.presetName || cleanProfileName((session.profiles || [])[0]?.name, 0);
@@ -466,29 +509,41 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
       };
     }
     case "RESET_FIELDS": {
+      const catalog = context.catalog || HP_FIELD_CATALOG;
       const fieldIds = Array.isArray(intent.fieldIds) ? intent.fieldIds : [];
-      const defaultState = intent.defaultState || context.defaultState || {};
+      const defaultState = intent.defaultState || context.defaultState || getCatalogDefaultState(catalog, HP_FIELD_CATALOG.createDefaultState());
       return updateActiveProfile(session, (profile) => {
-        const next = { ...profile.values };
+        const next = { ...getProfileEditorState(profile, catalog) };
         const resetIds = new Set(fieldIds);
         for (const id of fieldIds) next[id] = defaultState[id];
-        return {
-          values: next,
-          overrides: Object.fromEntries(Object.entries(profile.overrides || {}).filter(([id]) => !resetIds.has(id)))
-        };
+        const currentOverrides = isRewriteCatalog(catalog)
+          ? profile.rewrite?.webOverrides || {}
+          : profile.overrides || {};
+        const overrides = Object.fromEntries(Object.entries(currentOverrides).filter(([id]) => !resetIds.has(id)));
+        return isRewriteCatalog(catalog)
+          ? updateRewriteProfile(profile, next, overrides)
+          : { values: next, overrides };
       });
     }
-    case "RESET_ALL_FIELDS":
-      return updateActiveProfile(session, {
-        values: { ...(intent.defaultState || context.defaultState || {}) },
-        overrides: {}
-      });
+    case "RESET_ALL_FIELDS": {
+      const catalog = context.catalog || HP_FIELD_CATALOG;
+      const defaultState = intent.defaultState || context.defaultState || getCatalogDefaultState(catalog, HP_FIELD_CATALOG.createDefaultState());
+      return updateActiveProfile(session, (profile) => isRewriteCatalog(catalog)
+        ? updateRewriteProfile(profile, defaultState, {})
+        : { values: { ...defaultState }, overrides: {} });
+    }
     case "IMPORT_PROFILES_SUCCEEDED": {
       const importedProfiles = Array.isArray(intent.importedProfiles) ? intent.importedProfiles : [];
       if (importedProfiles.length === 1) {
         const imported = importedProfiles[0];
-        const selected = selectPresetBuilderSession(session, context.defaultState || {}, context.groups || [], context.activeKey);
-        const message = importedProfileMessage(imported, selected.activeProfileIndex, session.targetMode);
+        const selected = selectPresetBuilderSession(
+          session,
+          context.defaultState || {},
+          context.groups || [],
+          context.activeKey,
+          context.catalog || HP_FIELD_CATALOG
+        );
+        const message = importedProfileMessage(imported, selected.presetName, session.targetMode);
         return {
           ...updateActiveProfile(session, {
             name: imported.name,

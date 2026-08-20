@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { HP_FIELD_CATALOG } from '../src/hpSchema.js';
+import { HP_FIELD_CATALOG, REWRITE_FIELD_BINDINGS, REWRITE_FIELD_CATALOG } from '../src/hpSchema.js';
 import {
   createRewritePresetBundle,
   createRewritePresetCode,
+  createRewriteProfileMetadata,
   createRewriteSettingsCode,
   decodeRewriteTransfer
 } from '../src/rewritePresetCodec.js';
@@ -25,11 +26,12 @@ test('imports the supplied HPCRP1 preset without losing rewrite-only settings', 
   assert.deepEqual(profile.heroes, ['hero_shiv']);
   assert.equal(profile.values.hp_mode, 0);
   assert.equal(profile.values.hp_counter_size, 167);
-  assert.equal(profile.values.hp_pulse_text_position, '27,400');
+  assert.equal(profile.rewrite.webValues.hp_pulse_readout_offset_x, 27);
+  assert.equal(profile.rewrite.webValues.hp_pulse_readout_offset_y, 440);
   assert.equal(profile.rewrite.values[31], 'oracle');
   assert.equal(profile.rewrite.values[53], true);
   assert.equal(profile.rewrite.values[56], 440);
-  assert.deepEqual(profile.overrides.hp_low_threshold, { slot: 4, minTier: 3, value: 28 });
+  assert.deepEqual(profile.rewrite.webOverrides.hp_low_threshold, { slot: 4, minTier: 3, value: 28 });
 });
 
 test('exports an imported preset as a rewrite-valid semantic round trip', () => {
@@ -53,9 +55,15 @@ test('exports an imported preset as a rewrite-valid semantic round trip', () => 
 
 test('web edits override mapped values while rewrite-only values survive', () => {
   const profile = decodeRewriteTransfer(FIXTURE).profiles[0];
-  profile.values = { ...profile.values, hp_pulse_threshold: 33 };
-  const { hp_pulse_threshold: _removed, ...remainingOverrides } = profile.overrides;
-  profile.overrides = remainingOverrides;
+  const {
+    hp_pulse_threshold: _removed,
+    ...remainingOverrides
+  } = profile.rewrite.webOverrides;
+  profile.rewrite = createRewriteProfileMetadata({
+    ...profile,
+    values: { ...profile.rewrite.webValues, hp_pulse_threshold: 33 },
+    overrides: remainingOverrides
+  }, { valuesAreRewrite: true });
   const record = payload(createRewritePresetCode(profile), 'HPCRP1').records[0];
   assert.ok(record.values.some(([index, value]) => index === 45 && value === 33));
   assert.ok(record.values.some(([index, value]) => index === 31 && value === 'oracle'));
@@ -155,4 +163,52 @@ test('returns null for V1 text and rejects malformed rewrite values', () => {
   assert.equal(decodeRewriteTransfer('[ANITA-v1-hp_colors]:abc'), null);
   assert.throws(() => decodeRewriteTransfer('HPCRP1{"records":[]}'), /INVALID HPCRP1 PAYLOAD/);
   assert.throws(() => decodeRewriteTransfer('HPCR2[[31,"comic-sans"]]'), /INVALID SETTING: readoutFont/);
+});
+
+test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => {
+  const values = REWRITE_FIELD_CATALOG.createDefaultState();
+  for (const binding of REWRITE_FIELD_BINDINGS) {
+    const field = REWRITE_FIELD_CATALOG.schema[binding.webId];
+    if (field.type === 'toggle') {
+      values[binding.webId] = !field.defaultValue;
+    } else if (field.type === 'colorpicker') {
+      values[binding.webId] = '#123456';
+    } else if (field.type === 'cycler') {
+      const last = field.options.length - 1;
+      values[binding.webId] = field.defaultValue === 0 ? last : 0;
+    } else {
+      values[binding.webId] = field.bounds.min;
+    }
+  }
+  values.hp_exclude_buildings = true;
+  values.hp_exclude_bosses = false;
+  values.hp_low_threshold = 20;
+  values.hp_high_threshold = 80;
+
+  const profile = {
+    name: 'Every Rewrite setting',
+    values: HP_FIELD_CATALOG.createDefaultState(),
+    heroMode: 'all',
+    heroes: [],
+    overrides: {},
+    rewrite: createRewriteProfileMetadata({
+      name: 'Every Rewrite setting',
+      values,
+      overrides: {}
+    }, { valuesAreRewrite: true })
+  };
+  const code = createRewritePresetCode(profile);
+  const decoded = decodeRewriteTransfer(code).profiles[0];
+  const expected = REWRITE_FIELD_BINDINGS.map((binding) => {
+    const value = values[binding.webId];
+    if (binding.canonicalType === 'enum') return binding.canonicalOptions[value];
+    if (binding.canonicalType === 'enum-toggle') return value ? 'follow' : 'custom';
+    return value;
+  });
+
+  assert.deepEqual(decoded.rewrite.values, expected);
+  assert.equal(decoded.rewrite.values[12], true);
+  assert.equal(decoded.rewrite.values[13], false);
+  assert.equal(payload(code, 'HPCRP1').records[0].values.some(([index]) => index === 12), true);
+  assert.equal(payload(code, 'HPCRP1').records[0].values.some(([index]) => index === 13), false);
 });

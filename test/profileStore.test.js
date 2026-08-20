@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { HP_FIELD_CATALOG, HP_SCHEMA } from "../src/hpSchema.js";
+import { HP_FIELD_CATALOG, REWRITE_FIELD_CATALOG } from "../src/hpSchema.js";
 import {
   addProfile,
   createInitialProfile,
@@ -16,6 +16,7 @@ import {
   STORAGE_KEY,
   V2_STORAGE_KEY
 } from "../src/profileStore.js";
+import { createRewriteProfileMetadata } from "../src/rewritePresetCodec.js";
 
 function createMemoryStorage(seed = {}) {
   const values = new Map(Object.entries(seed));
@@ -127,7 +128,7 @@ test("createProfile accepts compact values and hero keys", () => {
   assert.equal(profile.name, "Compact Lane");
   assert.equal(profile.values.hp_enabled, false);
   assert.equal(profile.values.hp_color_low, "#AABBCC");
-  assert.deepEqual(Object.keys(profile.values), Object.keys(HP_SCHEMA));
+  assert.deepEqual(Object.keys(profile.values), Object.keys(HP_FIELD_CATALOG.schema));
   assert.equal(profile.heroMode, "selected");
   assert.deepEqual(profile.heroes, ["hero_shiv", "hero_bebop"]);
 });
@@ -357,7 +358,7 @@ test("profileToPreset expands compact aliases through the public preset shape", 
   assert.equal(preset.version, 1);
   assert.equal(preset.values.hp_enabled, false);
   assert.equal(preset.values.hp_color_low, "#AABBCC");
-  assert.deepEqual(Object.keys(preset.values), Object.keys(HP_SCHEMA));
+  assert.deepEqual(Object.keys(preset.values), Object.keys(HP_FIELD_CATALOG.schema));
   assert.equal(preset.heroMode, "selected");
   assert.deepEqual(preset.heroes, ["hero_shiv", "hero_bebop"]);
 });
@@ -394,4 +395,32 @@ test("storage security and quota failures are returned to the caller", () => {
   }, { profiles: [createInitialProfile(defaultState)], activeProfileId: "profile-1" });
   assert.equal(blockedWrite.ok, false);
   assert.match(blockedWrite.error, /could not be saved: Quota full/);
+});
+
+test("Rewrite-only editor values survive profile persistence", () => {
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
+  const rewriteValues = REWRITE_FIELD_CATALOG.createDefaultState();
+  rewriteValues.hp_width_scale = 133;
+  rewriteValues.hp_pulse_readout_modifiers = true;
+  const profile = createProfile({
+    id: "rewrite",
+    name: "Rewrite",
+    values: defaultState,
+    rewrite: createRewriteProfileMetadata({
+      id: "rewrite",
+      name: "Rewrite",
+      values: rewriteValues,
+      overrides: {}
+    }, { valuesAreRewrite: true })
+  });
+  const storage = createMemoryStorage();
+
+  assert.equal(saveProfileState(storage, { profiles: [profile], activeProfileId: "rewrite" }, V2_STORAGE_KEY).ok, true);
+  const loaded = loadProfileState(storage, defaultState, V2_STORAGE_KEY);
+  const restored = loaded.profiles[0];
+
+  assert.equal(restored.rewrite.webValues.hp_width_scale, 133);
+  assert.equal(restored.rewrite.webValues.hp_pulse_readout_modifiers, true);
+  assert.equal(restored.rewrite.values[1], 133);
+  assert.equal(restored.rewrite.values[53], true);
 });

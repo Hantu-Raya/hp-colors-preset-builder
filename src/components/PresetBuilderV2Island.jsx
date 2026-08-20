@@ -21,7 +21,7 @@ import {
   Trash2,
   Upload
 } from 'lucide-preact';
-import { HP_FIELD_CATALOG } from '../hpSchema.js';
+import { HP_FIELD_CATALOG, REWRITE_FIELD_CATALOG } from '../hpSchema.js';
 import { createHpMenuGroups } from '../hpMenuNavigation.js';
 import {
   getHpHeroById,
@@ -300,18 +300,30 @@ function PrecisePipsDialog({ initialMode = 'precise', onModeChange = null, onClo
 
 export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const defaultState = useMemo(() => HP_FIELD_CATALOG.createDefaultState(), []);
+  const rewriteDefaultState = useMemo(() => REWRITE_FIELD_CATALOG.createDefaultState(), []);
   const [freshGitCommitInfo, setFreshGitCommitInfo] = useState(gitCommitInfo);
   const [session, setSession] = useState(() => createPresetBuilderSession(defaultState));
   const latestProfileSnapshot = useRef(createProfilePersistenceSnapshot(session));
-  const groups = useMemo(() => createHpMenuGroups(HP_FIELD_CATALOG.schema), []);
+  const containsRewriteProfiles = (session.profiles || []).some((profile) => Boolean(profile?.rewrite));
+  const rewriteQollockTarget = isRewriteQollockTarget(session.targetMode);
+  const rewriteBuildTarget = containsRewriteProfiles || rewriteQollockTarget;
+  const activeCatalog = rewriteBuildTarget ? REWRITE_FIELD_CATALOG : HP_FIELD_CATALOG;
+  const activeDefaultState = rewriteBuildTarget ? rewriteDefaultState : defaultState;
+  const groups = useMemo(
+    () => activeCatalog.variant === 'rewrite'
+      ? createHpMenuGroups(activeCatalog)
+      : createHpMenuGroups(HP_FIELD_CATALOG.schema),
+    [activeCatalog]
+  );
+  const sharedGroups = useMemo(() => createHpMenuGroups(HP_FIELD_CATALOG.schema), []);
   const initialSelection = useMemo(
-    () => selectPresetBuilderSession(session, defaultState, groups, null),
-    [defaultState, groups, session]
+    () => selectPresetBuilderSession(session, activeDefaultState, groups, null, activeCatalog),
+    [activeCatalog, activeDefaultState, groups, session]
   );
   const [activeKey, setActiveKey] = useState(() => initialSelection.firstLeafKey);
   const selectedSession = useMemo(
-    () => selectPresetBuilderSession(session, defaultState, groups, activeKey),
-    [activeKey, defaultState, groups, session]
+    () => selectPresetBuilderSession(session, activeDefaultState, groups, activeKey, activeCatalog),
+    [activeCatalog, activeKey, activeDefaultState, groups, session]
   );
   const {
     activeProfile,
@@ -365,11 +377,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     modePickerUpgrade,
     conditionalFieldId
   } = session;
-  const containsRewriteProfiles = profiles.some((profile) => Boolean(profile?.rewrite));
-  const rewriteQollockTarget = isRewriteQollockTarget(targetMode);
-  const rewriteBuildTarget = containsRewriteProfiles || rewriteQollockTarget;
   const conditionalField = conditionalFieldId
-    ? { id: conditionalFieldId, ...HP_FIELD_CATALOG.schema[conditionalFieldId] }
+    ? { id: conditionalFieldId, ...activeCatalog.schema[conditionalFieldId] }
     : null;
   const showPrecisePipsControl = currentGroup?.pageId === 'health-pips-levels';
   const showPresetTools = currentGroup?.pageId === 'overview-presets';
@@ -379,7 +388,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   const [precisePipsOpen, setPrecisePipsOpen] = useState(false);
   const [precisePipsDialogMode, setPrecisePipsDialogMode] = useState('precise');
   const [rewriteInstallValidated, setRewriteInstallValidated] = useState(false);
-
   const loadBaseHudXml = useMemo(
     () => createBaseHudXmlLoader({ baseUrl: import.meta.env.BASE_URL }),
     []
@@ -396,9 +404,21 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     setRewriteInstallValidated(false);
   }, [rewriteBuildTarget, targetMode]);
 
-  const dispatchSessionIntent = useCallback((intent, context) => {
-    setSession((prev) => reducePresetBuilderSession(prev, intent, context));
-  }, []);
+  const dispatchSessionIntent = useCallback((intent, context = {}) => {
+    setSession((prev) => reducePresetBuilderSession(prev, intent, {
+      catalog: activeCatalog,
+      defaultState: activeDefaultState,
+      groups,
+      activeKey,
+      ...context
+    }));
+  }, [activeCatalog, activeDefaultState, activeKey, groups]);
+
+  useEffect(() => {
+    if (!rewriteBuildTarget || profiles.every((profile) => profile?.rewrite)) return;
+    dispatchSessionIntent({ type: 'ENSURE_REWRITE_PROFILES' });
+  }, [dispatchSessionIntent, profiles, rewriteBuildTarget]);
+
 
   const openBuildWarning = useCallback(() => {
     dispatchSessionIntent({ type: 'OPEN_BUILD_WARNING' });
@@ -527,7 +547,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
   function handleSelectGroup(group) {
     let cursor = group;
     while (cursor?.children?.length) cursor = cursor.children[0];
-    setActiveKey(HP_FIELD_CATALOG.getCategoryKey(cursor || group));
+    setActiveKey(activeCatalog.getCategoryKey(cursor || group));
   }
 
   const handleImport = useCallback(async () => {
@@ -535,15 +555,15 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     operationLockRef.current = true;
     dispatchSessionIntent({ type: 'OPERATION_STARTED', operation: 'import' });
     try {
-      const rewriteTransfer = decodeRewriteTransfer(importText, { defaultState });
+      const rewriteTransfer = decodeRewriteTransfer(importText, { defaultState: activeDefaultState });
       if (rewriteTransfer) {
         dispatchSessionIntent(
           { type: 'IMPORT_PROFILES_SUCCEEDED', importedProfiles: rewriteTransfer.profiles },
-          { defaultState, groups, activeKey }
+          { defaultState: activeDefaultState, groups, activeKey, catalog: activeCatalog }
         );
         dispatchSessionIntent({ type: 'SET_IMPORT_TEXT', text: '' });
       } else {
-        await runPresetImportWorkflow({ importText, defaultState, groups, activeKey, dispatch: dispatchSessionIntent });
+        await runPresetImportWorkflow({ importText, defaultState, groups: sharedGroups, activeKey, dispatch: dispatchSessionIntent });
       }
       dispatchSessionIntent({ type: 'OPERATION_SUCCEEDED' });
     } catch (error) {
@@ -551,22 +571,22 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     } finally {
       operationLockRef.current = false;
     }
-  }, [activeKey, busy, defaultState, dispatchSessionIntent, groups, importText]);
+  }, [activeCatalog, activeDefaultState, activeKey, busy, defaultState, dispatchSessionIntent, groups, importText, sharedGroups]);
 
   function handleResetPage() {
     dispatchSessionIntent({
       type: 'RESET_FIELDS',
       fieldIds: (currentGroup?.fields || []).map((field) => field.id),
-      defaultState
+      defaultState: activeDefaultState
     });
   }
 
   function handleResetAll() {
-    dispatchSessionIntent({ type: 'RESET_ALL_FIELDS', defaultState });
+    dispatchSessionIntent({ type: 'RESET_ALL_FIELDS', defaultState: activeDefaultState });
   }
 
   function handleAddProfile() {
-    dispatchSessionIntent({ type: 'ADD_PROFILE', defaultState });
+    dispatchSessionIntent({ type: 'ADD_PROFILE', defaultState: activeDefaultState });
   }
 
   function handleDeleteProfile() {
@@ -743,7 +763,10 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                   <div className="profile-selector-menu" role="listbox" aria-label="Preset profiles">
                     {profiles.map((profile, index) => {
                       const label = cleanProfileName(profile.name, index);
-                      const overrides = HP_FIELD_CATALOG.countOverrides(profile.values, defaultState) + Object.keys(profile.overrides || {}).length;
+                      const profileState = activeCatalog.variant === 'rewrite'
+                        ? activeCatalog.sanitizeState(profile.rewrite?.webValues || {})
+                        : profile.values;
+                      const overrides = activeCatalog.countOverrides(profileState, activeDefaultState) + Object.keys(profile.overrides || {}).length;
                       const active = profile.id === activeProfile.id;
                       return (
                         <div
@@ -868,7 +891,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
         </nav>
 
         <div className="panorama-workspace">
-          <SchemaTree groups={groups} activeKey={activeKey} state={state} defaultState={defaultState} onSelect={handleSelectGroup} />
+          <SchemaTree groups={groups} activeKey={activeKey} state={state} defaultState={activeDefaultState} onSelect={handleSelectGroup} />
           <div id="builderSettings" className="anita-menu-content">
             <SchemaTabs groups={groups} activeKey={activeKey} onSelect={handleSelectGroup} />
             <div className={showPresetTools ? 'anita-page-body has-tools' : 'anita-page-body'}>

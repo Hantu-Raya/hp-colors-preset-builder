@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createHpMenuGroups } from "../src/hpMenuNavigation.js";
-import { HP_FIELD_CATALOG } from "../src/hpSchema.js";
+import { HP_FIELD_CATALOG, REWRITE_FIELD_CATALOG } from "../src/hpSchema.js";
 
 test("web navigation mirrors the in-game HP Colors menu", () => {
   const groups = createHpMenuGroups(HP_FIELD_CATALOG.schema);
@@ -24,6 +24,26 @@ test("web navigation mirrors the in-game HP Colors menu", () => {
   assert.equal(pages.length, 15);
   assert.equal(new Set(assignedFieldIds).size, assignedFieldIds.length);
   assert.deepEqual(assignedFieldIds.sort(), Object.keys(HP_FIELD_CATALOG.schema).sort());
+});
+
+test("Rewrite navigation exposes every canonical setting exactly once", () => {
+  const groups = createHpMenuGroups(REWRITE_FIELD_CATALOG);
+  const fields = groups.flatMap((group) => group.children).flatMap((page) => page.fields);
+  const canonicalKeys = fields.map((field) => field.canonicalKey);
+  const forbiddenIds = [
+    "hp_info_health_margin_top",
+    "hp_healthbar_height",
+    "hp_skip_buildings",
+    "hp_counter_position",
+    "hp_pulse_text_position"
+  ];
+
+  assert.equal(fields.length, 67);
+  assert.equal(new Set(fields.map((field) => field.id)).size, 67);
+  assert.equal(new Set(canonicalKeys).size, 67);
+  assert.deepEqual(canonicalKeys.sort(), REWRITE_FIELD_CATALOG.bindings.map((binding) => binding.canonicalKey).sort());
+  assert.equal(fields.some((field) => forbiddenIds.includes(field.id)), false);
+  assert.equal(fields.some((field) => field.canonicalKey === "precisePipsEnabled" && field.conditionEligible === false), true);
 });
 
 test("reset boundaries keep pulse and kill-marker settings on separate pages", () => {

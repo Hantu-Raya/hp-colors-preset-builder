@@ -1,53 +1,28 @@
 import { normalizeHeroIds, HP_HERO_SCOPE_ALL, HP_HERO_SCOPE_SELECTED } from './hpHeroData.js';
-import { HP_FIELD_CATALOG } from './hpSchema.js';
+import { HP_FIELD_CATALOG, REWRITE_FIELD_BINDINGS, REWRITE_FIELD_CATALOG } from './hpSchema.js';
 
 const SETTINGS_PREFIX = 'HPCR2';
 const PRESET_PREFIX = 'HPCRP1';
 const USER_ID = /^user_\d{4,}$/;
 
-export const REWRITE_KEYS = Object.freeze([
-  'enabled', 'widthScale', 'heightScale', 'positionX', 'positionY',
-  'enemyEnabled', 'enemyVisible', 'enemyMode', 'enemyLow', 'enemyMid', 'enemyHigh',
-  'enemyTeamHigh', 'excludeBuildings', 'excludeBosses', 'enemyHealing', 'enemyDelta',
-  'enemyBulletShield', 'allyEnabled', 'allyVisible', 'allyMode', 'allyLow', 'allyMid',
-  'allyHigh', 'allyHealing', 'allyDelta', 'allyBulletShield', 'ultMode', 'ultCustom',
-  'readoutVisible', 'readoutFormat', 'readoutSize', 'readoutFont', 'readoutOffsetX',
-  'readoutOffsetY', 'readoutColorMode', 'readoutMode', 'readoutLow', 'readoutMid',
-  'readoutHigh', 'pipsVisible', 'precisePipsEnabled', 'levelsVisible', 'lowThreshold',
-  'highThreshold', 'enemyPulseEnabled', 'enemyPulseThreshold', 'enemyPulseBpm',
-  'enemyPulseIntensity', 'enemyPulseColorEnabled', 'enemyPulseColorMode',
-  'enemyPulseColor', 'enemyPulseHideBar', 'enemyPulseReadout',
-  'enemyPulseReadoutModifiers', 'enemyPulseReadoutSize', 'enemyPulseReadoutOffsetX',
-  'enemyPulseReadoutOffsetY', 'allyPulseEnabled', 'allyPulseThreshold', 'allyPulseBpm',
-  'allyPulseIntensity', 'allyPulseColorEnabled', 'allyPulseColor',
-  'enemyKillMarkerEnabled', 'enemyKillMarkerThreshold', 'enemyKillMarkerWidth',
-  'enemyKillMarkerColor'
-]);
-
-const DEFAULTS = Object.freeze([
-  true, 100, 100, 0, 0, true, true, 'gradient', '#E16161', '#FF7B00', '#00FF00',
-  false, false, false, '#5FFF80', '#FFE55B', '#FFFFFF', false, true, 'fixed',
-  '#E16161', '#FFED79', '#70F8C1', '#5FFF80', '#504C47', '#FFFFFF', 'follow',
-  '#E16161', true, 'hp', 145, 'default', 27, 500, 'bar', 'fixed', '#E16161',
-  '#FF7B00', '#FFFFFF', true, false, true, 25, 65, true, 25, 75, 1, false,
-  'gradient', '#FF2222', false, false, false, 145, 27, 500, false, 25, 75, 1,
-  false, '#FF2222', false, 25, 3, '#FF2222'
-]);
-
-const BOOLEAN_INDEXES = new Set([0, 5, 6, 11, 12, 13, 17, 18, 28, 39, 40, 41, 44, 48, 51, 52, 53, 57, 61, 63]);
-const COLOR_INDEXES = new Set([8, 9, 10, 14, 15, 16, 20, 21, 22, 23, 24, 25, 27, 36, 37, 38, 50, 62, 66]);
-const ENUMS = Object.freeze({
-  7: ['fixed', 'gradient'], 19: ['fixed', 'gradient'], 26: ['follow', 'custom'],
-  29: ['hp', 'percent', 'current'], 31: ['default', 'oracle', 'pulp'],
-  34: ['bar', 'custom'], 35: ['fixed', 'gradient'], 49: ['fixed', 'gradient']
-});
-const BOUNDS = Object.freeze({
-  1: [60, 160], 2: [60, 160], 3: [-300, 300], 4: [-200, 200],
-  30: [72, 320], 32: [-405, 405], 33: [-35, 840], 42: [0, 99], 43: [1, 100],
-  45: [0, 100], 46: [30, 300], 47: [0, 2], 54: [72, 320], 55: [-405, 405],
-  56: [-35, 840], 58: [0, 100], 59: [30, 300], 60: [0, 2], 64: [5, 80], 65: [1, 100]
-});
+export const REWRITE_KEYS = Object.freeze(REWRITE_FIELD_BINDINGS.map((binding) => binding.canonicalKey));
+const DEFAULTS = Object.freeze(REWRITE_FIELD_BINDINGS.map((binding) => binding.defaultValue));
+const BOOLEAN_INDEXES = new Set(REWRITE_FIELD_BINDINGS
+  .map((binding, index) => binding.canonicalType === 'boolean' ? index : null)
+  .filter((index) => index !== null));
+const COLOR_INDEXES = new Set(REWRITE_FIELD_BINDINGS
+  .map((binding, index) => binding.canonicalType === 'color' ? index : null)
+  .filter((index) => index !== null));
+const ENUMS = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS
+  .map((binding, index) => binding.canonicalType === 'enum' || binding.canonicalType === 'enum-toggle'
+    ? [index, binding.canonicalOptions]
+    : null)
+  .filter(Boolean)));
+const BOUNDS = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS
+  .map((binding, index) => binding.bounds ? [index, [binding.bounds.min, binding.bounds.max]] : null)
+  .filter(Boolean)));
 const KEY_INDEX = Object.freeze(Object.fromEntries(REWRITE_KEYS.map((key, index) => [key, index])));
+const BINDING_BY_KEY = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS.map((binding) => [binding.canonicalKey, binding])));
 
 function clone(value) {
   return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
@@ -111,7 +86,8 @@ function parsePairs(raw, errorLabel) {
 
 function validateRule(key, rule) {
   const index = KEY_INDEX[key];
-  if (index === undefined || index === 40 || !isPlainObject(rule)) return null;
+  const binding = BINDING_BY_KEY[key];
+  if (index === undefined || !binding?.conditionEligible || !isPlainObject(rule)) return null;
   if (Object.keys(rule).sort().join(',') !== 'minTier,slot,value') return null;
   if (!Number.isInteger(rule.slot) || rule.slot < 1 || rule.slot > 4) return null;
   if (!Number.isInteger(rule.minTier) || rule.minTier < 1 || rule.minTier > 3) return null;
@@ -147,80 +123,78 @@ function pairsFor(values) {
   return pairs;
 }
 
-function parsePosition(value) {
-  const [x, y] = String(value || '').split(',').map(Number);
-  return [Number.isFinite(x) ? x : 0, Number.isFinite(y) ? y : 0];
+
+function canonicalToWeb(binding, value) {
+  if (binding.canonicalType === 'enum') return binding.canonicalOptions.indexOf(value);
+  if (binding.canonicalType === 'enum-toggle') return value === 'follow';
+  return value;
 }
 
-function formatPosition(x, y) {
-  return `${Math.round(x)},${Math.round(y)}`;
+function webToCanonical(binding, value) {
+  if (binding.canonicalType === 'enum') return binding.canonicalOptions[value] || binding.defaultValue;
+  if (binding.canonicalType === 'enum-toggle') return value ? 'follow' : 'custom';
+  return value;
 }
 
-const SIMPLE_MAP = Object.freeze({
-  hp_enabled: 'enabled', hp_bg_visible: 'enemyVisible', hp_low_threshold: 'lowThreshold',
-  hp_high_threshold: 'highThreshold', hp_team_colors: 'enemyTeamHigh', hp_color_low: 'enemyLow',
-  hp_color_mid: 'enemyMid', hp_color_high: 'enemyHigh', hp_heal_color: 'enemyHealing',
-  hp_delta_color: 'enemyDelta', hp_bullet_shield_color: 'enemyBulletShield',
-  hp_pulse_enabled: 'enemyPulseEnabled', hp_pulse_threshold: 'enemyPulseThreshold',
-  hp_pulse_bpm: 'enemyPulseBpm', hp_pulse_intensity: 'enemyPulseIntensity',
-  hp_pulse_hide_bar: 'enemyPulseHideBar', hp_pulse_color_enabled: 'enemyPulseColorEnabled',
-  hp_pulse_color: 'enemyPulseColor', hp_pulse_text_enabled: 'enemyPulseReadout',
-  hp_pulse_text_scale: 'enemyPulseReadoutSize', hp_counter_visible: 'readoutVisible',
-  hp_counter_size: 'readoutSize', hp_level_number_visible: 'levelsVisible',
-  hp_pip_visible: 'pipsVisible', hp_precise_pips_enabled: 'precisePipsEnabled',
-  hp_text_color_low: 'readoutLow', hp_text_color_mid: 'readoutMid', hp_text_color_high: 'readoutHigh',
-  hp_friend_enabled: 'allyEnabled', hp_friend_color_low: 'allyLow', hp_friend_color_mid: 'allyMid',
-  hp_friend_color_high: 'allyHigh', hp_friend_heal_color: 'allyHealing',
-  hp_friend_delta_color: 'allyDelta', hp_friend_bullet_shield_color: 'allyBulletShield',
-  hp_friend_pulse_enabled: 'allyPulseEnabled', hp_friend_pulse_threshold: 'allyPulseThreshold',
-  hp_friend_pulse_bpm: 'allyPulseBpm', hp_friend_pulse_intensity: 'allyPulseIntensity',
-  hp_friend_pulse_color_enabled: 'allyPulseColorEnabled', hp_friend_pulse_color: 'allyPulseColor',
-  hp_kill_zone_enabled: 'enemyKillMarkerEnabled', hp_kill_zone_threshold: 'enemyKillMarkerThreshold',
-  hp_kill_zone_width: 'enemyKillMarkerWidth', hp_kill_zone_color: 'enemyKillMarkerColor',
-  hp_ult_color_custom: 'ultCustom'
-});
-const REVERSE_SIMPLE_MAP = Object.freeze(Object.fromEntries(Object.entries(SIMPLE_MAP).map(([web, rewrite]) => [rewrite, web])));
+function canonicalValuesFromMetadata(raw, fallback = DEFAULTS) {
+  if (Array.isArray(raw)) return normalizeRewriteValues(raw);
+  if (!isPlainObject(raw)) return normalizeRewriteValues(fallback);
+  const values = [...fallback];
+  for (const [key, value] of Object.entries(raw)) {
+    const index = KEY_INDEX[key];
+    if (index !== undefined) values[index] = value;
+  }
+  return normalizeRewriteValues(values);
+}
 
-function rewriteToWeb(values, base = {}) {
-  const web = { ...HP_FIELD_CATALOG.createDefaultState(), ...base };
-  for (const [webKey, rewriteKey] of Object.entries(SIMPLE_MAP)) web[webKey] = values[KEY_INDEX[rewriteKey]];
-  web.hp_mode = values[7] === 'gradient' ? 1 : 0;
-  web.hp_skip_buildings = values[12] && values[13];
-  web.hp_ult_color_enabled = values[26] === 'follow';
-  web.hp_pulse_color_mode = values[49] === 'gradient' ? 1 : 0;
-  web.hp_counter_format = ['hp', 'percent', 'current'].indexOf(values[29]);
-  web.hp_text_color_mode = values[34] === 'custom' ? 1 : 0;
-  web.hp_counter_position = formatPosition(values[32], values[33]);
-  web.hp_pulse_text_position = formatPosition(values[55], values[56]);
-  return HP_FIELD_CATALOG.sanitizeState(web);
+function rewriteToWeb(values) {
+  const web = { ...REWRITE_FIELD_CATALOG.createDefaultState() };
+  const normalized = normalizeRewriteValues(values);
+  for (const binding of REWRITE_FIELD_BINDINGS) {
+    web[binding.webId] = canonicalToWeb(binding, normalized[KEY_INDEX[binding.canonicalKey]]);
+  }
+  return REWRITE_FIELD_CATALOG.sanitizeState(web);
+}
+
+function sharedPositionAxis(value, axis, fallback) {
+  const parts = String(value || '').split(',').map(Number);
+  const index = axis === 'x' ? 0 : 1;
+  return Number.isFinite(parts[index]) ? parts[index] : fallback;
+}
+
+function rewriteWebValues(profile) {
+  if (profile?.rewrite?.webValues) {
+    return REWRITE_FIELD_CATALOG.sanitizeState(profile.rewrite.webValues);
+  }
+  if (!profile?.rewrite) {
+    const shared = { ...REWRITE_FIELD_CATALOG.createDefaultState() };
+    const sharedDefaults = HP_FIELD_CATALOG.createDefaultState();
+    for (const binding of REWRITE_FIELD_BINDINGS) {
+      const source = binding.sharedSource || binding.webId;
+      const sourceId = typeof source === 'object' ? source.id : source;
+      if (!Object.prototype.hasOwnProperty.call(profile?.values || {}, sourceId)) continue;
+      const raw = profile.values[sourceId];
+      if (Object.is(raw, sharedDefaults[sourceId])) continue;
+      shared[binding.webId] = typeof source === 'object'
+        ? sharedPositionAxis(raw, source.axis, binding.webDefault)
+        : raw;
+    }
+
+    return REWRITE_FIELD_CATALOG.sanitizeState(shared);
+  }
+  const canonical = canonicalValuesFromMetadata(profile.rewrite.values, DEFAULTS);
+  return rewriteToWeb(canonical);
 }
 
 function applyWebToRewrite(values, profile, forceAll = false) {
   const result = normalizeRewriteValues(values);
-  const current = HP_FIELD_CATALOG.sanitizeState(profile?.values || {});
+  const current = rewriteWebValues(profile);
   const baseline = profile?.rewrite?.webValues;
-  const changed = (key) => forceAll || !baseline || !Object.is(current[key], baseline[key]);
-  for (const [webKey, rewriteKey] of Object.entries(SIMPLE_MAP)) {
-    if (changed(webKey)) result[KEY_INDEX[rewriteKey]] = normalizeRewriteValue(KEY_INDEX[rewriteKey], current[webKey]);
-  }
-  if (changed('hp_mode')) result[7] = current.hp_mode === 1 ? 'gradient' : 'fixed';
-  if (changed('hp_skip_buildings')) {
-    result[12] = Boolean(current.hp_skip_buildings);
-    result[13] = Boolean(current.hp_skip_buildings);
-  }
-  if (changed('hp_ult_color_enabled')) result[26] = current.hp_ult_color_enabled ? 'follow' : 'custom';
-  if (changed('hp_pulse_color_mode')) result[49] = current.hp_pulse_color_mode === 1 ? 'gradient' : 'fixed';
-  if (changed('hp_counter_format')) result[29] = ['hp', 'percent', 'current'][current.hp_counter_format] || 'hp';
-  if (changed('hp_text_color_mode')) result[34] = current.hp_text_color_mode === 1 ? 'custom' : 'bar';
-  if (changed('hp_counter_position')) {
-    const [x, y] = parsePosition(current.hp_counter_position);
-    result[32] = normalizeRewriteValue(32, x);
-    result[33] = normalizeRewriteValue(33, y);
-  }
-  if (changed('hp_pulse_text_position')) {
-    const [x, y] = parsePosition(current.hp_pulse_text_position);
-    result[55] = normalizeRewriteValue(55, x);
-    result[56] = normalizeRewriteValue(56, y);
+  for (const binding of REWRITE_FIELD_BINDINGS) {
+    const index = KEY_INDEX[binding.canonicalKey];
+    if (forceAll || !baseline || !Object.is(current[binding.webId], baseline[binding.webId])) {
+      result[index] = normalizeRewriteValue(index, webToCanonical(binding, current[binding.webId]));
+    }
   }
   return normalizeRewriteValues(result);
 }
@@ -228,25 +202,33 @@ function applyWebToRewrite(values, profile, forceAll = false) {
 function rewriteConditionsToWeb(conditions) {
   const overrides = {};
   for (const [rewriteKey, rule] of Object.entries(conditions || {})) {
-    const webKey = REVERSE_SIMPLE_MAP[rewriteKey];
-    if (webKey) overrides[webKey] = clone(rule);
+    const binding = BINDING_BY_KEY[rewriteKey];
+    if (!binding || !binding.conditionEligible) continue;
+    overrides[binding.webId] = {
+      ...clone(rule),
+      value: canonicalToWeb(binding, rule.value)
+    };
   }
   return overrides;
 }
 
-function webConditionsToRewrite(profile) {
+function webConditionsToRewrite(profile, currentOverrides = null) {
   const conditions = clone(profile?.rewrite?.conditions) || {};
   const baseline = profile?.rewrite?.webOverrides || {};
-  const current = profile?.overrides || {};
-  for (const [webKey, rewriteKey] of Object.entries(SIMPLE_MAP)) {
-    const before = baseline[webKey];
-    const after = current[webKey];
+  const current = currentOverrides || profile?.rewrite?.webOverrides || profile?.overrides || {};
+  for (const binding of REWRITE_FIELD_BINDINGS) {
+    if (!binding.conditionEligible) continue;
+    const before = baseline[binding.webId];
+    const after = current[binding.webId];
     if (JSON.stringify(before) === JSON.stringify(after)) continue;
-    if (after === undefined) delete conditions[rewriteKey];
+    if (after === undefined) delete conditions[binding.canonicalKey];
     else {
-      const rule = validateRule(rewriteKey, after);
-      if (!rule) throw new Error(`Invalid condition for ${webKey}.`);
-      conditions[rewriteKey] = rule;
+      const rule = validateRule(binding.canonicalKey, {
+        ...after,
+        value: webToCanonical(binding, after.value)
+      });
+      if (!rule) throw new Error(`Invalid condition for ${binding.webId}.`);
+      conditions[binding.canonicalKey] = rule;
     }
   }
   return Object.keys(conditions).length ? conditions : null;
@@ -259,10 +241,10 @@ function makeProfile(record, index, defaultState) {
   return {
     id: `profile-${index + 1}`,
     name: record.name,
-    values: webValues,
+    values: HP_FIELD_CATALOG.sanitizeState(webValues),
     heroMode: record.mode,
     heroes: record.heroes,
-    overrides: webOverrides,
+    overrides: {},
     rewrite: {
       id: record.id,
       kind: record.kind || 'user',
@@ -271,6 +253,35 @@ function makeProfile(record, index, defaultState) {
       webValues: clone(webValues),
       webOverrides: clone(webOverrides)
     }
+  };
+}
+export function getRewriteEditorState(profile) {
+  return rewriteWebValues(profile);
+}
+
+export function createRewriteProfileMetadata(profile, { valuesAreRewrite = false } = {}) {
+  const hasMetadata = Boolean(profile?.rewrite);
+  const editorValues = valuesAreRewrite ? REWRITE_FIELD_CATALOG.sanitizeState(profile?.values || {}) : null;
+  const canonical = valuesAreRewrite
+    ? applyWebToRewrite(DEFAULTS, { ...profile, rewrite: { ...(profile.rewrite || {}), webValues: editorValues } }, true)
+    : hasMetadata && profile.rewrite.values !== undefined
+      ? canonicalValuesFromMetadata(profile.rewrite.values, DEFAULTS)
+      : applyWebToRewrite(DEFAULTS, profile, true);
+  const webValues = valuesAreRewrite
+    ? editorValues
+    : hasMetadata && profile.rewrite.webValues
+      ? REWRITE_FIELD_CATALOG.sanitizeState(profile.rewrite.webValues)
+      : rewriteToWeb(canonical);
+  const conditions = hasMetadata && !valuesAreRewrite
+    ? clone(profile.rewrite.conditions)
+    : webConditionsToRewrite(profile, profile?.overrides || {});
+  return {
+    id: String(profile?.rewrite?.id || profile?.id || ''),
+    kind: profile?.rewrite?.kind || 'user',
+    values: canonical,
+    conditions,
+    webValues: clone(webValues),
+    webOverrides: rewriteConditionsToWeb(conditions)
   };
 }
 
@@ -343,7 +354,7 @@ export function decodeRewriteTransfer(raw, { defaultState = HP_FIELD_CATALOG.cre
 }
 
 function profileValues(profile) {
-  const source = profile?.rewrite?.values || DEFAULTS;
+  const source = canonicalValuesFromMetadata(profile?.rewrite?.values, DEFAULTS);
   return applyWebToRewrite(source, profile, !profile?.rewrite);
 }
 
