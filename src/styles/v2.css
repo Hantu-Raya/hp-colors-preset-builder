@@ -353,10 +353,10 @@
   display: inline-grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 9px;
-  min-width: 142px;
+  gap: 7px;
+  min-width: 132px;
   min-height: 42px;
-  padding: 5px 11px;
+  padding: 5px 9px;
   border: 1px solid var(--border);
   border-radius: 7px;
   background: var(--muted);
@@ -437,7 +437,7 @@
 
 .profile-selector {
   position: relative;
-  min-width: 180px;
+  min-width: 140px;
   max-width: 100%;
 }
 
@@ -557,6 +557,7 @@
   grid-template-columns: auto minmax(120px, 220px);
   align-items: center;
   gap: 10px;
+  flex: 0 0 auto;
   min-width: 0;
   min-height: 42px;
   padding: 4px 4px 4px 12px;
@@ -2596,6 +2597,7 @@
 
   .preset-name-control {
     flex: 1 1 220px;
+    min-width: 186px;
     grid-template-columns: auto minmax(120px, 1fr);
   }
 
