@@ -32,6 +32,13 @@ async function chooseMinimalTarget(page) {
   await expect(dialog).toBeHidden();
 }
 
+async function chooseRewriteTarget(page) {
+  const dialog = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });
+  await expect(dialog).toBeVisible();
+  await dialog.locator('.target-mode-choice-select').filter({ hasText: 'Rewrite' }).filter({ hasNotText: 'QOLLOCK' }).click();
+  await expect(dialog).toBeHidden();
+}
+
 async function chooseRewriteQollockTarget(page) {
   const dialog = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });
   await expect(dialog).toBeVisible();
@@ -46,7 +53,8 @@ test('v2 Rewrite target adds presets from the topbar and Presets tab', async ({ 
   await page.getByRole('button', { name: 'Add preset' }).click();
   await expect(page.locator('.profile-selector-meta')).toContainText('/ 2');
 
-  await openV2Presets(page);
+  await page.getByRole('button', { name: 'Presets' }).click();
+  await expect(page.getByRole('heading', { name: 'PRESET LIBRARY' })).toBeVisible();
   const actions = page.locator('.preset-overview-actions');
   await actions.getByRole('button', { name: 'Add preset' }).click();
   await expect(page.locator('.profile-selector-meta')).toContainText('/ 3');
@@ -85,7 +93,7 @@ test('keeps v1 original and exposes v2 as a separate route', async ({ page }) =>
 
 test('v2 mirrors the in-game category and page navigation', async ({ page }) => {
   await page.goto('v2/');
-  await chooseMinimalTarget(page);
+  await chooseRewriteTarget(page);
 
   const sections = page.getByRole('listbox', { name: 'HP Colors sections' }).getByRole('option');
   await expect(sections).toHaveCount(4);
@@ -116,7 +124,7 @@ test('v2 rewrite profiles build a rewrite-only pak96 and retain code-copy contro
   });
   await routeRewriteTemplate(page);
   await page.goto('v2/');
-  await chooseMinimalTarget(page);
+  await chooseRewriteTarget(page);
   await openV2Presets(page);
 
   const actions = page.locator('.preset-overview-actions');
