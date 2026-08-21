@@ -1186,10 +1186,18 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                       <span className="target-mode-choice-summary">{choice.summary}</span>
                       <span className="target-mode-choice-description">{choice.description}</span>
                     </button>
-                    <a className="target-mode-choice-download" href={choice.downloadHref} target="_blank" rel="noreferrer">
-                      <Download aria-hidden="true" />
-                      <span>Download this mod</span>
-                    </a>
+                    {choice.downloadDisabledInV2 ? (
+                      <button type="button" className="target-mode-choice-download is-disabled" disabled>
+                        <Download aria-hidden="true" />
+                        <span>Download this mod</span>
+                        <span className="target-mode-choice-download-flag">Not ready</span>
+                      </button>
+                    ) : (
+                      <a className="target-mode-choice-download" href={choice.downloadHref} target="_blank" rel="noreferrer">
+                        <Download aria-hidden="true" />
+                        <span>Download this mod</span>
+                      </a>
+                    )}
                   </div>
                 );
               })}
@@ -1266,9 +1274,15 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     <span className="target-mode-summary-label">Selected base mod</span>
                     <strong>{targetModeDetails.title}</strong>
                     <p>{targetModeDetails.summary}</p>
-                    <a className="target-mode-summary-download-link" href={targetModeDetails.downloadHref} target="_blank" rel="noreferrer">
-                      Need the base mod? Download it first.
-                    </a>
+                    {targetModeDetails.downloadDisabledInV2 ? (
+                      <span className="target-mode-summary-download-link is-disabled" aria-disabled="true">
+                        Base mod download is not ready yet.
+                      </span>
+                    ) : (
+                      <a className="target-mode-summary-download-link" href={targetModeDetails.downloadHref} target="_blank" rel="noreferrer">
+                        Need the base mod? Download it first.
+                      </a>
+                    )}
                   </div>
                   <div className="target-mode-summary-actions">
                     <button type="button" className="secondary-action" onClick={() => {

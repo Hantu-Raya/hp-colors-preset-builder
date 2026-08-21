@@ -2060,11 +2060,16 @@
   justify-self: start;
   gap: 7px;
   min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--primary);
+  font: inherit;
   font-size: 0.78rem;
   font-weight: 780;
   line-height: 1.35;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .target-mode-choice-download svg {
@@ -2072,8 +2077,26 @@
   height: 15px;
 }
 
-.target-mode-choice-download:hover {
+.target-mode-choice-download:hover:not(:disabled) {
   color: var(--foreground);
+}
+
+.target-mode-choice-download:disabled {
+  color: color-mix(in srgb, var(--primary) 38%, var(--muted-foreground));
+  cursor: not-allowed;
+}
+
+.target-mode-choice-download-flag {
+  padding: 2px 6px;
+  border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 7%, var(--muted));
+  color: color-mix(in srgb, var(--primary) 44%, var(--muted-foreground));
+  font-size: 0.6rem;
+  font-weight: 820;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
 .target-mode-summary-card {
@@ -2123,6 +2146,11 @@
 
 .target-mode-summary-download-link:hover {
   color: #a9ceff;
+}
+
+.target-mode-summary-download-link.is-disabled {
+  color: color-mix(in srgb, var(--primary) 38%, var(--muted-foreground));
+  text-decoration: none;
 }
 
 .target-mode-summary-actions {

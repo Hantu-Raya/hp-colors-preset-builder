@@ -28,6 +28,22 @@ test("v1 and v2 link to separate GitHub Pages routes", async () => {
   assert.match(v2Page, /<title>HP Colors Preset Builder V2<\/title>/);
 });
 
+test("v2 disables downloads that are not ready without changing v1", async () => {
+  const [v1Island, v2Island, targetMode] = await Promise.all([
+    readFile(v1IslandPath, "utf8"),
+    readFile(v2IslandPath, "utf8"),
+    readFile(new URL("../src/targetModeStore.js", import.meta.url), "utf8")
+  ]);
+
+  assert.doesNotMatch(v1Island, /downloadDisabledInV2/);
+  assert.match(v2Island, /choice\.downloadDisabledInV2/);
+  assert.match(v2Island, /className="target-mode-choice-download is-disabled" disabled/);
+  assert.match(v2Island, />Not ready</);
+  assert.match(v2Island, /targetModeDetails\.downloadDisabledInV2/);
+  assert.match(targetMode, /downloadDisabledInV2: true/);
+  assert.match(targetMode, /downloadDisabledInV2: false/);
+});
+
 test("v2 owns the in-game menu navigation without changing v1", async () => {
   const [v1Island, v2Island, v2Tree] = await Promise.all([
     readFile(v1IslandPath, "utf8"),

@@ -9,7 +9,8 @@ export const TARGET_MODE_CHOICES = Object.freeze([
     label: "Minimal",
     summary: "Preset VPK for the lightweight HP Colors runtime.",
     description: "Use this when you installed the minimal HP Colors mod. It builds the preset store the minimal runtime reads, including static hero-targeted profile routing without the full Anita UI menu.",
-    downloadHref: "https://gamebanana.com/mods/download/603113#FileInfo_1701235"
+    downloadHref: "https://gamebanana.com/mods/download/603113#FileInfo_1701235",
+    downloadDisabledInV2: true
   }),
   Object.freeze({
     id: HP_COLORS_MOD_VARIANTS.FULL,
@@ -17,7 +18,8 @@ export const TARGET_MODE_CHOICES = Object.freeze([
     label: "Full",
     summary: "Preset VPK for the full HP Colors in-game menu.",
     description: "Use this when you installed full HP Colors. It supports the full Anita UI menu, multi-profile preset routing, and hero-targeted profiles.",
-    downloadHref: "https://gamebanana.com/mods/download/603113#FileInfo_1701236"
+    downloadHref: "https://gamebanana.com/mods/download/603113#FileInfo_1701236",
+    downloadDisabledInV2: false
   }),
   Object.freeze({
     id: HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK,
@@ -25,7 +27,8 @@ export const TARGET_MODE_CHOICES = Object.freeze([
     label: "Rewrite QOLLOCK",
     summary: "Preset VPK for the hp_colors_rewrite and QOLLOCK composite runtime.",
     description: "Use this with the fixed pak01/pak02/pak03 Rewrite + QOLLOCK install order. It writes only the composite Escape-menu layout and embeds the HPCRP1 preset bundle.",
-    downloadHref: "https://github.com/Predi-i/qollock-updates"
+    downloadHref: "https://github.com/Predi-i/qollock-updates",
+    downloadDisabledInV2: true
   })
 ]);
 

@@ -94,12 +94,15 @@ test("getTargetModeDetails exposes choice copy and download links", () => {
   assert.equal(minimal.id, HP_COLORS_MOD_VARIANTS.MINIMAL);
   assert.match(minimal.description, /preset/i);
   assert.match(minimal.downloadHref, /^https:\/\//);
+  assert.equal(minimal.downloadDisabledInV2, true);
   assert.equal(full.id, HP_COLORS_MOD_VARIANTS.FULL);
   assert.match(full.description, /Anita UI/i);
   assert.match(full.downloadHref, /^https:\/\//);
+  assert.equal(full.downloadDisabledInV2, false);
   assert.equal(qollock.id, HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
   assert.match(qollock.description, /pak01|pak02|pak03/);
   assert.match(qollock.downloadHref, /^https:\/\//);
+  assert.equal(qollock.downloadDisabledInV2, true);
 });
 
 test("target mode storage failures are surfaced", () => {
