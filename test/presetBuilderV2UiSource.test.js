@@ -28,20 +28,22 @@ test("v1 and v2 link to separate GitHub Pages routes", async () => {
   assert.match(v2Page, /<title>HP Colors Preset Builder V2<\/title>/);
 });
 
-test("v2 disables downloads that are not ready without changing v1", async () => {
+test("v2 disables Minimal and uses Rewrite download links without changing v1", async () => {
   const [v1Island, v2Island, targetMode] = await Promise.all([
     readFile(v1IslandPath, "utf8"),
     readFile(v2IslandPath, "utf8"),
     readFile(new URL("../src/targetModeStore.js", import.meta.url), "utf8")
   ]);
 
-  assert.doesNotMatch(v1Island, /downloadDisabledInV2/);
-  assert.match(v2Island, /choice\.downloadDisabledInV2/);
-  assert.match(v2Island, /className="target-mode-choice-download is-disabled" disabled/);
-  assert.match(v2Island, />Not ready</);
-  assert.match(v2Island, /targetModeDetails\.downloadDisabledInV2/);
-  assert.match(targetMode, /downloadDisabledInV2: true/);
-  assert.match(targetMode, /downloadDisabledInV2: false/);
+  assert.doesNotMatch(v1Island, /unavailableInV2|downloadHrefV2/);
+  assert.match(v2Island, /choice\.unavailableInV2 === true/);
+  assert.match(v2Island, /disabled=\{unavailable\}/);
+  assert.match(v2Island, /is-unavailable/);
+  assert.match(v2Island, />Unavailable in V2</);
+  assert.match(v2Island, /choice\.downloadHrefV2 \|\| choice\.downloadHref/);
+  assert.match(targetMode, /unavailableInV2: true/);
+  assert.match(targetMode, /FileInfo_1792071/);
+  assert.match(targetMode, /FileInfo_1792072/);
 });
 
 test("v2 owns the in-game menu navigation without changing v1", async () => {

@@ -2036,6 +2036,21 @@
   background: color-mix(in srgb, var(--primary) 12%, var(--muted));
 }
 
+.target-mode-choice.is-unavailable,
+.target-mode-choice.is-unavailable:hover,
+.target-mode-choice.is-unavailable.is-selected {
+  border-color: color-mix(in srgb, var(--muted-foreground) 38%, var(--border));
+  background: color-mix(in srgb, var(--muted-foreground) 16%, var(--muted));
+  color: var(--muted-foreground);
+}
+
+.target-mode-choice.is-unavailable .target-mode-choice-title,
+.target-mode-choice.is-unavailable .target-mode-choice-title svg,
+.target-mode-choice.is-unavailable .target-mode-choice-summary,
+.target-mode-choice.is-unavailable .target-mode-choice-description {
+  color: var(--muted-foreground);
+}
+
 .target-mode-choice-select {
   display: grid;
   gap: 8px;
@@ -2047,6 +2062,10 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.target-mode-choice-select:disabled {
+  cursor: not-allowed;
 }
 
 .target-mode-choice-select:focus-visible {

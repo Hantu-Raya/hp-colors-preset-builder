@@ -1202,25 +1202,36 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             <div className="target-mode-choice-grid" role="group" aria-label="HP Colors target mod">
               {TARGET_MODE_CHOICES.map((choice) => {
                 const selected = targetMode === choice.id;
+                const unavailable = choice.unavailableInV2 === true;
+                const choiceClassName = [
+                  'target-mode-choice',
+                  selected ? 'is-selected' : '',
+                  unavailable ? 'is-unavailable' : ''
+                ].filter(Boolean).join(' ');
                 return (
-                  <div key={choice.id} className={selected ? 'target-mode-choice is-selected' : 'target-mode-choice'}>
-                    <button type="button" className="target-mode-choice-select" onClick={() => commitTargetMode(choice.id)}>
+                  <div key={choice.id} className={choiceClassName} aria-disabled={unavailable || undefined}>
+                    <button
+                      type="button"
+                      className="target-mode-choice-select"
+                      disabled={unavailable}
+                      onClick={() => commitTargetMode(choice.id)}
+                    >
                       <span className="target-mode-choice-title">
                         <Layers3 aria-hidden="true" />
-                        <strong>{choice.title}</strong>
-                        {selected ? <Check aria-hidden="true" /> : null}
+                        <strong>{choice.v2Title || choice.title}</strong>
+                        {selected && !unavailable ? <Check aria-hidden="true" /> : null}
                       </span>
-                      <span className="target-mode-choice-summary">{choice.summary}</span>
-                      <span className="target-mode-choice-description">{choice.description}</span>
+                      <span className="target-mode-choice-summary">{choice.v2Summary || choice.summary}</span>
+                      <span className="target-mode-choice-description">{choice.v2Description || choice.description}</span>
                     </button>
-                    {choice.downloadDisabledInV2 ? (
+                    {unavailable ? (
                       <button type="button" className="target-mode-choice-download is-disabled" disabled>
                         <Download aria-hidden="true" />
                         <span>Download this mod</span>
-                        <span className="target-mode-choice-download-flag">Not ready</span>
+                        <span className="target-mode-choice-download-flag">Unavailable in V2</span>
                       </button>
                     ) : (
-                      <a className="target-mode-choice-download" href={choice.downloadHref} target="_blank" rel="noreferrer">
+                      <a className="target-mode-choice-download" href={choice.downloadHrefV2 || choice.downloadHref} target="_blank" rel="noreferrer">
                         <Download aria-hidden="true" />
                         <span>Download this mod</span>
                       </a>
@@ -1301,14 +1312,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 <>
                   <div>
                     <span className="target-mode-summary-label">Selected base mod</span>
-                    <strong>{targetModeDetails.title}</strong>
-                    <p>{targetModeDetails.summary}</p>
-                    {targetModeDetails.downloadDisabledInV2 ? (
+                    <strong>{targetModeDetails.v2Title || targetModeDetails.title}</strong>
+                    <p>{targetModeDetails.v2Summary || targetModeDetails.summary}</p>
+                    {targetModeDetails.unavailableInV2 ? (
                       <span className="target-mode-summary-download-link is-disabled" aria-disabled="true">
-                        Base mod download is not ready yet.
+                        This target is unavailable in V2.
                       </span>
                     ) : (
-                      <a className="target-mode-summary-download-link" href={targetModeDetails.downloadHref} target="_blank" rel="noreferrer">
+                      <a className="target-mode-summary-download-link" href={targetModeDetails.downloadHrefV2 || targetModeDetails.downloadHref} target="_blank" rel="noreferrer">
                         Need the base mod? Download it first.
                       </a>
                     )}

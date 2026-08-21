@@ -94,15 +94,16 @@ test("getTargetModeDetails exposes choice copy and download links", () => {
   assert.equal(minimal.id, HP_COLORS_MOD_VARIANTS.MINIMAL);
   assert.match(minimal.description, /preset/i);
   assert.match(minimal.downloadHref, /^https:\/\//);
-  assert.equal(minimal.downloadDisabledInV2, true);
+  assert.equal(minimal.unavailableInV2, true);
   assert.equal(full.id, HP_COLORS_MOD_VARIANTS.FULL);
   assert.match(full.description, /Anita UI/i);
   assert.match(full.downloadHref, /^https:\/\//);
-  assert.equal(full.downloadDisabledInV2, false);
+  assert.equal(full.v2Title, "Rewrite");
+  assert.equal(full.downloadHrefV2, "https://gamebanana.com/mods/download/603113#FileInfo_1792071");
   assert.equal(qollock.id, HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
   assert.match(qollock.description, /pak01|pak02|pak03/);
   assert.match(qollock.downloadHref, /^https:\/\//);
-  assert.equal(qollock.downloadDisabledInV2, true);
+  assert.equal(qollock.downloadHrefV2, "https://gamebanana.com/mods/download/603113#FileInfo_1792072");
 });
 
 test("target mode storage failures are surfaced", () => {
