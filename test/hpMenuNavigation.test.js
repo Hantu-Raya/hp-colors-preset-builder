@@ -38,9 +38,9 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
     "hp_pulse_text_position"
   ];
 
-  assert.equal(fields.length, 67);
-  assert.equal(new Set(fields.map((field) => field.id)).size, 67);
-  assert.equal(new Set(canonicalKeys).size, 67);
+  assert.equal(fields.length, 70);
+  assert.equal(new Set(fields.map((field) => field.id)).size, 70);
+  assert.equal(new Set(canonicalKeys).size, 70);
   assert.deepEqual(canonicalKeys.sort(), REWRITE_FIELD_CATALOG.bindings.map((binding) => binding.canonicalKey).sort());
   assert.equal(fields.some((field) => forbiddenIds.includes(field.id)), false);
   assert.equal(fields.some((field) => field.canonicalKey === "precisePipsEnabled" && field.conditionEligible === false), true);
@@ -52,6 +52,9 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
     .children.find((page) => page.pageId === "health-text");
   assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "lowThreshold"), true);
   assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "highThreshold"), true);
+  assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "excludeGhouls"), true);
+  assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "ghoulOpacityEnabled"), true);
+  assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "ghoulOpacity"), true);
   assert.equal(healthText.fields.some((field) => field.canonicalKey === "lowThreshold"), false);
   assert.equal(healthText.fields.some((field) => field.canonicalKey === "highThreshold"), false);
 });

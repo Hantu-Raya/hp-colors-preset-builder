@@ -341,7 +341,10 @@ const REWRITE_BINDING_DATA = [
   ["enemyKillMarkerEnabled", "hp_kill_zone_enabled", "toggle", "Show kill marker", "ENEMY|KILL MARKER", false],
   ["enemyKillMarkerThreshold", "hp_kill_zone_threshold", "slider", "Marker position %", "ENEMY|KILL MARKER", 25, { min: 5, max: 80, step: 1 }],
   ["enemyKillMarkerWidth", "hp_kill_zone_width", "slider", "Marker width", "ENEMY|KILL MARKER", 3, { min: 1, max: 100, step: 1 }],
-  ["enemyKillMarkerColor", "hp_kill_zone_color", "colorpicker", "Marker color", "ENEMY|KILL MARKER", "#FF2222"]
+  ["enemyKillMarkerColor", "hp_kill_zone_color", "colorpicker", "Marker color", "ENEMY|KILL MARKER", "#FF2222"],
+  ["excludeGhouls", "hp_exclude_ghouls", "toggle", "Exclude ghoul colors", "ENEMY|BAR", false],
+  ["ghoulOpacityEnabled", "hp_ghoul_opacity_enabled", "toggle", "Use custom ghoul opacity", "ENEMY|BAR", false],
+  ["ghoulOpacity", "hp_ghoul_opacity", "slider", "Ghoul HUD opacity", "ENEMY|BAR", 100, { min: 0, max: 100, step: 1 }]
 ];
 
 function freezeRewriteBinding(data) {

@@ -34,17 +34,34 @@ export const REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES = Object.freeze([
   "s2r://panorama/styles/citadel_base_styles.vcss_c",
   "s2r://panorama/styles/hud_escape_menu.vcss_c",
   "s2r://panorama/styles/ql_settings.vcss_c",
-  "s2r://panorama/styles/hp_colors_menu.vcss_c",
-  "s2r://panorama/styles/showrank_player_list.vcss_c"
+  "s2r://panorama/styles/hp_colors_menu.vcss_c"
 ]);
 export const REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES = Object.freeze([
+  "s2r://panorama/scripts/ql_utils.vjs_c",
   "s2r://panorama/scripts/ql_shared_presets.vjs_c",
-  "s2r://panorama/scripts/ql_custom_announcer_slot1_pack_meta.vjs_c",
-  "s2r://panorama/scripts/ql_custom_announcer_slot2_pack_meta.vjs_c",
-  "s2r://panorama/scripts/ql_custom_announcer_slot3_pack_meta.vjs_c",
-  "s2r://panorama/scripts/ql_custom_announcer_slot4_pack_meta.vjs_c",
-  "s2r://panorama/scripts/ql_custom_announcer_slot5_pack_meta.vjs_c",
-  "s2r://panorama/scripts/showrank_web_media_bridge.vjs_c",
+  "s2r://panorama/scripts/ql_bridge.vjs_c",
+  "s2r://panorama/scripts/ql_config.vjs_c",
+  "s2r://panorama/scripts/ql_custom_announcer_pack_meta.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_en.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_ko.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_it.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_tr.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_ru.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_uk.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_pl.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_bg.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_by.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_ja.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_zh.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_fr.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_pt.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_pt_br.vjs_c",
+  "s2r://panorama/scripts/ql_settings_loc/ql_settings_loc_es.vjs_c",
+  "s2r://panorama/scripts/ql_arcade_games.vjs_c",
+  "s2r://panorama/scripts/ql_settings_previews.vjs_c",
+  "s2r://panorama/scripts/ql_settings_tooltips.vjs_c",
+  "s2r://panorama/scripts/ql_settings_persistence.vjs_c",
+  "s2r://panorama/scripts/ql_update_checker.vjs_c",
   "s2r://panorama/scripts/ql_settings.vjs_c",
   "s2r://panorama/scripts/hp_colors_contract.vjs_c",
   "s2r://panorama/scripts/hp_colors_state.vjs_c",
@@ -62,7 +79,7 @@ export const REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   "HPColorsEditorRoot",
   REWRITE_PRESET_STORE_PANEL_ID
 ]);
-const REWRITE_QOLLOCK_MENU_ONCANCEL = "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else if (typeof CitadelResumePlaying === 'function') { CitadelResumePlaying(); } else { $.DispatchEvent('CitadelResumePlaying', $.GetContextPanel()); }";
+const REWRITE_QOLLOCK_MENU_ONCANCEL = "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { $.DispatchEvent('CitadelResumePlaying', $.GetContextPanel()); }";
 
 const XML_TOKEN = /<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<![\s\S]*?>|<[^>]*>|[^<]+/g;
 const XML_NAME = /^[A-Za-z_:][A-Za-z0-9_.:-]*$/;

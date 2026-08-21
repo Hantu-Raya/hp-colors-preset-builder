@@ -32,6 +32,9 @@ test('imports the supplied HPCRP1 preset without losing rewrite-only settings', 
   assert.equal(profile.rewrite.values[53], true);
   assert.equal(profile.rewrite.values[56], 440);
   assert.deepEqual(profile.rewrite.webOverrides.hp_low_threshold, { slot: 4, minTier: 3, value: 28 });
+  assert.equal(profile.rewrite.webValues.hp_exclude_ghouls, false);
+  assert.equal(profile.rewrite.webValues.hp_ghoul_opacity_enabled, false);
+  assert.equal(profile.rewrite.webValues.hp_ghoul_opacity, 100);
 });
 
 test('exports an imported preset as a rewrite-valid semantic round trip', () => {
@@ -209,6 +212,12 @@ test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => 
   assert.deepEqual(decoded.rewrite.values, expected);
   assert.equal(decoded.rewrite.values[12], true);
   assert.equal(decoded.rewrite.values[13], false);
+  assert.equal(decoded.rewrite.values[67], true);
+  assert.equal(decoded.rewrite.values[68], true);
+  assert.equal(decoded.rewrite.values[69], 0);
   assert.equal(payload(code, 'HPCRP1').records[0].values.some(([index]) => index === 12), true);
   assert.equal(payload(code, 'HPCRP1').records[0].values.some(([index]) => index === 13), false);
+  assert.equal(payload(code, 'HPCRP1').records[0].values.some(([index]) => index === 67), true);
+  assert.equal(payload(code, 'HPCRP1').records[0].values.some(([index]) => index === 68), true);
+  assert.equal(payload(code, 'HPCRP1').records[0].values.some(([index]) => index === 69), true);
 });

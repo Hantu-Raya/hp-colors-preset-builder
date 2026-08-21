@@ -58,7 +58,10 @@ const MENU_DEFINITION = Object.freeze([
           "highThreshold",
           "enemyTeamHigh",
           "excludeBuildings",
-          "excludeBosses"
+          "excludeBosses",
+          "excludeGhouls",
+          "ghoulOpacityEnabled",
+          "ghoulOpacity"
         ]
       },
       {
