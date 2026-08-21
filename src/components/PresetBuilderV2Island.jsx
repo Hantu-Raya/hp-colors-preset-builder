@@ -14,6 +14,7 @@ import {
   GripVertical,
   Heart,
   Layers3,
+  Library,
   Plus,
   RotateCcw,
   ShieldCheck,
@@ -317,6 +318,10 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     [activeCatalog]
   );
   const sharedGroups = useMemo(() => createHpMenuGroups(HP_FIELD_CATALOG.schema), []);
+  const presetLibraryGroup = useMemo(
+    () => groups.flatMap((group) => group.children || []).find((group) => group.pageId === 'overview-presets'),
+    [groups]
+  );
   const initialSelection = useMemo(
     () => selectPresetBuilderSession(session, activeDefaultState, groups, null, activeCatalog),
     [activeCatalog, activeDefaultState, groups, session]
@@ -560,6 +565,10 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     setActiveKey(activeCatalog.getCategoryKey(cursor || group));
   }
 
+  function openPresetLibrary() {
+    if (presetLibraryGroup) handleSelectGroup(presetLibraryGroup);
+  }
+
   const handleImport = useCallback(async () => {
     if (busy || operationLockRef.current) return;
     operationLockRef.current = true;
@@ -750,6 +759,15 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 <span>Preset target</span>
                 <strong>{containsRewriteProfiles && !rewriteQollockTarget ? 'Rewrite' : targetModeDetails.label}</strong>
               </span>
+            </button>
+            <button
+              type="button"
+              className={showPresetTools ? 'preset-shortcut is-active' : 'preset-shortcut'}
+              onClick={openPresetLibrary}
+              aria-current={showPresetTools ? 'page' : undefined}
+            >
+              <Library aria-hidden="true" />
+              <span>Presets</span>
             </button>
             {rewriteBuildTarget && !rewriteQollockTarget ? (
               <button
@@ -1218,11 +1236,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     >
                       <span className="target-mode-choice-title">
                         <Layers3 aria-hidden="true" />
-                        <strong>{choice.v2Title || choice.title}</strong>
+                        <strong>{'v2Title' in choice ? choice.v2Title : choice.title}</strong>
                         {selected && !unavailable ? <Check aria-hidden="true" /> : null}
                       </span>
-                      <span className="target-mode-choice-summary">{choice.v2Summary || choice.summary}</span>
-                      <span className="target-mode-choice-description">{choice.v2Description || choice.description}</span>
+                      <span className="target-mode-choice-summary">{'v2Summary' in choice ? choice.v2Summary : choice.summary}</span>
+                      <span className="target-mode-choice-description">{'v2Description' in choice ? choice.v2Description : choice.description}</span>
                     </button>
                     {unavailable ? (
                       <button type="button" className="target-mode-choice-download is-disabled" disabled>
@@ -1231,7 +1249,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                         <span className="target-mode-choice-download-flag">Unavailable in V2</span>
                       </button>
                     ) : (
-                      <a className="target-mode-choice-download" href={choice.downloadHrefV2 || choice.downloadHref} target="_blank" rel="noreferrer">
+                      <a className="target-mode-choice-download" href={'downloadHrefV2' in choice ? choice.downloadHrefV2 : choice.downloadHref} target="_blank" rel="noreferrer">
                         <Download aria-hidden="true" />
                         <span>Download this mod</span>
                       </a>
@@ -1312,14 +1330,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 <>
                   <div>
                     <span className="target-mode-summary-label">Selected base mod</span>
-                    <strong>{targetModeDetails.v2Title || targetModeDetails.title}</strong>
-                    <p>{targetModeDetails.v2Summary || targetModeDetails.summary}</p>
+                    <strong>{'v2Title' in targetModeDetails ? targetModeDetails.v2Title : targetModeDetails.title}</strong>
+                    <p>{'v2Summary' in targetModeDetails ? targetModeDetails.v2Summary : targetModeDetails.summary}</p>
                     {targetModeDetails.unavailableInV2 ? (
                       <span className="target-mode-summary-download-link is-disabled" aria-disabled="true">
                         This target is unavailable in V2.
                       </span>
                     ) : (
-                      <a className="target-mode-summary-download-link" href={targetModeDetails.downloadHrefV2 || targetModeDetails.downloadHref} target="_blank" rel="noreferrer">
+                      <a className="target-mode-summary-download-link" href={'downloadHrefV2' in targetModeDetails ? targetModeDetails.downloadHrefV2 : targetModeDetails.downloadHref} target="_blank" rel="noreferrer">
                         Need the base mod? Download it first.
                       </a>
                     )}

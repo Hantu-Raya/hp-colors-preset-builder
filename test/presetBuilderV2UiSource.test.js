@@ -40,7 +40,7 @@ test("v2 disables Minimal and uses Rewrite download links without changing v1", 
   assert.match(v2Island, /disabled=\{unavailable\}/);
   assert.match(v2Island, /is-unavailable/);
   assert.match(v2Island, />Unavailable in V2</);
-  assert.match(v2Island, /choice\.downloadHrefV2 \|\| choice\.downloadHref/);
+  assert.match(v2Island, /'downloadHrefV2' in choice \? choice\.downloadHrefV2 : choice\.downloadHref/);
   assert.match(targetMode, /unavailableInV2: true/);
   assert.match(targetMode, /FileInfo_1792071/);
   assert.match(targetMode, /FileInfo_1792072/);
@@ -59,6 +59,16 @@ test("v2 owns the in-game menu navigation without changing v1", async () => {
   assert.match(v2Island, /currentGroup\?\.pageId === 'health-pips-levels'/);
   assert.match(v2Tree, /export function SchemaTabs/);
   assert.match(v2Tree, /aria-label="HP Colors sections"/);
+});
+
+test("v2 topbar opens the preset library directly", async () => {
+  const v2Island = await readFile(v2IslandPath, "utf8");
+
+  assert.match(v2Island, /pageId === 'overview-presets'/);
+  assert.match(v2Island, /function openPresetLibrary\(\)/);
+  assert.match(v2Island, /onClick=\{openPresetLibrary\}/);
+  assert.match(v2Island, /aria-current=\{showPresetTools \? 'page' : undefined\}/);
+  assert.match(v2Island, />Presets</);
 });
 
 test("rewrite transfer and preset actions stay isolated to v2", async () => {

@@ -349,6 +349,36 @@
   color: var(--primary);
 }
 
+.preset-shortcut {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--muted);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 780;
+  cursor: pointer;
+}
+
+.preset-shortcut:hover,
+.preset-shortcut.is-active {
+  border-color: var(--primary);
+  background: var(--accent);
+}
+
+.preset-shortcut svg {
+  width: 16px;
+  height: 16px;
+  color: var(--primary);
+}
+
 .showranks-toggle {
   display: inline-grid;
   grid-template-columns: auto minmax(0, 1fr);
