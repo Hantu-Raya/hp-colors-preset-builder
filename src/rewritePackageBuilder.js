@@ -27,6 +27,17 @@ const REWRITE_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   "HPColorsEditorRoot",
   REWRITE_PRESET_STORE_PANEL_ID
 ]);
+export const REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME = "pak01_dir.vpk";
+const REWRITE_SHOWRANKS_SCRIPT_INCLUDE = "s2r://panorama/scripts/showrank_barebones.vjs_c";
+export const REWRITE_SHOWRANKS_SCRIPT_INCLUDES = Object.freeze([
+  ...REWRITE_PRESET_SCRIPT_INCLUDES,
+  REWRITE_SHOWRANKS_SCRIPT_INCLUDE
+]);
+const REWRITE_SHOWRANKS_OPEN_HOOK = "if ($.ShowRankBarebonesEscapeOpen) $.ShowRankBarebonesEscapeOpen();";
+const REWRITE_SHOWRANKS_OUT_HOOK = "if ($.ShowRankBarebonesEscapeOut) $.ShowRankBarebonesEscapeOut();";
+export const REWRITE_SHOWRANKS_MENU_ONLOAD = `$.HPColorsMenuBoot(); ${REWRITE_SHOWRANKS_OPEN_HOOK}`;
+export const REWRITE_SHOWRANKS_MENU_ONMOUSEOVER = REWRITE_SHOWRANKS_OPEN_HOOK;
+export const REWRITE_SHOWRANKS_MENU_ONMOUSEOUT = REWRITE_SHOWRANKS_OUT_HOOK;
 
 export const REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME = "pak01_dir.vpk";
 export const REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH = "templates/hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml";
@@ -211,6 +222,7 @@ function requireMenuContract(
   {
     expectedOnload = "$.HPColorsMenuBoot()",
     expectedOncancel = "if (!$.HPColorsMenuCancel()) CitadelResumePlaying()",
+    expectedMenuAttributes = null,
     requiredPanelIds = REWRITE_PRESET_REQUIRED_PANEL_IDS
   } = {}
 ) {
@@ -220,6 +232,13 @@ function requireMenuContract(
   }
   if (escapeMenus[0].attrs.onload !== expectedOnload || escapeMenus[0].attrs.oncancel !== expectedOncancel) {
     throw new Error("Rewrite XML menu lifecycle contract is stale or incompatible");
+  }
+  if (expectedMenuAttributes) {
+    for (const [attribute, value] of Object.entries(expectedMenuAttributes)) {
+      if (escapeMenus[0].attrs[attribute] !== value) {
+        throw new Error("Rewrite XML menu lifecycle contract is stale or incompatible");
+      }
+    }
   }
   const ids = new Set();
   const walk = (node) => {
@@ -274,7 +293,8 @@ function inspectRewriteXml(
     scriptIncludes = REWRITE_PRESET_SCRIPT_INCLUDES,
     requiredPanelIds = REWRITE_PRESET_REQUIRED_PANEL_IDS,
     expectedOnload = "$.HPColorsMenuBoot()",
-    expectedOncancel = "if (!$.HPColorsMenuCancel()) CitadelResumePlaying()"
+    expectedOncancel = "if (!$.HPColorsMenuCancel()) CitadelResumePlaying()",
+    expectedMenuAttributes = null
   } = {}
 ) {
   const text = asText(source);
@@ -283,7 +303,7 @@ function inspectRewriteXml(
   const styles = requireIncludes(parsed.root, "styles", styleIncludes, "style");
   const scripts = requireIncludes(parsed.root, "scripts", scriptIncludes, "script");
   const store = requireStoreLabel(parsed.root, { requireEmpty });
-  requireMenuContract(parsed.root, { expectedOnload, expectedOncancel, requiredPanelIds });
+  requireMenuContract(parsed.root, { expectedOnload, expectedOncancel, expectedMenuAttributes, requiredPanelIds });
   let code = "";
   if (store.label.attrs.text) {
     code = decodeUtf16Hex(store.label.attrs.text);
@@ -473,6 +493,104 @@ export function buildRewritePresetPackage(input, positionalTemplateText = null) 
     xmlText: rereadText,
     presetCode: patched.code,
     template: inspectRewriteXml(rereadText, { requireEmpty: false }),
+    archive: rereadArchive
+  };
+}
+
+function mergeRewriteShowranksTemplate(templateText) {
+  const inspected = inspectRewritePresetTemplate(templateText);
+  const canonicalMenuTag = '<CitadelHudEscapeMenu onload="$.HPColorsMenuBoot()" oncancel="if (!$.HPColorsMenuCancel()) CitadelResumePlaying()">';
+  const lastScriptInclude = `    <include src="${REWRITE_PRESET_SCRIPT_INCLUDES[REWRITE_PRESET_SCRIPT_INCLUDES.length - 1]}" />`;
+  const showrankInclude = `    <include src="${REWRITE_SHOWRANKS_SCRIPT_INCLUDE}" />`;
+  const newline = inspected.text.includes("\r\n") ? "\r\n" : "\n";
+  const showranksMenuTag = `<CitadelHudEscapeMenu onload="${REWRITE_SHOWRANKS_MENU_ONLOAD}" oncancel="if (!$.HPColorsMenuCancel()) CitadelResumePlaying()" onmouseover="${REWRITE_SHOWRANKS_MENU_ONMOUSEOVER}" onmouseout="${REWRITE_SHOWRANKS_MENU_ONMOUSEOUT}">`;
+  if (!inspected.text.includes(canonicalMenuTag)) {
+    throw new Error("Rewrite XML menu lifecycle contract is stale or incompatible");
+  }
+  if (!inspected.text.includes(lastScriptInclude)) {
+    throw new Error("Rewrite XML script include contract is stale or incompatible");
+  }
+  return inspected.text
+    .replace(canonicalMenuTag, showranksMenuTag)
+    .replace(`${lastScriptInclude}${newline}`, `${lastScriptInclude}${newline}${showrankInclude}${newline}`);
+}
+
+export function inspectRewriteShowranksPresetTemplate(templateText, { requireEmpty = true } = {}) {
+  return inspectRewriteXml(templateText, {
+    requireEmpty,
+    scriptIncludes: REWRITE_SHOWRANKS_SCRIPT_INCLUDES,
+    expectedOnload: REWRITE_SHOWRANKS_MENU_ONLOAD,
+    expectedMenuAttributes: {
+      onmouseover: REWRITE_SHOWRANKS_MENU_ONMOUSEOVER,
+      onmouseout: REWRITE_SHOWRANKS_MENU_ONMOUSEOUT
+    }
+  });
+}
+
+export const validateRewriteShowranksPresetTemplate = inspectRewriteShowranksPresetTemplate;
+
+export function readRewriteShowranksPresetCode(input) {
+  const source = sourceTextFromResource(input);
+  const inspected = inspectRewriteShowranksPresetTemplate(source, { requireEmpty: false });
+  if (!inspected.presetCode) throw new Error("Rewrite showranks XML store is empty");
+  return validatePresetCode(inspected.presetCode);
+}
+
+function patchRewriteShowranksPresetTemplate({ templateText, templateXml, template, presetCode, code = presetCode } = {}) {
+  const source = templateText ?? templateXml ?? template;
+  const normalizedCode = validatePresetCode(code);
+  const mergedText = mergeRewriteShowranksTemplate(source);
+  const inspected = inspectRewriteShowranksPresetTemplate(mergedText);
+  const encoded = encodeUtf16Hex(normalizedCode);
+  const patchedText = inspected.text.slice(0, inspected.labelTextStart) + encoded + inspected.text.slice(inspected.labelTextEnd);
+  const reread = inspectRewriteShowranksPresetTemplate(patchedText, { requireEmpty: false });
+  if (reread.presetCode !== normalizedCode) throw new Error("Rewrite showranks XML store patch failed payload round-trip");
+  if (inspected.text.slice(0, inspected.labelTextStart) !== patchedText.slice(0, inspected.labelTextStart) || inspected.text.slice(inspected.labelTextEnd) !== patchedText.slice(inspected.labelTextStart + encoded.length)) {
+    throw new Error("Rewrite showranks XML patch changed bytes outside the store label");
+  }
+  return {
+    text: patchedText,
+    xmlText: patchedText,
+    code: normalizedCode,
+    presetCode: normalizedCode,
+    template: reread
+  };
+}
+
+export function validateRewriteShowranksPresetVpk(vpkBytes) {
+  const archive = readVpkArchive(vpkBytes);
+  if (archive.files.length !== 1) throw new Error("Rewrite showranks preset VPK must contain exactly one file");
+  const [file] = archive.files;
+  if (normalizeVpkPath(file.path) !== REWRITE_PRESET_ARCHIVE_PATH) throw new Error("Rewrite showranks preset VPK contains an unexpected file");
+  if (!(file.bytes instanceof Uint8Array)) throw new Error("Rewrite showranks preset VPK contains invalid bytes");
+  const sourceText = extractSource2Resource({ bytes: file.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  const inspected = inspectRewriteShowranksPresetTemplate(sourceText, { requireEmpty: false });
+  if (!inspected.presetCode) throw new Error("Rewrite showranks preset VPK store is empty");
+  return archive;
+}
+
+export function buildRewriteShowranksPresetPackage(input, positionalTemplateText = null) {
+  const options = typeof input === "string"
+    ? { presetCode: input, templateText: positionalTemplateText }
+    : (input || {});
+  const presetCode = options.presetCode ?? options.code;
+  const templateText = options.templateText ?? options.templateXml ?? options.template;
+  const patched = patchRewriteShowranksPresetTemplate({ templateText, presetCode });
+  const bytes = compileSource2Resource({ sourceText: patched.text, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  const archive = createVpkArchive([{ path: REWRITE_PRESET_ARCHIVE_PATH, bytes }]);
+  const vpkBytes = writeVpkArchive(archive);
+  const rereadArchive = validateRewriteShowranksPresetVpk(vpkBytes);
+  const file = rereadArchive.files[0];
+  const rereadText = extractSource2Resource({ bytes: file.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  const rereadCode = readRewriteShowranksPresetCode(rereadText);
+  if (rereadCode !== patched.code) throw new Error("Rewrite showranks preset VPK payload failed round-trip");
+  return {
+    vpkBytes,
+    bytes: file.bytes,
+    sourceText: rereadText,
+    xmlText: rereadText,
+    presetCode: patched.code,
+    template: inspectRewriteShowranksPresetTemplate(rereadText, { requireEmpty: false }),
     archive: rereadArchive
   };
 }

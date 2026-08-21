@@ -349,6 +349,37 @@
   color: var(--primary);
 }
 
+.showranks-toggle {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-width: 142px;
+  min-height: 42px;
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--muted);
+  color: var(--foreground);
+  cursor: pointer;
+  text-align: left;
+}
+
+.showranks-toggle:hover {
+  border-color: var(--ring);
+  background: var(--accent);
+}
+
+.showranks-toggle.is-active {
+  border-color: var(--primary);
+  background: var(--accent);
+}
+
+.showranks-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
 .target-mode-text {
   display: grid;
   gap: 2px;

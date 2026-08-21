@@ -4,9 +4,12 @@ import test from "node:test";
 
 import {
   buildRewritePresetPackage,
+  buildRewriteShowranksPresetPackage,
   encodeUtf16Hex,
   inspectRewritePresetTemplate,
+  inspectRewriteShowranksPresetTemplate,
   readRewritePresetCode,
+  readRewriteShowranksPresetCode,
   REWRITE_PRESET_ARCHIVE_PATH,
   REWRITE_PRESET_CONTRACT,
   REWRITE_PRESET_CONTRACT_VERSION,
@@ -14,7 +17,8 @@ import {
   REWRITE_PRESET_STORE_LABEL_ID,
   REWRITE_PRESET_STORE_PANEL_ID,
   validateRewritePresetTemplate,
-  validateRewritePresetVpk
+  validateRewritePresetVpk,
+  validateRewriteShowranksPresetVpk
 } from "../src/rewritePackageBuilder.js";
 import { createVpkArchive, readVpkArchive, writeVpkArchive } from "../src/vpkArchive.js";
 
@@ -125,4 +129,47 @@ test("rewrite VPK rejects any asset besides the XML layout", () => {
   assert.throws(() => validateRewritePresetVpk(extra), /exactly one file/);
   const wrong = writeVpkArchive(createVpkArchive([{ path: "panorama/layout/base_hud.vxml_c", bytes: built.bytes }]));
   assert.throws(() => validateRewritePresetVpk(wrong), /unexpected file/);
+});
+
+test("showranks package merges the ShowRank escape-menu hooks and round-trips HPCRP1", () => {
+  const built = buildRewriteShowranksPresetPackage({ templateText, presetCode: PRESET_CODE });
+  assert.match(built.sourceText, /<include src="s2r:\/\/panorama\/scripts\/showrank_barebones\.vjs_c" \/>/);
+  assert.match(
+    built.sourceText,
+    /<CitadelHudEscapeMenu onload="\$\.HPColorsMenuBoot\(\); if \(\$\.ShowRankBarebonesEscapeOpen\) \$\.ShowRankBarebonesEscapeOpen\(\);" oncancel="if \(!\$\.HPColorsMenuCancel\(\)\) CitadelResumePlaying\(\)" onmouseover="if \(\$\.ShowRankBarebonesEscapeOpen\) \$\.ShowRankBarebonesEscapeOpen\(\);" onmouseout="if \(\$\.ShowRankBarebonesEscapeOut\) \$\.ShowRankBarebonesEscapeOut\(\);">/
+  );
+  const inspected = inspectRewriteShowranksPresetTemplate(built.sourceText, { requireEmpty: false });
+  assert.deepEqual(inspected.scriptIncludes, [
+    "s2r://panorama/scripts/hp_colors_contract.vjs_c",
+    "s2r://panorama/scripts/hp_colors_state.vjs_c",
+    "s2r://panorama/scripts/hp_colors_menu.vjs_c",
+    "s2r://panorama/scripts/showrank_barebones.vjs_c"
+  ]);
+  assert.equal(readRewriteShowranksPresetCode(built.bytes), PRESET_CODE);
+  assert.equal(validateRewriteShowranksPresetVpk(built.vpkBytes).files.length, 1);
+});
+
+test("canonical rewrite contract rejects the showranks layout and vice versa", () => {
+  const built = buildRewriteShowranksPresetPackage({ templateText, presetCode: PRESET_CODE });
+  assert.throws(() => validateRewritePresetVpk(built.vpkBytes), /stale or incompatible/);
+  assert.throws(() => validateRewritePresetTemplate(built.sourceText), /stale or incompatible/);
+  const plain = buildRewritePresetPackage({ templateText, presetCode: PRESET_CODE });
+  assert.throws(() => validateRewriteShowranksPresetVpk(plain.vpkBytes), /stale or incompatible/);
+});
+
+test("showranks merge rejects templates whose canonical anchors drifted", () => {
+  assert.throws(
+    () => buildRewriteShowranksPresetPackage({
+      templateText: templateText.replace('onload="$.HPColorsMenuBoot()"', 'onload="$.OtherBoot()"'),
+      presetCode: PRESET_CODE
+    }),
+    /lifecycle contract is stale or incompatible/
+  );
+  assert.throws(
+    () => buildRewriteShowranksPresetPackage({
+      templateText: templateText.replace("hp_colors_menu.vjs_c", "hp_colors_other.vjs_c"),
+      presetCode: PRESET_CODE
+    }),
+    /stale or incompatible/
+  );
 });

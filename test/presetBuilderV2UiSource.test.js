@@ -126,3 +126,18 @@ test("Rewrite QOLLOCK is a separate selectable target with a composite template"
   assert.match(template, /<Panel id="HPColorsEditorRoot"/);
   assert.doesNotMatch(template, /panorama\/scripts\/.*\.js\b|panorama\/styles\/.*\.css\b/);
 });
+
+test("showranks compatibility is a v2-only rewrite toggle with merged menu output", async () => {
+  const [v1Island, v2Island, workflow] = await Promise.all([
+    readFile(v1IslandPath, "utf8"),
+    readFile(v2IslandPath, "utf8"),
+    readFile(new URL("../src/presetBuilderWorkflow.js", import.meta.url), "utf8")
+  ]);
+  assert.doesNotMatch(v1Island, /showranks|ShowRank/i);
+  assert.match(v2Island, /Showranks compatible/);
+  assert.match(v2Island, /rewriteBuildTarget && !rewriteQollockTarget \? \(/);
+  assert.match(v2Island, /commitShowranksCompatibleState/);
+  assert.match(v2Island, /showranksCompatible: session\.showranksCompatible/);
+  assert.match(workflow, /buildRewriteShowranksPresetPackage/);
+  assert.match(workflow, /REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME/);
+});

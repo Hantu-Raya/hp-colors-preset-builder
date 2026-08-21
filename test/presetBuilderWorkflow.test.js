@@ -7,9 +7,11 @@ import { HP_COLORS_PACKAGE_ARTIFACTS } from "../src/packageArtifacts.js";
 import { buildHpColorsPackage } from "../src/packageBuilder.js";
 import { createPresetBuilderSession } from "../src/presetBuilderSession.js";
 import { TARGET_MODE_STORAGE_KEY } from "../src/targetModeStore.js";
+import { SHOWRANKS_COMPATIBLE_STORAGE_KEY } from "../src/showranksCompatibleStore.js";
 import {
   BASE_HUD_TEMPLATE_PATH,
   commitPresetBuilderTargetMode,
+  commitShowranksCompatibleState,
   createBaseHudXmlLoader,
   runPresetBuildWorkflow,
   runPresetConvertWorkflow,
@@ -238,4 +240,17 @@ test("runPresetConvertWorkflow reports converter errors to both statuses", async
     { type: "SET_CONVERT_STATUS", status: "Invalid VPK file" },
     { type: "SET_STATUS", status: "Invalid VPK file" }
   ]);
+});
+
+test("commitShowranksCompatibleState persists and mirrors the session flag", () => {
+  const storage = createMemoryStorage();
+  const session = createPresetBuilderSession(HP_FIELD_CATALOG.createDefaultState());
+
+  const enabled = commitShowranksCompatibleState({ session, showranksCompatible: true, storage });
+  assert.equal(enabled.showranksCompatible, true);
+  assert.equal(storage.values.get(SHOWRANKS_COMPATIBLE_STORAGE_KEY), "true");
+
+  const disabled = commitShowranksCompatibleState({ session: enabled, showranksCompatible: false, storage });
+  assert.equal(disabled.showranksCompatible, false);
+  assert.equal(storage.values.get(SHOWRANKS_COMPATIBLE_STORAGE_KEY), "false");
 });

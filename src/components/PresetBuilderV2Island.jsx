@@ -58,6 +58,7 @@ import {
 } from '../presetBuilderSession.js';
 import {
   commitPresetBuilderTargetMode,
+  commitShowranksCompatibleState,
   createBaseHudXmlLoader,
   createRewritePresetTemplateLoader,
   createRewriteQollockPresetTemplateLoader,
@@ -448,6 +449,15 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     }));
   }
 
+  function commitShowranksCompatible(nextValue) {
+    const storage = typeof window !== 'undefined' ? window.localStorage : null;
+    setSession((previous) => commitShowranksCompatibleState({
+      session: previous,
+      showranksCompatible: nextValue,
+      storage
+    }));
+  }
+
   function openTargetModePicker() {
     dispatchSessionIntent({ type: 'OPEN_TARGET_MODE_PICKER' });
   }
@@ -634,13 +644,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
           profiles,
           activeProfileId,
           loadRewritePresetTemplate,
+          showranksCompatible: session.showranksCompatible,
           dispatch: dispatchSessionIntent
         });
       }
     } finally {
       operationLockRef.current = false;
     }
-  }, [activeProfileId, busy, dispatchSessionIntent, loadRewritePresetTemplate, loadRewriteQollockPresetTemplate, profiles]);
+  }, [activeProfileId, busy, dispatchSessionIntent, loadRewritePresetTemplate, loadRewriteQollockPresetTemplate, profiles, session.showranksCompatible]);
 
 
   const performConvert = useCallback(async (targetModVariant) => {
@@ -740,6 +751,20 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 <strong>{containsRewriteProfiles && !rewriteQollockTarget ? 'Rewrite' : targetModeDetails.label}</strong>
               </span>
             </button>
+            {rewriteBuildTarget && !rewriteQollockTarget ? (
+              <button
+                type="button"
+                className={session.showranksCompatible ? 'showranks-toggle is-active' : 'showranks-toggle'}
+                onClick={() => commitShowranksCompatible(!session.showranksCompatible)}
+                aria-pressed={session.showranksCompatible}
+              >
+                <ShieldCheck aria-hidden="true" />
+                <span className="target-mode-text">
+                  <span>Showranks compatible</span>
+                  <strong>{session.showranksCompatible ? 'On' : 'Off'}</strong>
+                </span>
+              </button>
+            ) : null}
             <div className="topbar-profile-controls" aria-label="Preset profiles">
               <button type="button" className="profile-icon-action" onClick={handleAddProfile} disabled={profiles.length >= profileLimit} aria-label="Add preset">
                 <Plus aria-hidden="true" />
@@ -935,7 +960,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                     <strong>{rewriteBuildTarget ? 'HPCRP1 / HPCR2' : targetModeDetails.title}</strong>
                     <p>
                       {rewriteBuildTarget
-                        ? `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will build ${presetVpkFileName} for ${rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}. Code-copy actions remain available below.`
+                        ? `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will build ${presetVpkFileName} for ${rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}${!rewriteQollockTarget && session.showranksCompatible ? ' with ShowRank escape-menu hooks merged in' : ''}. Code-copy actions remain available below.`
                         : `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will be packaged as ${presetVpkFileName}.`}
                     </p>
                   </article>
@@ -1129,7 +1154,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <p>{buildResult.targetLabel === 'hp_colors_rewrite_qollock'
                 ? 'Keep hp_colors_rewrite_qollock pak02 and pinned QOLLOCK pak03 installed beside this generated pak01.'
                 : buildResult.targetLabel === 'hp_colors_rewrite'
-                  ? 'Keep hp_colors_rewrite installed as the rewrite runtime.'
+                  ? buildResult.showranksCompatible
+                    ? 'Keep hp_colors_rewrite as pak02 and showrank_barebones as pak03 below this generated pak01 (lower pak numbers win).'
+                    : 'Keep hp_colors_rewrite installed as the rewrite runtime.'
                   : `Keep the selected ${targetModeDetails.title.toLowerCase()} installed as the base runtime.`}</p>
             </div>
           ) : null}
@@ -1254,7 +1281,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                   <p>
                     {rewriteQollockTarget
                       ? 'Install the hp_colors_rewrite_qollock support pak02 and pinned QOLLOCK pak03 first. This generated pak01 contains only the composite Escape-menu layout with the HPCRP1 preset.'
-                      : 'Install the hp_colors_rewrite base package first. This VPK replaces its escape-menu layout and stores HPCRP1 in a hidden XML label.'}
+                      : session.showranksCompatible
+                        ? 'Install order (lower pak numbers win): this generated pak01 preset, then hp_colors_rewrite as pak02, then showrank_barebones as pak03. The preset layout merges the ShowRank escape-menu hooks.'
+                        : 'Install the hp_colors_rewrite base package first. This VPK replaces its escape-menu layout and stores HPCRP1 in a hidden XML label.'}
                   </p>
                   {rewriteQollockTarget ? (
                     <div className="target-mode-summary-actions">

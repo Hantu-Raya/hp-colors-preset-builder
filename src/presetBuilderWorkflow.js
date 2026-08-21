@@ -6,12 +6,15 @@ import { createRewritePresetBundle } from "./rewritePresetCodec.js";
 import {
   buildRewritePresetPackage,
   buildRewriteQollockPresetPackage,
+  buildRewriteShowranksPresetPackage,
   REWRITE_PRESET_TEMPLATE_PATH,
   REWRITE_PRESET_VPK_FILE_NAME,
+  REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME,
   REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH
 } from "./rewritePackageBuilder.js";
 import { reducePresetBuilderSession } from "./presetBuilderSession.js";
 import { getTargetModeDetails, normalizeTargetMode, saveTargetModeState } from "./targetModeStore.js";
+import { saveShowranksCompatibleState } from "./showranksCompatibleStore.js";
 
 export const BASE_HUD_TEMPLATE_PATH = "templates/hp_colors/panorama/layout/base_hud.xml";
 export const PRESET_INSTALL_DIRECTORY = "game/citadel/addons";
@@ -71,6 +74,16 @@ export function commitPresetBuilderTargetMode({ session, targetMode, storage = n
   const normalizedTargetMode = normalizeTargetMode(targetMode);
   const saved = saveTargetModeState(storage, normalizedTargetMode);
   const nextSession = reducePresetBuilderSession(session, { type: "COMMIT_TARGET_MODE", targetMode: normalizedTargetMode });
+  if (saved.ok) return nextSession;
+  return reducePresetBuilderSession(nextSession, {
+    type: "SET_FEEDBACK",
+    feedback: { type: "error", message: saved.error }
+  });
+}
+
+export function commitShowranksCompatibleState({ session, showranksCompatible, storage = null }) {
+  const saved = saveShowranksCompatibleState(storage, showranksCompatible === true);
+  const nextSession = reducePresetBuilderSession(session, { type: "SET_SHOWRANKS_COMPATIBLE", showranksCompatible: saved.ok ? showranksCompatible === true : session.showranksCompatible });
   if (saved.ok) return nextSession;
   return reducePresetBuilderSession(nextSession, {
     type: "SET_FEEDBACK",
@@ -143,6 +156,7 @@ export async function runRewritePresetBuildWorkflow({
   profiles,
   activeProfileId = null,
   loadRewritePresetTemplate,
+  showranksCompatible = false,
   download = downloadBytes,
   dispatch,
   digest = null,
@@ -156,24 +170,29 @@ export async function runRewritePresetBuildWorkflow({
   }
   rewriteBuildInFlight = true;
   const buildProfiles = Array.isArray(profiles) ? profiles : [];
+  const vpkFileName = showranksCompatible ? REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME : REWRITE_PRESET_VPK_FILE_NAME;
+  const targetSuffix = showranksCompatible ? " + showrank_barebones" : "";
   dispatch?.({ type: "BUILD_STARTED" });
-  dispatchStatus(dispatch, "SET_STATUS", `Building ${REWRITE_PRESET_VPK_FILE_NAME} for hp_colors_rewrite...`);
+  dispatchStatus(dispatch, "SET_STATUS", `Building ${vpkFileName} for hp_colors_rewrite${targetSuffix}...`);
   try {
     const presetCode = createRewritePresetBundle(buildProfiles, activeProfileId);
     const templateText = await loadRewritePresetTemplate();
-    const built = buildRewritePresetPackage({ presetCode, templateText });
-    await download(REWRITE_PRESET_VPK_FILE_NAME, built.vpkBytes);
+    const built = showranksCompatible
+      ? buildRewriteShowranksPresetPackage({ presetCode, templateText })
+      : buildRewritePresetPackage({ presetCode, templateText });
+    await download(vpkFileName, built.vpkBytes);
     const result = {
-      filename: REWRITE_PRESET_VPK_FILE_NAME,
+      filename: vpkFileName,
       byteLength: built.vpkBytes.byteLength,
       sha256: await sha256Hex(built.vpkBytes, digest),
       profileCount: buildProfiles.length,
       target: "hp_colors_rewrite",
       targetLabel: "hp_colors_rewrite",
+      showranksCompatible,
       installDirectory
     };
     dispatch?.({ type: "BUILD_SUCCEEDED", result });
-    dispatchStatus(dispatch, "SET_STATUS", `Built ${REWRITE_PRESET_VPK_FILE_NAME} for hp_colors_rewrite (${built.vpkBytes.byteLength.toLocaleString()} bytes, ${buildProfiles.length} profile${buildProfiles.length === 1 ? "" : "s"}).`);
+    dispatchStatus(dispatch, "SET_STATUS", `Built ${vpkFileName} for hp_colors_rewrite${targetSuffix} (${built.vpkBytes.byteLength.toLocaleString()} bytes, ${buildProfiles.length} profile${buildProfiles.length === 1 ? "" : "s"}).`);
     return result;
   } catch (error) {
     const message = error?.message || String(error);

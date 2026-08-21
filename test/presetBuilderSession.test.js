@@ -297,3 +297,29 @@ test("both dialogs can close through reducer actions", () => {
   assert.equal(warningClosed.warningOpen, false);
   assert.equal(pickerClosed.modePickerOpen, false);
 });
+
+test("showranks compatibility toggles the plain rewrite preset filename", () => {
+  const rewriteProfile = { name: "Lane", values: {}, heroMode: "off", heroes: [], rewrite: { values: {}, conditions: null } };
+  let session = { ...createPresetBuilderSession(defaultState), profiles: [rewriteProfile] };
+  assert.equal(selection(session).presetVpkFileName, "pak96_dir.vpk");
+
+  session = reducePresetBuilderSession(session, { type: "SET_SHOWRANKS_COMPATIBLE", showranksCompatible: true });
+  assert.equal(session.showranksCompatible, true);
+  assert.equal(selection(session).presetVpkFileName, "pak01_dir.vpk");
+
+  session = reducePresetBuilderSession(session, { type: "SET_SHOWRANKS_COMPATIBLE", showranksCompatible: false });
+  assert.equal(session.showranksCompatible, false);
+  assert.equal(selection(session).presetVpkFileName, "pak96_dir.vpk");
+});
+
+test("showranks compatibility never applies to qollock or non-rewrite targets", () => {
+  const rewriteProfile = { name: "Lane", values: {}, heroMode: "off", heroes: [], rewrite: { values: {}, conditions: null } };
+  const qollockSession = reducePresetBuilderSession(
+    { ...createPresetBuilderSession(defaultState), profiles: [rewriteProfile], showranksCompatible: true },
+    { type: "COMMIT_TARGET_MODE", targetMode: HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK }
+  );
+  assert.equal(selection(qollockSession).presetVpkFileName, "pak01_dir.vpk");
+
+  const minimalSession = { ...createPresetBuilderSession(defaultState), showranksCompatible: true };
+  assert.equal(selection(minimalSession).presetVpkFileName, "pak96_dir.vpk");
+});

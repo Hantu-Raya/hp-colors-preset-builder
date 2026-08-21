@@ -24,7 +24,8 @@ import {
 } from "./profileStore.js";
 import { createRewriteProfileMetadata, getRewriteEditorState } from "./rewritePresetCodec.js";
 import { getTargetModeDetails, isFullTargetMode, isRewriteQollockTarget, loadTargetModeState } from "./targetModeStore.js";
-import { PRESET_VPK_FILE_NAME, REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME } from "./presetVpkFileName.js";
+import { PRESET_VPK_FILE_NAME, REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME, REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME } from "./presetVpkFileName.js";
+import { loadShowranksCompatibleState } from "./showranksCompatibleStore.js";
 
 const DEFAULT_PRESET_NAME = "Web Builder Preset";
 const BUILD_VARIANTS = new Set(Object.values(HP_COLORS_MOD_VARIANTS));
@@ -180,14 +181,16 @@ export function createPresetBuilderSession(defaultState) {
     targetModeLoaded: false,
     modePickerOpen: false,
     modePickerRequired: false,
-    modePickerUpgrade: false
+    modePickerUpgrade: false,
+    showranksCompatible: false
   };
 }
 
 export function loadPresetBuilderSession(storage, defaultState, { profileStorageKey = PROFILE_STORAGE_KEY } = {}) {
   const profileState = loadProfileState(storage, defaultState, profileStorageKey);
   const targetModeState = loadTargetModeState(storage, { profileStorageKey });
-  const storageError = profileState.error || targetModeState.error || null;
+  const showranksState = loadShowranksCompatibleState(storage);
+  const storageError = profileState.error || targetModeState.error || showranksState.error || null;
   return {
     ...createPresetBuilderSession(defaultState),
     profiles: profileState.profiles,
@@ -198,10 +201,19 @@ export function loadPresetBuilderSession(storage, defaultState, { profileStorage
     modePickerOpen: targetModeState.shouldShowPicker,
     modePickerRequired: targetModeState.shouldShowPicker,
     modePickerUpgrade: targetModeState.isUpgradePrompt,
+    showranksCompatible: showranksState.showranksCompatible,
     feedback: storageError ? { type: "error", message: storageError } : null,
     status: storageError ? `Status: ${storageError}` : "Status: Ready"
   };
 }
+
+function resolvePresetVpkFileName(session) {
+  if (isRewriteQollockTarget(session.targetMode)) return REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME;
+  const containsRewriteProfiles = (Array.isArray(session.profiles) ? session.profiles : []).some((profile) => Boolean(profile?.rewrite));
+  if (containsRewriteProfiles && session.showranksCompatible) return REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME;
+  return PRESET_VPK_FILE_NAME;
+}
+
 
 export function selectPresetBuilderSession(session, defaultState, groups, activeKey, catalog = HP_FIELD_CATALOG) {
   const profiles = Array.isArray(session.profiles) && session.profiles.length
@@ -259,7 +271,7 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
     fullTargetMode: isFullTargetMode(session.targetMode),
     buildProfilePresets,
     canConfirmBuildVariant: !session.busy && canConfirmBuild({ installValidated: session.installValidated, buildVariant: session.targetMode }),
-    presetVpkFileName: isRewriteQollockTarget(session.targetMode) ? REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME : PRESET_VPK_FILE_NAME,
+    presetVpkFileName: resolvePresetVpkFileName(session),
     installDirectory: "Deadlock/game/citadel/addons",
     topPresetName,
     catalog,
@@ -420,6 +432,9 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
         profileMenuOpen: false,
         heroMenuOpen: false
       };
+    case "SET_SHOWRANKS_COMPATIBLE":
+      if (session.showranksCompatible === (intent.showranksCompatible === true)) return session;
+      return { ...session, showranksCompatible: intent.showranksCompatible === true };
     case "OPEN_TARGET_MODE_PICKER":
       return { ...session, modePickerRequired: false, modePickerOpen: true };
     case "TOGGLE_INSTALL_VALIDATION": {
