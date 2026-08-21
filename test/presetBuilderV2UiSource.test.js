@@ -18,11 +18,13 @@ test("v1 and v2 link to separate GitHub Pages routes", async () => {
     readFile(v2PagePath, "utf8")
   ]);
 
+  assert.match(v1Island, />\s*V1 original\s*</);
+  assert.match(v1Island, />\s*V2 game menu\s*</);
   for (const island of [v1Island, v2Island]) {
-    assert.match(island, />\s*V1 original\s*</);
     assert.match(island, /import\.meta\.env\.BASE_URL\}v2\//);
-    assert.match(island, />\s*V2 game menu\s*</);
   }
+  assert.match(v2Island, /aria-label="V1 original builder"/);
+  assert.match(v2Island, /aria-label="V2 game menu builder"/);
   assert.match(v2Page, /PresetBuilderV2Island/);
   assert.match(v2Page, /styles\/v2\.css/);
   assert.match(v2Page, /<title>HP Colors Preset Builder V2<\/title>/);
@@ -69,6 +71,15 @@ test("v2 topbar opens the preset library directly", async () => {
   assert.match(v2Island, /onClick=\{openPresetLibrary\}/);
   assert.match(v2Island, /aria-current=\{showPresetTools \? 'page' : undefined\}/);
   assert.match(v2Island, />Presets</);
+});
+
+test("v2 topbar keeps workflow, profile, and utility controls grouped", async () => {
+  const v2Island = await readFile(v2IslandPath, "utf8");
+
+  assert.match(v2Island, /className="topbar-workflow-actions"/);
+  assert.match(v2Island, /className="topbar-profile-workspace"/);
+  assert.match(v2Island, /className="topbar-utility-bar"/);
+  assert.match(v2Island, /className="topbar-support-actions"/);
 });
 
 test("rewrite transfer and preset actions stay isolated to v2", async () => {

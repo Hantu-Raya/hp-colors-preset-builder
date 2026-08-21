@@ -139,24 +139,27 @@
   top: 12px;
   z-index: 20;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
+  grid-template-columns: minmax(500px, 0.9fr) minmax(0, 1.1fr);
+  grid-template-areas:
+    "brand workflow"
+    "utility profile";
+  gap: 8px 16px;
   align-items: center;
   min-width: 0;
-  padding: 14px;
+  padding: 10px 12px;
   box-shadow: 0 20px 44px -34px var(--page-shadow);
   backdrop-filter: blur(14px);
 }
 
 .panorama-brand-block {
+  grid-area: brand;
   display: grid;
-  gap: 7px;
+  gap: 3px;
   min-width: 0;
 }
 
 .panorama-title-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -164,16 +167,17 @@
 
 .panorama-brand {
   color: var(--foreground);
-  font-size: 1.58rem;
+  font-size: 1.42rem;
   font-weight: 780;
   line-height: 1;
-  text-wrap: balance;
+  white-space: nowrap;
 }
 
 .panorama-kicker {
   color: var(--primary);
-  font-size: 0.74rem;
+  font-size: 0.66rem;
   font-weight: 760;
+  line-height: 1;
   text-transform: uppercase;
 }
 
@@ -181,9 +185,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   min-width: 0;
-  padding-top: 2px;
 }
 
 .similar-tools-label {
@@ -310,8 +313,125 @@
 }
 
 .panorama-header-actions {
-  flex-wrap: nowrap;
+  display: contents;
+}
+
+.topbar-workflow-actions,
+.topbar-profile-workspace,
+.topbar-utility-bar,
+.topbar-support-actions {
+  display: flex;
+  align-items: center;
   min-width: 0;
+}
+
+.topbar-workflow-actions {
+  grid-area: workflow;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--muted) 45%, transparent);
+}
+
+.topbar-profile-workspace {
+  grid-area: profile;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--muted) 45%, transparent);
+}
+
+.topbar-utility-bar {
+  grid-area: utility;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.topbar-utility-links {
+  min-width: 0;
+}
+
+.topbar-support-actions {
+  flex: 0 0 auto;
+  padding-left: 7px;
+  border-left: 1px solid var(--border);
+  gap: 5px;
+}
+
+.topbar-workflow-actions .target-mode-trigger,
+.topbar-workflow-actions .showranks-toggle,
+.topbar-workflow-actions .preset-shortcut,
+.topbar-workflow-actions .build-action,
+.topbar-profile-workspace .profile-selector-trigger,
+.topbar-profile-workspace .preset-name-control,
+.topbar-profile-workspace .hero-selector-trigger {
+  min-height: 36px;
+}
+
+.topbar-workflow-actions .target-mode-trigger {
+  min-width: 112px;
+  padding: 3px 9px;
+}
+
+.topbar-workflow-actions .showranks-toggle {
+  min-width: 105px;
+  padding: 3px 8px;
+}
+
+.topbar-workflow-actions .preset-shortcut {
+  min-height: 36px;
+  padding: 0 10px;
+}
+
+.topbar-workflow-actions .build-action {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.topbar-profile-workspace .topbar-profile-controls {
+  flex: 1 1 250px;
+  max-width: 320px;
+}
+
+.topbar-profile-workspace .profile-icon-action {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+
+.topbar-profile-workspace .preset-name-control {
+  flex: 1 1 210px;
+  min-width: 180px;
+  padding: 3px 3px 3px 10px;
+}
+
+.topbar-profile-workspace .preset-name-control input {
+  height: 28px;
+}
+
+.topbar-profile-workspace .hero-selector {
+  flex: 1 1 180px;
+  min-width: 165px;
+  max-width: 240px;
+}
+
+.topbar-support-actions .support-button {
+  min-height: 28px;
+  padding: 0 9px;
+  border-color: var(--border);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+
+.topbar-support-actions .support-button:hover {
+  border-color: var(--ring);
+  background: var(--accent);
+  color: var(--foreground);
 }
 
 .topbar-profile-controls {
@@ -2568,92 +2688,34 @@
   }
 }
 
-@media (min-width: 1621px) {
-  .panorama-topbar {
-    grid-template-columns: max-content minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
-    row-gap: 5px;
-  }
-
-  .panorama-brand-block {
-    display: contents;
-  }
-
-  .panorama-kicker {
-    grid-column: 1;
-    grid-row: 1;
-    align-self: end;
-  }
-
-  .panorama-title-row {
-    grid-column: 1;
-    grid-row: 2;
-    align-self: start;
-  }
-
-  .similar-tools {
-    grid-column: 1 / -1;
-    grid-row: 3;
-    padding-top: 5px;
-  }
-
-  .panorama-header-actions {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-  }
-
-  .target-mode-trigger {
-    min-width: 130px;
-  }
-
-  .topbar-profile-controls {
-    flex-basis: 245px;
-    min-width: 245px;
-  }
-
-  .profile-selector {
-    min-width: 0;
-  }
-
-  .hero-selector {
-    min-width: 180px;
-  }
-}
-
-@media (max-width: 1620px) {
+@media (max-width: 1180px) {
   .panorama-topbar {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "brand"
+      "workflow"
+      "profile"
+      "utility";
     align-items: start;
   }
 
-  .panorama-header-actions {
+  .topbar-workflow-actions,
+  .topbar-profile-workspace {
     flex-wrap: wrap;
     justify-content: flex-start;
   }
 
-  .topbar-profile-controls {
-    flex: 1 1 260px;
+  .topbar-workflow-actions > * {
+    flex: 1 1 150px;
   }
 
-  .target-mode-trigger {
-    flex: 1 1 170px;
-  }
-
-  .profile-selector {
-    flex: 1 1 180px;
-    min-width: 0;
-  }
-
-  .preset-name-control {
-    flex: 1 1 220px;
-    min-width: 186px;
-    grid-template-columns: auto minmax(120px, 1fr);
-  }
-
-  .hero-selector {
-    flex: 1 1 220px;
+  .topbar-profile-workspace .topbar-profile-controls,
+  .topbar-profile-workspace .preset-name-control,
+  .topbar-profile-workspace .hero-selector {
+    max-width: none;
   }
 }
+
 
 @media (max-width: 860px) {
   .schema-field-row {
@@ -2714,8 +2776,26 @@
     outline-offset: 2px;
   }
 
-  .panorama-header-actions {
-    flex-wrap: wrap;
+  .topbar-workflow-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .topbar-profile-workspace {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .topbar-utility-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .topbar-support-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .topbar-profile-controls {
@@ -2757,7 +2837,10 @@
     min-height: 44px;
   }
 
-  .panorama-header-actions,
+  .topbar-utility-links {
+    width: 100%;
+  }
+
   .reset-actions,
   .rail-actions,
   .build-warning-actions {

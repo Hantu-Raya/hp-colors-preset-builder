@@ -724,31 +724,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 </a>
               ) : null}
             </div>
-            <nav className="similar-tools" aria-label="Builder versions and similar tools">
-              <span className="similar-tools-label">Versions</span>
-              <a className="similar-tool-link" href={import.meta.env.BASE_URL}>
-                V1 original
-              </a>
-              <a className="similar-tool-link" href={`${import.meta.env.BASE_URL}v2/`}>
-                V2 game menu
-              </a>
-              <a className="similar-tool-link" href="https://hantu-raya.github.io/color-blind-web-builder/" target="_blank" rel="noreferrer">
-                Color Blind Builder
-              </a>
-              <a className="similar-tool-link" href="https://hantu-raya.github.io/3d-hud-web-merger/" target="_blank" rel="noreferrer">
-                3D HUD VPK Merger
-              </a>
-            </nav>
           </div>
           <div className="panorama-header-actions">
-            <a className="support-button top-support-button" href="https://ko-fi.com/hantuaraya" target="_blank" rel="noreferrer" aria-label="Donate on Ko-fi">
-              <Heart aria-hidden="true" />
-              <span>Donate</span>
-            </a>
-            <a className="support-button star-repo-button" href="https://github.com/Hantu-Raya/hp-colors-preset-builder" target="_blank" rel="noreferrer" aria-label="Star the repository on GitHub">
-              <Star aria-hidden="true" />
-              <span>Star</span>
-            </a>
+            <div className="topbar-workflow-actions" aria-label="Build workflow">
             <button
               type="button"
               className="target-mode-trigger"
@@ -756,7 +734,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             >
               <Layers3 aria-hidden="true" />
               <span className="target-mode-text">
-                <span>Preset target</span>
+                <span>Target</span>
                 <strong>{containsRewriteProfiles && !rewriteQollockTarget ? 'Rewrite' : targetModeDetails.label}</strong>
               </span>
             </button>
@@ -772,17 +750,30 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
             {rewriteBuildTarget && !rewriteQollockTarget ? (
               <button
                 type="button"
+                aria-label={`Showranks compatible ${session.showranksCompatible ? 'on' : 'off'}`}
                 className={session.showranksCompatible ? 'showranks-toggle is-active' : 'showranks-toggle'}
                 onClick={() => commitShowranksCompatible(!session.showranksCompatible)}
                 aria-pressed={session.showranksCompatible}
               >
                 <ShieldCheck aria-hidden="true" />
                 <span className="target-mode-text">
-                  <span>Showranks compatible</span>
+                  <span>ShowRank</span>
                   <strong>{session.showranksCompatible ? 'On' : 'Off'}</strong>
                 </span>
               </button>
             ) : null}
+            <button
+              type="button"
+              className="build-action"
+              onClick={openBuildWarning}
+              disabled={busy}
+              title={rewriteBuildTarget ? `Build ${presetVpkFileName} for ${rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}.` : undefined}
+            >
+              <Download aria-hidden="true" />
+              <span>{busyOperation === 'build' ? 'Building…' : 'Build VPK'}</span>
+            </button>
+            </div>
+            <div className="topbar-profile-workspace" aria-label="Profile workspace">
             <div className="topbar-profile-controls" aria-label="Preset profiles">
               <button type="button" className="profile-icon-action" onClick={handleAddProfile} disabled={profiles.length >= profileLimit} aria-label="Add preset">
                 <Plus aria-hidden="true" />
@@ -916,16 +907,36 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 </div>
               ) : null}
             </div>
-            <button
-              type="button"
-              className="build-action"
-              onClick={openBuildWarning}
-              disabled={busy}
-              title={rewriteBuildTarget ? `Build ${presetVpkFileName} for ${rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}.` : undefined}
-            >
-              <Download aria-hidden="true" />
-              <span>{busyOperation === 'build' ? 'Building…' : 'Build VPK'}</span>
-            </button>
+            </div>
+            <div className="topbar-utility-bar">
+              <div className="topbar-utility-links">
+            <nav className="similar-tools" aria-label="Builder versions and similar tools">
+              <span className="similar-tools-label">Versions</span>
+              <a className="similar-tool-link" href={import.meta.env.BASE_URL} aria-label="V1 original builder" title="V1 original builder">
+                V1
+              </a>
+              <a className="similar-tool-link" href={`${import.meta.env.BASE_URL}v2/`} aria-label="V2 game menu builder" title="V2 game menu builder">
+                V2
+              </a>
+              <a className="similar-tool-link" href="https://hantu-raya.github.io/color-blind-web-builder/" target="_blank" rel="noreferrer" aria-label="Color Blind Builder" title="Color Blind Builder">
+                Color Blind
+              </a>
+              <a className="similar-tool-link" href="https://hantu-raya.github.io/3d-hud-web-merger/" target="_blank" rel="noreferrer" aria-label="3D HUD VPK Merger" title="3D HUD VPK Merger">
+                3D HUD
+              </a>
+            </nav>
+              </div>
+              <div className="topbar-support-actions">
+            <a className="support-button top-support-button" href="https://ko-fi.com/hantuaraya" target="_blank" rel="noreferrer" aria-label="Donate on Ko-fi">
+              <Heart aria-hidden="true" />
+              <span>Donate</span>
+            </a>
+            <a className="support-button star-repo-button" href="https://github.com/Hantu-Raya/hp-colors-preset-builder" target="_blank" rel="noreferrer" aria-label="Star the repository on GitHub">
+              <Star aria-hidden="true" />
+              <span>Star</span>
+            </a>
+              </div>
+            </div>
           </div>
         </header>
         <nav className="mobile-workspace-nav" aria-label="Mobile builder navigation">
