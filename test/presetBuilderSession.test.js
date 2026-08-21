@@ -171,6 +171,31 @@ test("importing multiple profiles appends and activates the first imported profi
   assert.equal(next.status, "Imported 2 profiles from preset codes.");
 });
 
+test("importing one Rewrite preset per hero keeps the complete bundle", () => {
+  const heroNames = [
+    "Abrams", "Apollo", "Bebop", "Billy", "Calico", "Celeste", "Drifter", "Dynamo",
+    "Graves", "Grey Talon", "Haze", "Holliday", "Infernus", "Ivy", "Kelvin",
+    "Lady Geist", "Lash", "McGinnis", "Mina", "Mirage", "Mo & Krill", "Paige",
+    "Paradox", "Pocket", "Rem", "Seven", "Shiv", "Sinclair", "Silver", "The Doorman",
+    "Vyper", "Viscous", "Vindicta", "Venator", "Victor", "Warden", "Wraith", "Yamato"
+  ];
+  const session = createPresetBuilderSession(defaultState);
+  const importedProfiles = heroNames.map((name, index) => ({
+    name,
+    values: defaultState,
+    heroMode: "selected",
+    heroes: [`hero_${index}`]
+  }));
+  const next = reducePresetBuilderSession(session, {
+    type: "IMPORT_PROFILES_SUCCEEDED",
+    importedProfiles
+  }, { defaultState, groups });
+
+  assert.equal(next.profiles.length, heroNames.length + 1);
+  assert.deepEqual(next.profiles.slice(1).map((profile) => profile.name), heroNames);
+  assert.equal(next.status, `Imported ${heroNames.length} profiles from preset codes.`);
+});
+
 test("single-profile rewrite metadata survives updates and is removed on replacement or deletion", () => {
   const rewrite = { values: { lowThreshold: 18 }, conditions: { enemyPulseThreshold: 28 } };
   let session = createPresetBuilderSession(defaultState);

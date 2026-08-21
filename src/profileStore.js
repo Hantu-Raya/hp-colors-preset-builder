@@ -10,7 +10,7 @@ export const STORAGE_KEY = "hp_colors_preset_builder_profiles_v1";
 export const V2_STORAGE_KEY = "hp_colors_preset_builder_profiles_v2";
 export const DEFAULT_PRESET_NAME = DEFAULT_HP_PRESET_NAME;
 export const FIRST_PROFILE_ID = "profile-1";
-export const HP_PROFILE_LIMIT = 32;
+export const HP_PROFILE_LIMIT = 128;
 
 
 function cloneJsonSafe(value) {
