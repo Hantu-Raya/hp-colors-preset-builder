@@ -2,16 +2,19 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const stylesheets = ["global.css", "v2.css"];
+const stylesheets = [
+  { name: "global.css", narrowMax: 1540, wideMin: 1541 },
+  { name: "v2.css", narrowMax: 1620, wideMin: 1621 }
+];
 
 async function readStylesheet(name) {
   return readFile(new URL(`../src/styles/${name}`, import.meta.url), "utf8");
 }
 
-for (const stylesheet of stylesheets) {
-  test(`${stylesheet} switches to an uncramped low-DPI layout before mobile width`, async () => {
-    const css = await readStylesheet(stylesheet);
-    const lowDpiStart = css.indexOf("@media (max-width: 1540px)");
+for (const { name, narrowMax, wideMin } of stylesheets) {
+  test(`${name} switches to an uncramped low-DPI layout before mobile width`, async () => {
+    const css = await readStylesheet(name);
+    const lowDpiStart = css.indexOf(`@media (max-width: ${narrowMax}px)`);
     const nextBreakpoint = css.indexOf("@media (max-width: 860px)");
 
     assert.notEqual(lowDpiStart, -1);
@@ -23,10 +26,10 @@ for (const stylesheet of stylesheets) {
     assert.match(lowDpiCss, /\.topbar-profile-controls[\s\S]*flex:\s*1 1 260px;/);
   });
 
-  test(`${stylesheet} keeps wide profile controls within their flex allocation`, async () => {
-    const css = await readStylesheet(stylesheet);
-    const wideStart = css.indexOf("@media (min-width: 1541px)");
-    const narrowStart = css.indexOf("@media (max-width: 1540px)");
+  test(`${name} keeps wide profile controls within their flex allocation`, async () => {
+    const css = await readStylesheet(name);
+    const wideStart = css.indexOf(`@media (min-width: ${wideMin}px)`);
+    const narrowStart = css.indexOf(`@media (max-width: ${narrowMax}px)`);
 
     assert.notEqual(wideStart, -1);
     assert.notEqual(narrowStart, -1);

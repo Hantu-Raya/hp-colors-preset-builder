@@ -109,7 +109,7 @@
 }
 
 .shell {
-  width: min(1460px, calc(100% - 32px));
+  width: min(1580px, calc(100% - 32px));
   margin: 0 auto;
   padding: 22px 0 28px;
 }
@@ -554,11 +554,11 @@
 
 .preset-name-control {
   display: grid;
-  grid-template-columns: auto minmax(120px, 220px);
+  grid-template-columns: auto minmax(120px, 1fr);
   align-items: center;
   gap: 10px;
-  flex: 0 0 auto;
-  min-width: 0;
+  flex: 0 1 220px;
+  min-width: 186px;
   min-height: 42px;
   padding: 4px 4px 4px 12px;
   border: 1px solid var(--border);
@@ -2519,7 +2519,7 @@
   }
 }
 
-@media (min-width: 1541px) {
+@media (min-width: 1621px) {
   .panorama-topbar {
     grid-template-columns: max-content minmax(0, 1fr);
     grid-template-rows: auto auto auto;
@@ -2571,7 +2571,7 @@
   }
 }
 
-@media (max-width: 1540px) {
+@media (max-width: 1620px) {
   .panorama-topbar {
     grid-template-columns: 1fr;
     align-items: start;
