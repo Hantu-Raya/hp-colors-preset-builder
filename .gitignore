@@ -12,3 +12,5 @@ playwright-report/
 *.png
 !public/heroes/
 !public/heroes/*.png
+!public/healthbar-preview/
+!public/healthbar-preview/*.png

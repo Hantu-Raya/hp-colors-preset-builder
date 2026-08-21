@@ -71,6 +71,7 @@ import {
 } from '../presetBuilderWorkflow.js';
 import { SchemaField } from './schema-field.jsx';
 import { SchemaTabs, SchemaTree } from './schema-tree-v2.jsx';
+import HealthbarPreview from './HealthbarPreview.jsx';
 
 const PRECISE_PIPS_COMMAND = [
   '"citadel_unit_status_health_per_minor_pip" "10"',
@@ -388,6 +389,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     : null;
   const showPrecisePipsControl = currentGroup?.pageId === 'health-pips-levels';
   const showPresetTools = currentGroup?.pageId === 'overview-presets';
+  const showHealthbarPreview = !showPresetTools;
+  const rewritePreviewState = activeProfile?.rewrite?.webValues || null;
+  const previewConversionRequired = activeCatalog.variant !== 'rewrite' || !rewritePreviewState;
   const profileOptionRefs = useRef([]);
   const heroOptionRefs = useRef([]);
   const operationLockRef = useRef(false);
@@ -419,6 +423,23 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
       ...context
     }));
   }, [activeCatalog, activeDefaultState, activeKey, groups]);
+  const handlePreviewConvert = useCallback(() => {
+    const storage = window.localStorage;
+    setSession((previous) => {
+      const targeted = commitPresetBuilderTargetMode({
+        session: previous,
+        targetMode: HP_COLORS_MOD_VARIANTS.FULL,
+        storage
+      });
+      return reducePresetBuilderSession(targeted, { type: 'ENSURE_REWRITE_PROFILES' }, {
+        catalog: activeCatalog,
+        defaultState: activeDefaultState,
+        groups,
+        activeKey
+      });
+    });
+  }, [activeCatalog, activeDefaultState, activeKey, groups]);
+
 
   useEffect(() => {
     if (!rewriteBuildTarget || profiles.every((profile) => profile?.rewrite)) return;
@@ -948,7 +969,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
           <SchemaTree groups={groups} activeKey={activeKey} state={state} defaultState={activeDefaultState} onSelect={handleSelectGroup} />
           <div id="builderSettings" className="anita-menu-content">
             <SchemaTabs groups={groups} activeKey={activeKey} onSelect={handleSelectGroup} />
-            <div className={showPresetTools ? 'anita-page-body has-tools' : 'anita-page-body'}>
+            <div className={showPresetTools ? 'anita-page-body has-tools' : showHealthbarPreview ? 'anita-page-body has-preview' : 'anita-page-body'}>
 
           <section className="anita-detail-panel">
             <div className="anita-detail-header-row">
@@ -1160,6 +1181,15 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               </div>
             </DisclosurePanel>
 
+          </aside>
+          ) : showHealthbarPreview ? (
+          <aside className="anita-right-rail healthbar-preview-rail" aria-label="Healthbar live preview">
+            <HealthbarPreview
+              profileState={rewritePreviewState}
+              conversionRequired={previewConversionRequired}
+              profileName={presetName}
+              onConvert={handlePreviewConvert}
+            />
           </aside>
           ) : null}
             </div>

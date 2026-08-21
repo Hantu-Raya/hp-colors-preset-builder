@@ -45,6 +45,234 @@ async function chooseRewriteQollockTarget(page) {
   await dialog.locator('.target-mode-choice-select').filter({ hasText: 'Rewrite + QOLLOCK' }).click();
   await expect(dialog).toBeHidden();
 }
+async function clearPreviewStorage(page) {
+  await page.evaluate(() => {
+    for (const storage of [window.sessionStorage, window.localStorage]) {
+      for (const key of Object.keys(storage)) {
+        if (/preview/i.test(key)) storage.removeItem(key);
+      }
+    }
+  });
+}
+
+async function readPreviewStorage(page) {
+  return page.evaluate(() => {
+    const previewKey = Object.keys(window.sessionStorage).find((key) => /preview/i.test(key));
+    return {
+      session: previewKey ? JSON.parse(window.sessionStorage.getItem(previewKey)) : null,
+      localPreviewKeys: Object.keys(window.localStorage).filter((key) => /preview/i.test(key))
+    };
+  });
+}
+
+test('v2 shows the healthbar preview for both Rewrite targets and hides it on Presets', async ({ page }) => {
+  await page.goto('v2/');
+  await clearPreviewStorage(page);
+  await chooseRewriteTarget(page);
+
+  const rail = page.locator('.healthbar-preview-rail');
+  await expect(rail).toBeVisible();
+  await expect(rail.getByRole('heading', { name: 'Healthbar preview' })).toBeVisible();
+
+  await page.locator('.target-mode-trigger').click();
+  await chooseRewriteQollockTarget(page);
+  await expect(rail).toBeVisible();
+  await expect(rail.getByRole('heading', { name: 'Healthbar preview' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Presets', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'PRESET LIBRARY' })).toBeVisible();
+  await expect(rail).toHaveCount(0);
+});
+
+test('v2 preview controls update output, support hold-to-stock, zoom, and reset', async ({ page }) => {
+  await page.goto('v2/');
+  await clearPreviewStorage(page);
+  await chooseRewriteQollockTarget(page);
+  await expect(page.locator('#healthbar-preview-health')).toBeVisible();
+
+  await page.locator('.target-mode-trigger').click();
+  await chooseRewriteTarget(page);
+
+  const preview = page.locator('.healthbar-preview');
+  const health = preview.locator('#healthbar-preview-health');
+  const healthOutput = preview.locator('.healthbar-preview-health-control output');
+  const relation = preview.locator('.healthbar-preview-relation');
+  const canvas = preview.locator('.healthbar-preview-canvas');
+  const stock = preview.getByRole('button', { name: 'Show stock' });
+
+  await expect(health).toHaveValue('72');
+  await expect(healthOutput).toContainText('72%');
+  await health.focus();
+  await health.press('Home');
+  await expect(health).toHaveValue('0');
+  await expect(healthOutput).toContainText('0%');
+
+  await relation.getByRole('radio', { name: 'ALLY' }).click();
+  await expect(relation.getByRole('radio', { name: 'ALLY' })).toHaveAttribute('aria-checked', 'true');
+  await expect(preview.locator('.healthbar-preview-status')).toHaveText('ALLY');
+
+  await expect(canvas).toHaveAttribute('data-zoom', 'fit');
+  await preview.getByRole('radio', { name: '2x inspection' }).click();
+  await expect(canvas).toHaveAttribute('data-zoom', '2x');
+  await expect(canvas).toHaveClass(/is-zoomed/);
+
+  await stock.focus();
+  await expect(stock).toHaveAttribute('aria-pressed', 'false');
+  await page.keyboard.down('Space');
+  await expect(stock).toHaveAttribute('aria-pressed', 'true');
+  await expect(preview.locator('.healthbar-preview-status')).toHaveText('Stock');
+  await expect(healthOutput).toContainText('0%');
+  await page.keyboard.up('Space');
+  await expect(stock).toHaveAttribute('aria-pressed', 'false');
+  await expect(preview.locator('.healthbar-preview-status')).toHaveText('ALLY');
+
+  await preview.getByRole('button', { name: 'Reset', exact: true }).click();
+  await expect(health).toHaveValue('72');
+  await expect(healthOutput).toContainText('72%');
+  await expect(relation.getByRole('radio', { name: 'ENEMY' })).toHaveAttribute('aria-checked', 'true');
+  await expect(canvas).toHaveAttribute('data-zoom', 'fit');
+  await expect(stock).toHaveAttribute('aria-pressed', 'false');
+  await expect(preview.locator('.healthbar-preview-status')).toHaveText('ENEMY');
+});
+
+test('v2 preview matches the compact in-game healthbar geometry', async ({ page }) => {
+  await page.goto('v2/');
+  await clearPreviewStorage(page);
+  await chooseRewriteQollockTarget(page);
+
+  const preview = page.locator('.healthbar-preview');
+  const hud = await preview.locator('.healthbar-preview-hud').boundingBox();
+  const bar = await preview.locator('.healthbar-preview-bar').boundingBox();
+  const level = await preview.locator('.healthbar-preview-level').boundingBox();
+  const readout = await preview.locator('.healthbar-preview-readout').boundingBox();
+  const pips = await preview.locator('.healthbar-preview-pips').boundingBox();
+  const unitInfo = await preview.locator('.healthbar-preview-unit-info').boundingBox();
+  const unitInfoBackground = preview.locator('.healthbar-preview-unit-info-bg');
+
+  expect(hud).not.toBeNull();
+  expect(bar).not.toBeNull();
+  expect(level).not.toBeNull();
+  expect(readout).not.toBeNull();
+  expect(pips).not.toBeNull();
+  expect(unitInfo).not.toBeNull();
+  await expect(unitInfoBackground).toHaveJSProperty('naturalWidth', 512);
+  expect(bar.width).toBeGreaterThanOrEqual(118);
+  expect(bar.width).toBeLessThanOrEqual(136);
+  expect(bar.height).toBeGreaterThanOrEqual(18);
+  expect(bar.height).toBeLessThanOrEqual(22);
+  expect(level.width).toBeGreaterThanOrEqual(22);
+  expect(level.width).toBeLessThanOrEqual(30);
+  expect(level.height).toBeGreaterThanOrEqual(22);
+  expect(level.height).toBeLessThanOrEqual(30);
+  expect(Math.abs(bar.x - hud.x - level.width - 6)).toBeLessThanOrEqual(1);
+  expect(level.x + level.width).toBeLessThanOrEqual(unitInfo.x + unitInfo.width * 0.18 + 2);
+  const unitInfoOverlap = unitInfo.x + unitInfo.width - bar.x;
+  expect(unitInfoOverlap).toBeGreaterThanOrEqual(unitInfo.width * 0.28);
+  expect(unitInfoOverlap).toBeLessThanOrEqual(unitInfo.width * 0.32);
+  expect(Math.abs((level.y + level.height / 2) - (bar.y + bar.height / 2))).toBeLessThanOrEqual(2);
+  expect(readout.y + readout.height).toBeLessThanOrEqual(bar.y + 1);
+  expect(Math.abs((readout.x + readout.width / 2) - (bar.x + bar.width / 2))).toBeLessThanOrEqual(8);
+  expect(pips.y).toBeGreaterThanOrEqual(bar.y);
+  expect(pips.y + pips.height).toBeLessThanOrEqual(bar.y + bar.height);
+});
+
+test('v2 preview keeps high-health pip groups readable', async ({ page }) => {
+  await page.goto('v2/');
+  await clearPreviewStorage(page);
+  await chooseRewriteQollockTarget(page);
+
+  const maxHealth = page.locator('#healthbar-preview-max-health');
+  await maxHealth.evaluate((input) => {
+    input.value = '32700';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+
+  const pips = page.locator('.healthbar-preview-pips');
+  await expect(pips).toHaveAttribute('aria-label', '29 health pips at 1100 HP intervals, with 5 major markers');
+  const minorStepPixels = await pips.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const percent = Number.parseFloat(style.getPropertyValue('--healthbar-minor-pip-step'));
+    return element.getBoundingClientRect().width * percent / 100;
+  });
+  expect(minorStepPixels).toBeGreaterThanOrEqual(4);
+});
+
+test('v2 preview keeps scenario and mobile collapse in session storage across reload', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('v2/');
+  await clearPreviewStorage(page);
+  await chooseRewriteQollockTarget(page);
+
+  const rail = page.locator('.healthbar-preview-rail');
+  const preview = page.locator('.healthbar-preview');
+  await expect(rail).toBeVisible();
+  const previewBox = await rail.boundingBox();
+  const settingsBox = await page.locator('.anita-detail-panel').boundingBox();
+  expect(previewBox).not.toBeNull();
+  expect(settingsBox).not.toBeNull();
+  expect(previewBox.y).toBeLessThan(settingsBox.y);
+
+  const expand = preview.getByRole('button', { name: 'Show preview' });
+  await expect(expand).toHaveAttribute('aria-expanded', 'false');
+  await expect(preview.locator('.healthbar-preview-content')).toBeHidden();
+  await expand.click();
+  const collapse = preview.getByRole('button', { name: 'Hide preview' });
+  await expect(collapse).toHaveAttribute('aria-expanded', 'true');
+  await expect(preview.locator('.healthbar-preview-content')).toBeVisible();
+
+  await preview.locator('.healthbar-preview-relation').getByRole('radio', { name: 'ALLY' }).click();
+  const scenario = preview.locator('.healthbar-preview-scenario');
+  await scenario.locator('summary').click();
+  await scenario.locator('#healthbar-preview-unit-kind').selectOption('boss');
+  await expect(scenario.locator('#healthbar-preview-unit-kind')).toHaveValue('boss');
+
+  await collapse.click();
+  await expect(preview.getByRole('button', { name: 'Show preview' })).toHaveAttribute('aria-expanded', 'false');
+  await expect(preview.locator('.healthbar-preview-content')).toBeHidden();
+
+  const beforeReload = await readPreviewStorage(page);
+  expect(beforeReload.session).toMatchObject({
+    mobileCollapsed: true,
+    scenario: { relation: 'ally', unitKind: 'boss' }
+  });
+  expect(beforeReload.localPreviewKeys).toEqual([]);
+
+  await page.reload();
+  const reloadedPreview = page.locator('.healthbar-preview');
+  await expect(reloadedPreview).toBeVisible();
+  await expect(reloadedPreview.getByRole('button', { name: 'Show preview' })).toHaveAttribute('aria-expanded', 'false');
+  await expect(reloadedPreview.locator('.healthbar-preview-content')).toBeHidden();
+  await expect(reloadedPreview.locator('#healthbar-preview-unit-kind')).toHaveValue('boss');
+  await expect(reloadedPreview.locator('.healthbar-preview-status')).toHaveText('ALLY');
+
+  const afterReload = await readPreviewStorage(page);
+  expect(afterReload.session).toMatchObject({
+    mobileCollapsed: true,
+    scenario: { relation: 'ally', unitKind: 'boss' }
+  });
+  expect(afterReload.localPreviewKeys).toEqual([]);
+});
+
+test('v2 plain Rewrite target requires explicit preview conversion', async ({ page }) => {
+  await page.goto('v2/');
+  await clearPreviewStorage(page);
+  await chooseRewriteTarget(page);
+
+  const preview = page.locator('.healthbar-preview');
+  await expect(preview.locator('.healthbar-preview-status')).toHaveText('Conversion required');
+  await expect(preview.locator('#healthbar-preview-health')).toHaveCount(0);
+
+  const convert = preview.getByRole('button', { name: 'Convert to Rewrite', exact: true });
+  await expect(convert).toBeVisible();
+  await convert.click();
+
+  await expect(preview.locator('#healthbar-preview-health')).toBeVisible();
+  await expect(preview.getByRole('button', { name: 'Convert to Rewrite', exact: true })).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.locator('.healthbar-preview #healthbar-preview-health')).toBeVisible();
+});
+
 
 test('v2 Rewrite target adds presets from the topbar and Presets tab', async ({ page }) => {
   await page.goto('v2/');

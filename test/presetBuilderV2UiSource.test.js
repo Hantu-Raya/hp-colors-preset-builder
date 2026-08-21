@@ -4,6 +4,8 @@ import test from "node:test";
 
 const v1IslandPath = new URL("../src/components/PresetBuilderIsland.jsx", import.meta.url);
 const v2IslandPath = new URL("../src/components/PresetBuilderV2Island.jsx", import.meta.url);
+const healthbarPreviewPath = new URL("../src/components/HealthbarPreview.jsx", import.meta.url);
+const v2StylesPath = new URL("../src/styles/v2.css", import.meta.url);
 const v2TreePath = new URL("../src/components/schema-tree-v2.jsx", import.meta.url);
 const v2PagePath = new URL("../src/pages/v2.astro", import.meta.url);
 const rewriteTemplatePath = new URL("../public/templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml", import.meta.url);
@@ -71,6 +73,73 @@ test("v2 topbar opens the preset library directly", async () => {
   assert.match(v2Island, /onClick=\{openPresetLibrary\}/);
   assert.match(v2Island, /aria-current=\{showPresetTools \? 'page' : undefined\}/);
   assert.match(v2Island, />Presets</);
+});
+
+test("v2 preview renders only on Rewrite settings pages and keeps state outside the reducer", async () => {
+  const [island, preview] = await Promise.all([
+    readFile(v2IslandPath, "utf8"),
+    readFile(healthbarPreviewPath, "utf8")
+  ]);
+
+  assert.match(island, /import HealthbarPreview from '\.\/HealthbarPreview\.jsx'/);
+  assert.match(island, /showHealthbarPreview = !showPresetTools/);
+  assert.match(island, /anita-page-body has-preview/);
+  assert.match(island, /healthbar-preview-rail/);
+  assert.match(island, /profileState=\{rewritePreviewState\}/);
+  assert.match(island, /conversionRequired=\{previewConversionRequired\}/);
+  assert.match(island, /const handlePreviewConvert = useCallback\(\(\) => \{\s*const storage = window\.localStorage;[\s\S]*?setSession\(\(previous\) => \{/);
+  assert.match(island, /const targeted = commitPresetBuilderTargetMode\(\{[\s\S]*?targetMode: HP_COLORS_MOD_VARIANTS\.FULL/);
+  assert.match(island, /return reducePresetBuilderSession\(targeted, \{ type: 'ENSURE_REWRITE_PROFILES' \}/);
+  assert.match(island, /onConvert=\{handlePreviewConvert\}/);
+  assert.match(preview, /healingPercent: 0,[\s\S]*damagePercent: 0,[\s\S]*bulletShieldPercent: 0,[\s\S]*techShieldPercent: 0/);
+  assert.match(island, /activeCatalog\.variant !== 'rewrite'/);
+  assert.match(preview, /onConvert = null/);
+  assert.match(preview, /<button type="button" className="primary-action" onClick=\{onConvert\}>Convert to Rewrite<\/button>/);
+  assert.match(preview, /createHealthbarPreviewModel\(profileState, scenario, \{ stock: showStock \}\)/);
+  assert.match(preview, /sessionStorage/);
+  assert.doesNotMatch(preview, /localStorage/);
+  assert.match(preview, /healthbar-preview-health/);
+  assert.match(preview, /Show stock/);
+  assert.match(preview, /onPointerDown=\{onPress\}/);
+  assert.match(preview, /onKeyDown=\{handleKeyDown\}/);
+  assert.match(preview, /2x inspection/);
+  assert.match(preview, /healthbar-preview-scenario/);
+  assert.match(preview, /animationPaused/);
+  assert.match(preview, /Reset/);
+  assert.match(preview, /healthbar-preview-pulse-overlay/);
+  assert.match(preview, /hero_healthbar_bg_psd\.png/);
+  assert.match(preview, /hero_healthbar_fill_center_psd\.png/);
+  assert.match(preview, /hero_healthbar_fill_shield_psd\.png/);
+  assert.match(preview, /hero_healthbar_missing_psd\.png/);
+  assert.doesNotMatch(island, /HealthbarPreview[\s\S]*showPresetTools \? null/);
+});
+
+test("v2 preview maps each texture role and explicit geometry once", async () => {
+  const [preview, css] = await Promise.all([
+    readFile(healthbarPreviewPath, "utf8"),
+    readFile(v2StylesPath, "utf8")
+  ]);
+
+  assert.match(preview, /healthbar-preview-missing-layer[\s\S]*PREVIEW_ASSETS\.missing/);
+  assert.match(preview, /healthbar-preview-unit-info-bg[\s\S]*PREVIEW_ASSETS\.unitInfo/);
+  assert.match(preview, /healthbar-preview-ult-ready[\s\S]*PREVIEW_ASSETS\.ultReady/);
+  assert.match(preview, /killMarkerLeftPercent[\s\S]*killMarker\.leftPx[\s\S]*barWidthPx/);
+  assert.match(preview, /killMarkerWidthPercent[\s\S]*killMarker\.widthPx[\s\S]*barWidthPx/);
+  assert.match(preview, /--healthbar-width[\s\S]*barWidth/);
+  assert.doesNotMatch(preview, /scaleX|barScale|widthScalePercent/);
+  assert.match(css, /\.healthbar-preview-missing-layer[\s\S]*right:\s*0;[\s\S]*left:\s*auto;/);
+  assert.match(css, /\.healthbar-preview-pips[\s\S]*rgba\(5,\s*8,\s*8,[\s\S]*left top[\s\S]*--healthbar-minor-pip-step\)\s*45%[\s\S]*--healthbar-major-pip-step\)\s*100%/);
+  assert.match(css, /\.healthbar-preview-health-layer img[\s\S]*mix-blend-mode:\s*multiply;[\s\S]*opacity:\s*0\.48;/);
+  assert.doesNotMatch(css, /\.healthbar-preview-ult-ready\s*\{[^}]*filter:/);
+  assert.match(css, /\.healthbar-preview-unit-info[\s\S]*transform:\s*translateX\(30%\)/);
+  assert.match(css, /\.healthbar-preview-level[\s\S]*z-index:\s*6;[\s\S]*transform:\s*translateX\(-70%\)/);
+  assert.match(css, /\.healthbar-preview-unit-info[\s\S]*z-index:\s*9;/);
+  assert.match(css, /\.healthbar-preview-hud[\s\S]*grid-template-columns:\s*var\(--healthbar-level-size\)\s+6px\s+var\(--healthbar-width\)/);
+  assert.match(css, /\.healthbar-preview-canvas\.is-zoomed[\s\S]*overflow:\s*auto;/);
+  assert.match(css, /\.healthbar-preview-hud[\s\S]*transform:\s*translate\(/);
+  assert.doesNotMatch(css, /\.healthbar-preview-bar[\s\S]*scaleX/);
+  assert.match(css, /prefers-reduced-motion[\s\S]*animation:\s*none/);
+  assert.doesNotMatch(css, /healthbar-preview-bar\.is-hidden[\s\S]*!important/);
 });
 
 test("v2 topbar keeps workflow, profile, and utility controls grouped", async () => {

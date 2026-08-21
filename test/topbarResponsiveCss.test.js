@@ -62,3 +62,14 @@ test("v2.css stacks grouped controls before mobile width", async () => {
   assert.match(mobileCss, /\.topbar-workflow-actions[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(mobileCss, /\.topbar-profile-workspace[\s\S]*grid-template-columns:\s*1fr;/);
 });
+
+test("v2.css gives healthbar preview its own rail and mobile-first ordering", async () => {
+  const css = await readStylesheet("v2.css");
+  assert.match(css, /\.anita-page-body\.has-preview[\s\S]*grid-template-areas:\s*"settings preview";/);
+  assert.match(css, /\.anita-page-body\.has-preview > \.healthbar-preview-rail[\s\S]*grid-area:\s*preview;/);
+  const mobileStart = css.lastIndexOf("@media (max-width: 740px)");
+  assert.notEqual(mobileStart, -1);
+  const mobileCss = css.slice(mobileStart);
+  assert.match(mobileCss, /\.anita-page-body\.has-preview[\s\S]*grid-template-areas:[\s\S]*"preview"[\s\S]*"settings";/);
+  assert.match(mobileCss, /\.healthbar-preview\.is-mobile-collapsed[\s\S]*\.healthbar-preview-content[\s\S]*display:\s*none;/);
+});
