@@ -8,6 +8,61 @@ const healthbarPreviewPath = new URL("../src/components/HealthbarPreview.jsx", i
 const v2StylesPath = new URL("../src/styles/v2.css", import.meta.url);
 const v2TreePath = new URL("../src/components/schema-tree-v2.jsx", import.meta.url);
 const v2PagePath = new URL("../src/pages/v2.astro", import.meta.url);
+const v2TickerPath = new URL("../src/components/KofiLeaderboardTicker.jsx", import.meta.url);
+
+test("v2 owns the Ko-fi leaderboard source while v1 stays request-free", async () => {
+  const [v1Page, v1Island, v2Page, v2Island, ticker] = await Promise.all([
+    readFile(new URL("../src/pages/index.astro", import.meta.url), "utf8"),
+    readFile(v1IslandPath, "utf8"),
+    readFile(v2PagePath, "utf8"),
+    readFile(v2IslandPath, "utf8"),
+    readFile(v2TickerPath, "utf8")
+  ]);
+  const sourceNodeMatch = v2Page.match(/<[^>]*id="kofi-leaderboard-embed"[^>]*>/);
+  const sourceNodeIndex = v2Page.indexOf('id="kofi-leaderboard-embed"');
+  const islandIndex = v2Page.indexOf("<PresetBuilderV2Island");
+
+  assert.match(v2Page, /<script\s+is:inline\s+defer\s+src="https:\/\/cdn\.ko-fi\.tools\/v2\/js\/leaderboard\.js"\s+onerror="[^"]*data-leaderboard-status[^"]*"\s*><\/script>/);
+  assert.ok(sourceNodeMatch);
+  assert.match(sourceNodeMatch[0], /\bhidden\b/);
+  assert.match(sourceNodeMatch[0], /data-leaderboard-id="X8X31HPU2G"/);
+  assert.match(sourceNodeMatch[0], /data-leaderboard-name="Hanturaya's Leaderboard"/);
+  assert.match(sourceNodeMatch[0], /data-leaderboard-theme="none"/);
+  assert.ok(sourceNodeIndex >= 0 && sourceNodeIndex < islandIndex);
+  assert.doesNotMatch(v2Island, /kofi-leaderboard-embed|cdn\.ko-fi\.tools\/v2\/js\/leaderboard\.js/);
+  assert.doesNotMatch(v1Page, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
+  assert.doesNotMatch(v1Island, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
+
+  for (const marker of [
+    "kofi-leaderboard-item",
+    "kofi-leaderboard-supporter-order",
+    "kofi-leaderboard-supporter-name",
+    "MutationObserver",
+    "topbar-supporter-strip",
+    "topbar-supporter-window",
+    "topbar-supporter-track",
+    "topbar-supporter-sequence",
+    "topbar-supporter-item",
+    "topbar-supporter-pause",
+    "is-paused",
+    "is-static",
+    "Loading top supporters",
+    "View Ko-fi leaderboard",
+    "Pause supporter ticker",
+    "Resume supporter ticker",
+    "https://ko-fi.com/hantuaraya/leaderboard",
+    "document.hidden",
+    "visibilitychange",
+    "ResizeObserver",
+    "SUPPORTER_SPEED_PX_PER_SECOND = 36",
+    "MIN_ANIMATION_SECONDS = 18",
+    "--topbar-supporter-duration",
+    "aria-hidden"
+  ]) {
+    assert.match(ticker, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(v2Island, /KofiLeaderboardTicker/);
+});
 const rewriteTemplatePath = new URL("../public/templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml", import.meta.url);
 const rewriteQollockTemplatePath = new URL("../public/templates/hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml", import.meta.url);
 const oldRewriteScriptPath = new URL("../public/templates/hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.js", import.meta.url);
@@ -149,13 +204,25 @@ test("v2 preview maps each texture role and explicit geometry once", async () =>
   assert.doesNotMatch(css, /healthbar-preview-bar\.is-hidden[\s\S]*!important/);
 });
 
-test("v2 topbar keeps workflow, profile, and utility controls grouped", async () => {
-  const v2Island = await readFile(v2IslandPath, "utf8");
+test("v2 topbar keeps workflow, profile, utility, and supporter controls grouped", async () => {
+  const [v1Island, v2Island] = await Promise.all([
+    readFile(v1IslandPath, "utf8"),
+    readFile(v2IslandPath, "utf8")
+  ]);
 
   assert.match(v2Island, /className="topbar-workflow-actions"/);
   assert.match(v2Island, /className="topbar-profile-workspace"/);
   assert.match(v2Island, /className="topbar-utility-bar"/);
   assert.match(v2Island, /className="topbar-support-actions"/);
+  assert.match(
+    v2Island,
+    /<div className="panorama-title-row">[\s\S]*?<span className="panorama-brand">HP Colors<\/span>[\s\S]*?className="commit-version-link"[\s\S]*?<KofiLeaderboardTicker\s*\/>[\s\S]*?className="topbar-support-actions"/
+  );
+  assert.doesNotMatch(
+    v2Island,
+    /<div className="topbar-utility-bar">[\s\S]*?className="topbar-support-actions"/
+  );
+  assert.doesNotMatch(v1Island, /KofiLeaderboardTicker|topbar-supporter-strip|topbar-support-actions/);
 });
 
 test("rewrite transfer and preset actions stay isolated to v2", async () => {

@@ -72,6 +72,7 @@ import {
 import { SchemaField } from './schema-field.jsx';
 import { SchemaTabs, SchemaTree } from './schema-tree-v2.jsx';
 import HealthbarPreview from './HealthbarPreview.jsx';
+import KofiLeaderboardTicker from './KofiLeaderboardTicker.jsx';
 
 const PRECISE_PIPS_COMMAND = [
   '"citadel_unit_status_health_per_minor_pip" "10"',
@@ -744,6 +745,17 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                   <code>{activeGitCommitInfo.shortHash}</code>
                 </a>
               ) : null}
+              <KofiLeaderboardTicker />
+              <div className="topbar-support-actions">
+            <a className="support-button top-support-button" href="https://ko-fi.com/hantuaraya" target="_blank" rel="noreferrer" aria-label="Donate on Ko-fi">
+              <Heart aria-hidden="true" />
+              <span>Donate</span>
+            </a>
+            <a className="support-button star-repo-button" href="https://github.com/Hantu-Raya/hp-colors-preset-builder" target="_blank" rel="noreferrer" aria-label="Star the repository on GitHub">
+              <Star aria-hidden="true" />
+              <span>Star</span>
+            </a>
+              </div>
             </div>
           </div>
           <div className="panorama-header-actions">
@@ -946,16 +958,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 3D HUD
               </a>
             </nav>
-              </div>
-              <div className="topbar-support-actions">
-            <a className="support-button top-support-button" href="https://ko-fi.com/hantuaraya" target="_blank" rel="noreferrer" aria-label="Donate on Ko-fi">
-              <Heart aria-hidden="true" />
-              <span>Donate</span>
-            </a>
-            <a className="support-button star-repo-button" href="https://github.com/Hantu-Raya/hp-colors-preset-builder" target="_blank" rel="noreferrer" aria-label="Star the repository on GitHub">
-              <Star aria-hidden="true" />
-              <span>Star</span>
-            </a>
               </div>
             </div>
           </div>
@@ -1467,7 +1469,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
 
       <footer className="page-footer" aria-label="Project notices">
         <p>
-          Unofficial fan-made tool. Not affiliated with Valve. Runs locally; preset files are not uploaded. Built by
+          Unofficial fan-made tool. Not affiliated with Valve. Runs locally; preset files stay local while supporter names load from Ko-fi Tools. Built by
           {' '}
           <a href="https://github.com/Hantu-Raya" target="_blank" rel="noreferrer">Hantu-Raya</a>.
           {' '}
