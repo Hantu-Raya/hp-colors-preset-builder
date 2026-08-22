@@ -746,20 +746,20 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 </a>
               ) : null}
               <KofiLeaderboardTicker />
-              <div className="topbar-support-actions">
-            <a className="support-button top-support-button" href="https://ko-fi.com/hantuaraya" target="_blank" rel="noreferrer" aria-label="Donate on Ko-fi">
-              <Heart aria-hidden="true" />
-              <span>Donate</span>
-            </a>
-            <a className="support-button star-repo-button" href="https://github.com/Hantu-Raya/hp-colors-preset-builder" target="_blank" rel="noreferrer" aria-label="Star the repository on GitHub">
-              <Star aria-hidden="true" />
-              <span>Star</span>
-            </a>
-              </div>
             </div>
           </div>
           <div className="panorama-header-actions">
             <div className="topbar-workflow-actions" aria-label="Build workflow">
+              <div className="topbar-support-actions">
+                <a className="support-button top-support-button" href="https://ko-fi.com/hantuaraya" target="_blank" rel="noreferrer" aria-label="Donate on Ko-fi">
+                  <Heart aria-hidden="true" />
+                  <span>Donate</span>
+                </a>
+                <a className="support-button star-repo-button" href="https://github.com/Hantu-Raya/hp-colors-preset-builder" target="_blank" rel="noreferrer" aria-label="Star the repository on GitHub">
+                  <Star aria-hidden="true" />
+                  <span>Star</span>
+                </a>
+              </div>
             <button
               type="button"
               className="target-mode-trigger"

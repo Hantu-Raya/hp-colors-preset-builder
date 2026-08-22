@@ -24,7 +24,7 @@ function renderSequence(entries, sequenceKey, sequenceRef = null, duplicate = fa
   return (
     <div className="topbar-supporter-sequence" ref={sequenceRef} aria-hidden={duplicate ? 'true' : undefined}>
       {entries.map((entry, index) => (
-        <span className="topbar-supporter-item" key={`${sequenceKey}-${index}`}>
+        <span className={`topbar-supporter-item${index < 3 ? ` topbar-supporter-place-${index + 1}` : ''}`} key={`${sequenceKey}-${index}`}>
           <span className="topbar-supporter-rank">{entry.rank}</span>
           <span className="topbar-supporter-name">{entry.name}</span>
         </span>

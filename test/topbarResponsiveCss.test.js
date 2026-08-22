@@ -44,6 +44,7 @@ test("v2.css assigns each header group to a stable two-row grid area", async () 
   assert.match(css, /\.topbar-profile-workspace\s*\{[\s\S]*grid-area:\s*profile;/);
   assert.match(css, /\.topbar-utility-bar\s*\{[\s\S]*grid-area:\s*utility;/);
   assert.match(css, /\.panorama-header-actions\s*\{[\s\S]*display:\s*contents;/);
+  assert.match(css, /\.topbar-support-actions\s*\{[\s\S]*margin-right:\s*auto;/);
 });
 
 test("v2.css stacks grouped controls before mobile width", async () => {
@@ -89,9 +90,11 @@ test("v2.css keeps the supporter ticker clipped, automatic, static-safe, and mob
   const mobileStart = css.indexOf("@media (max-width: 740px)");
   assert.notEqual(mobileStart, -1);
   const mobileCss = css.slice(mobileStart);
-  assert.match(mobileCss, /\.panorama-title-row\s*\{[\s\S]*grid-template-areas:\s*"title commit"\s*"ticker actions";/);
+  assert.match(mobileCss, /\.panorama-title-row\s*\{[\s\S]*grid-template-areas:\s*"title commit"\s*"ticker ticker";/);
   assert.match(mobileCss, /\.panorama-brand\s*\{[^}]*grid-area:\s*title;/);
   assert.match(mobileCss, /\.commit-version-link\s*\{[^}]*grid-area:\s*commit;/);
   assert.match(mobileCss, /\.topbar-supporter-strip\s*\{[^}]*grid-area:\s*ticker;[^}]*min-width:\s*0;/);
-  assert.match(mobileCss, /\.topbar-support-actions\s*\{[^}]*grid-area:\s*actions;/);
+  assert.match(mobileCss, /\.topbar-support-actions\s*\{[^}]*grid-column:\s*1\s*\/\s*-1;[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/);
+  assert.match(mobileCss, /\.topbar-workflow-actions > \.build-action:last-child\s*\{[^}]*grid-column:\s*1\s*\/\s*-1;/);
+  assert.match(mobileCss, /\.topbar-workflow-actions:has\(\.showranks-toggle\) > \.build-action:last-child\s*\{[^}]*grid-column:\s*auto;/);
 });

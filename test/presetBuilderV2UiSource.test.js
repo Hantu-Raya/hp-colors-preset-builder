@@ -203,18 +203,19 @@ test("v2 topbar keeps workflow, profile, utility, and supporter controls grouped
     readFile(v1IslandPath, "utf8"),
     readFile(v2IslandPath, "utf8")
   ]);
+  const titleRowMatch = v2Island.match(/<div className="panorama-title-row">([\s\S]*?)<\/div>/);
+
 
   assert.match(v2Island, /className="topbar-workflow-actions"/);
   assert.match(v2Island, /className="topbar-profile-workspace"/);
   assert.match(v2Island, /className="topbar-utility-bar"/);
   assert.match(v2Island, /className="topbar-support-actions"/);
+  assert.ok(titleRowMatch);
+  assert.match(titleRowMatch[1], /<span className="panorama-brand">HP Colors<\/span>[\s\S]*?className="commit-version-link"[\s\S]*?<KofiLeaderboardTicker\s*\/>/);
+  assert.doesNotMatch(titleRowMatch[1], /topbar-support-actions/);
   assert.match(
     v2Island,
-    /<div className="panorama-title-row">[\s\S]*?<span className="panorama-brand">HP Colors<\/span>[\s\S]*?className="commit-version-link"[\s\S]*?<KofiLeaderboardTicker\s*\/>[\s\S]*?className="topbar-support-actions"/
-  );
-  assert.doesNotMatch(
-    v2Island,
-    /<div className="topbar-utility-bar">[\s\S]*?className="topbar-support-actions"/
+    /<div className="topbar-workflow-actions"[\s\S]*?className="topbar-support-actions"[\s\S]*?className="target-mode-trigger"/
   );
   assert.doesNotMatch(v1Island, /KofiLeaderboardTicker|topbar-supporter-strip|topbar-support-actions/);
 });

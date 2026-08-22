@@ -127,16 +127,23 @@ test('v2 keeps the wide title row ordered and renders stubbed top supporters', a
   const titleRow = page.locator('.panorama-title-row');
   await expect(titleRow.locator('.commit-version-link')).toBeVisible();
   await expect(titleRow.locator('.topbar-supporter-strip')).toBeVisible();
-  await expect(titleRow.locator('.topbar-support-actions')).toBeVisible();
+  const workflow = page.locator('.topbar-workflow-actions');
+  await expect(workflow.locator('.topbar-support-actions')).toBeVisible();
   const directChildClasses = await titleRow.locator(':scope > *').evaluateAll((nodes) => (
     nodes.map((node) => node.className)
   ));
   expect(directChildClasses).toEqual([
     'panorama-brand',
     'commit-version-link',
-    'topbar-supporter-strip',
-    'topbar-support-actions'
+    'topbar-supporter-strip'
   ]);
+  const [workflowBox, supportBox, targetBox] = await Promise.all([
+    workflow.boundingBox(),
+    workflow.locator('.topbar-support-actions').boundingBox(),
+    workflow.locator('.target-mode-trigger').boundingBox()
+  ]);
+  expect(supportBox.x - workflowBox.x).toBeLessThanOrEqual(12);
+  expect(supportBox.x + supportBox.width).toBeLessThanOrEqual(targetBox.x);
 
   const strip = page.locator('.topbar-supporter-strip');
   const window = strip.locator('.topbar-supporter-window');
@@ -150,6 +157,15 @@ test('v2 keeps the wide title row ordered and renders stubbed top supporters', a
   await expect(track.locator('.topbar-supporter-sequence')).toHaveCount(2);
   await expect(track.locator('.topbar-supporter-sequence').nth(1)).toHaveAttribute('aria-hidden', 'true');
   await expect(track.locator('.topbar-supporter-item').first()).toContainText(/1\s*Ada Lovelace/);
+  const podiumItems = track.locator('.topbar-supporter-sequence').first().locator('.topbar-supporter-item');
+  for (let index = 0; index < 3; index += 1) {
+    await expect(podiumItems.nth(index)).toHaveClass(new RegExp(`topbar-supporter-place-${index + 1}`));
+  }
+  const podiumShadows = await podiumItems.evaluateAll((items) => (
+    items.slice(0, 3).map((item) => getComputedStyle(item).textShadow)
+  ));
+  expect(new Set(podiumShadows).size).toBe(3);
+  expect(podiumShadows.every((shadow) => shadow !== 'none')).toBe(true);
 
 
   await page.locator('#presetName').fill('Ticker survives rerender');

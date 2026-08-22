@@ -224,6 +224,21 @@
   white-space: nowrap;
 }
 
+.topbar-supporter-place-1 {
+  color: #f2cf73;
+  text-shadow: 0 0 7px rgb(242 207 115 / 45%);
+}
+
+.topbar-supporter-place-2 {
+  color: #d5dce5;
+  text-shadow: 0 0 7px rgb(213 220 229 / 38%);
+}
+
+.topbar-supporter-place-3 {
+  color: #d59a78;
+  text-shadow: 0 0 7px rgb(213 154 120 / 42%);
+}
+
 .topbar-supporter-loading,
 .topbar-supporter-static {
   display: inline-flex;
@@ -426,11 +441,12 @@
   flex: 0 0 auto;
   min-width: 0;
   gap: 5px;
+  margin-right: auto;
 }
 
 .topbar-workflow-actions {
   grid-area: workflow;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 6px;
   padding: 3px;
   border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
@@ -517,7 +533,7 @@
 }
 
 .topbar-support-actions .support-button {
-  min-height: 28px;
+  min-height: 36px;
   padding: 0 9px;
   border-color: var(--border);
   background: transparent;
@@ -2821,7 +2837,12 @@
   }
 
   .topbar-workflow-actions > * {
-    flex: 1 1 150px;
+    flex: 0 1 auto;
+  }
+
+  .topbar-workflow-actions > .topbar-support-actions {
+    flex: 0 0 auto;
+    margin-right: 0;
   }
 
   .topbar-profile-workspace .topbar-profile-controls,
@@ -2864,7 +2885,7 @@
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       "title commit"
-      "ticker actions";
+      "ticker ticker";
     align-items: center;
     gap: 8px;
   }
@@ -2888,7 +2909,10 @@
   }
 
   .topbar-support-actions {
-    grid-area: actions;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-right: 0;
   }
 
 
@@ -2927,6 +2951,14 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
+  }
+
+  .topbar-workflow-actions > .build-action:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .topbar-workflow-actions:has(.showranks-toggle) > .build-action:last-child {
+    grid-column: auto;
   }
 
   .topbar-profile-workspace {
@@ -3010,9 +3042,9 @@
   .quiet-action {
     min-height: 44px;
   }
-  .panorama-title-row .topbar-support-actions .support-button {
-    width: auto;
-    min-height: 28px;
+  .topbar-workflow-actions .topbar-support-actions .support-button {
+    width: 100%;
+    min-height: 36px;
     padding: 0 8px;
     font-size: 0.68rem;
   }
