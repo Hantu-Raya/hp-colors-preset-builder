@@ -111,19 +111,6 @@ test("build validation toggles through the session reducer", () => {
   assert.equal(unvalidated.targetMode, HP_COLORS_MOD_VARIANTS.FULL);
 });
 
-test("build warning stays null for multi-profile minimal and full targets", () => {
-  const session = {
-    ...createPresetBuilderSession(defaultState),
-    profiles: [
-      { id: "profile-1", name: "Lane", values: defaultState, heroMode: "off", heroes: [] },
-      { id: "profile-2", name: "Teamfight", values: defaultState, heroMode: "off", heroes: [] },
-      { id: "profile-3", name: "Late", values: defaultState, heroMode: "off", heroes: [] }
-    ]
-  };
-
-  assert.equal(selection({ ...session, targetMode: HP_COLORS_MOD_VARIANTS.MINIMAL }).buildVariantWarning, null);
-  assert.equal(selection({ ...session, targetMode: HP_COLORS_MOD_VARIANTS.FULL }).buildVariantWarning, null);
-});
 
 test("committing a target mode clears picker and validation state", () => {
   const session = {

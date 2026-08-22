@@ -383,22 +383,28 @@ function freezeRewriteBinding(data) {
 }
 
 export const REWRITE_FIELD_BINDINGS = Object.freeze(REWRITE_BINDING_DATA.map(freezeRewriteBinding));
-const REWRITE_SCHEMA = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS.map((binding) => [
-  binding.webId,
-  Object.freeze({
+const REWRITE_SCHEMA = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS.map((binding) => {
+  const schemaEntry = {
     type: binding.webType,
     label: binding.label,
     category: binding.category,
     defaultValue: binding.webDefault,
-    ...(binding.bounds ? { bounds: binding.bounds } : {}),
-    ...(binding.canonicalOptions.length && binding.canonicalType === "enum"
-      ? { options: binding.canonicalOptions.map((option) => option === "percent" ? "%" : option === "current" ? "Current HP" : option[0].toUpperCase() + option.slice(1)) }
-      : {}),
     canonicalKey: binding.canonicalKey,
     canonicalDefault: binding.defaultValue,
     conditionEligible: binding.conditionEligible
-  })
-])));
+  };
+  if (binding.bounds) schemaEntry.bounds = binding.bounds;
+  if (binding.canonicalOptions.length && binding.canonicalType === "enum") {
+    schemaEntry.options = binding.canonicalOptions.map((option) => (
+      option === "percent"
+        ? "%"
+        : option === "current"
+          ? "Current HP"
+          : option[0].toUpperCase() + option.slice(1)
+    ));
+  }
+  return [binding.webId, Object.freeze(schemaEntry)];
+})));
 
 export const REWRITE_FIELD_CATALOG = createHpFieldCatalog(REWRITE_SCHEMA, {
   variant: "rewrite",

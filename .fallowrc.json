@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "ignorePatterns": [
+    "tmp/**",
+    "tools/oxlint/anti-slop/**"
+  ],
+  "ignoreDependencies": [
+    "@oxlint/plugins"
+  ],
+  "ignoreExports": [
+    {
+      "file": "src/contracts/hpColorsPresetContract.js",
+      "exports": ["*"]
+    },
+    {
+      "file": "src/hpSchema.js",
+      "exports": ["*"]
+    },
+    {
+      "file": "src/presetVpkFileName.js",
+      "exports": ["*"]
+    },
+    {
+      "file": "src/rewritePackageBuilder.js",
+      "exports": ["*"]
+    }
+  ]
+}

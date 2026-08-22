@@ -17,6 +17,7 @@
     ".windsurf/**",
     "dist/**",
     "test-results/**",
+    "tmp/**",
     "tools/oxlint/anti-slop/**"
   ],
   "jsPlugins": [

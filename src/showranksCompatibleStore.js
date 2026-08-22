@@ -1,6 +1,6 @@
 export const SHOWRANKS_COMPATIBLE_STORAGE_KEY = "hp_colors_preset_builder_showranks_compatible_v1";
 
-export function normalizeShowranksCompatible(value) {
+function normalizeShowranksCompatible(value) {
   return value === true || value === "true";
 }
 

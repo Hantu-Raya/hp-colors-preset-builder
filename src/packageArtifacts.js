@@ -1,7 +1,6 @@
 import { SOURCE2_RESOURCE_CODECS } from "./source2ResourceCodec.js";
 import { normalizeVpkPath } from "./vpkArchive.js";
 
-export const HP_COLORS_ARTIFACT_IDS = Object.freeze({ BASE_HUD: "baseHud" });
 export const HP_COLORS_PACKAGE_FILE_PATHS = Object.freeze(["panorama/layout/base_hud.vxml_c"]);
 export const HP_COLORS_PACKAGE_LIMITS = Object.freeze({
   MAX_PROFILES: 128,
@@ -30,10 +29,6 @@ export function getHpColorsPackageArtifact(id) {
   return artifact;
 }
 
-export function findHpColorsPackageArtifactBySourcePath(sourcePath) {
-  const normalized = String(sourcePath || "");
-  return ARTIFACTS.find((artifact) => artifact.sourcePath === normalized || artifact.legacySourcePaths.includes(normalized)) || null;
-}
 
 export function findHpColorsPackageArtifactByArchivePath(archivePath) {
   const normalized = String(archivePath || "");

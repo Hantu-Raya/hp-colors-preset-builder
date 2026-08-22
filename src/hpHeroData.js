@@ -40,7 +40,7 @@ export function getHpHeroById(id) {
   return HP_HEROES.find((hero) => hero.id === normalized) || null;
 }
 
-export function normalizeHeroId(value) {
+function normalizeHeroId(value) {
   const normalized = normalizeHeroKey(value);
   if (!normalized) return null;
   return HERO_ID_LOOKUP.get(normalized) || HERO_ID_LOOKUP.get(`hero_${normalized}`) || null;

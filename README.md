@@ -71,6 +71,17 @@ When Deadlock or a runtime changes, install the matching updated packages and re
 
 Use a current Chromium (Chrome or Edge), Firefox, or Safari release on desktop or mobile. The browser must provide ES modules, Web Crypto, `TextEncoder`/`TextDecoder`, File/Blob downloads, and clipboard access (where offered). Internet Explorer and obsolete browser versions are not supported. CI exercises the browser flow in Playwright Chromium at desktop and mobile viewports.
 
+## Supporter ticker maintenance
+
+V2 uses a manually maintained supporter list instead of loading the remote Ko-fi leaderboard script. Update `SUPPORTERS` in `src/components/KofiLeaderboardTicker.jsx` when a new donation arrives:
+
+1. Copy only the public supporter name and total donation from the Ko-fi supporters CSV.
+2. Keep totals as numeric USD values; the ticker formats them as `$100`, `$20`, and so on.
+3. Sort entries by total donated from highest to lowest. Keep the newest supporter first when totals match.
+4. Never commit email addresses, transaction IDs, or other private CSV fields.
+
+The ticker displays each total immediately after the supporter name and links to the public Ko-fi leaderboard.
+
 ## Run locally
 
 ```powershell
@@ -85,6 +96,12 @@ npm run build
 ```
 
 The build output is written to `dist/` and should not be committed.
+
+## Code health checks
+
+`npm run lint` runs Oxlint with the repository-local anti-slop plugin in `tools/oxlint/anti-slop/`. `npx fallow dead-code` checks the application graph for unused files, exports, dependencies, and import cycles. Both tools exclude `tmp/` and the vendored anti-slop source from application cleanup.
+
+Run focused tests after a cleanup, then run `npm test`, `npm run test:e2e`, and `npm run build` before release.
 
 ## Deterministic verification and release gates
 

@@ -27,7 +27,6 @@ import { getTargetModeDetails, isFullTargetMode, isRewriteQollockTarget, loadTar
 import { PRESET_VPK_FILE_NAME, REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME, REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME } from "./presetVpkFileName.js";
 import { loadShowranksCompatibleState } from "./showranksCompatibleStore.js";
 
-const DEFAULT_PRESET_NAME = "Web Builder Preset";
 const BUILD_VARIANTS = new Set(Object.values(HP_COLORS_MOD_VARIANTS));
 
 function canConfirmBuild({ installValidated, buildVariant }) {
@@ -47,9 +46,6 @@ function getNextInstallValidationState({ installValidated, buildVariant }) {
   };
 }
 
-function getBuildVariantWarning({ buildVariant, profileCount, firstPresetName }) {
-  return null;
-}
 
 function formatHeroSelection(heroMode, heroIds) {
   const selected = normalizeHeroIds(heroIds);
@@ -234,7 +230,6 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
   const visibleFields = getVisibleFields(currentGroup, state, catalog);
   const buildProfilePresets = profiles.map(profileToPreset);
   const targetModeDetails = getTargetModeDetails(session.targetMode);
-  const topPresetName = cleanProfileName(profiles[0]?.name, 0);
   const profileScopeCounts = profiles.reduce((counts, profile) => {
     const mode = normalizeHeroScopeMode(profile.heroMode || profile.hm, profile.heroes || profile.hs);
     counts[mode] = (counts[mode] || 0) + 1;
@@ -273,14 +268,8 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
     canConfirmBuildVariant: !session.busy && canConfirmBuild({ installValidated: session.installValidated, buildVariant: session.targetMode }),
     presetVpkFileName: resolvePresetVpkFileName(session),
     installDirectory: "Deadlock/game/citadel/addons",
-    topPresetName,
     catalog,
     defaultState: activeDefaultState,
-    buildVariantWarning: getBuildVariantWarning({
-      buildVariant: session.targetMode,
-      profileCount: buildProfilePresets.length,
-      firstPresetName: topPresetName
-    })
   };
 }
 

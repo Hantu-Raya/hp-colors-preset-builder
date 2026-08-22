@@ -5,8 +5,8 @@ export const SOURCE2_RESOURCE_CODECS = Object.freeze({
   PANORAMA_LAYOUT: "panoramaLayout"
 });
 
-export const MAX_SOURCE2_RESOURCE_BYTES = 2 * 1024 * 1024;
-export const MAX_SOURCE2_XML_BYTES = 2 * 1024 * 1024;
+const MAX_SOURCE2_RESOURCE_BYTES = 2 * 1024 * 1024;
+const MAX_SOURCE2_XML_BYTES = 2 * 1024 * 1024;
 const HEADER_SIZE = 16;
 const BLOCK_ENTRY_SIZE = 12;
 const DATA_ALIGNMENT = 16;

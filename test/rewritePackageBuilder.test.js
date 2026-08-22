@@ -6,7 +6,6 @@ import {
   buildRewritePresetPackage,
   buildRewriteShowranksPresetPackage,
   encodeUtf16Hex,
-  inspectRewritePresetTemplate,
   inspectRewriteShowranksPresetTemplate,
   readRewritePresetCode,
   readRewriteShowranksPresetCode,

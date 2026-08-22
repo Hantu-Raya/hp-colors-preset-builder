@@ -1,8 +1,8 @@
 import { crc32 } from "./crc32.js";
 
 const VPK_MAGIC = 0x55aa1234;
-export const VPK_ARCHIVE_VERSION = 2;
-export const MAX_VPK_ARCHIVE_BYTES = 4 * 1024 * 1024;
+const VPK_ARCHIVE_VERSION = 2;
+const MAX_VPK_ARCHIVE_BYTES = 4 * 1024 * 1024;
 const HEADER_SIZE = 28;
 const EMBEDDED_ARCHIVE_INDEX = 0x7fff;
 const ENTRY_TERMINATOR = 0xffff;

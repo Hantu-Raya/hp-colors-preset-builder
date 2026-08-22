@@ -29,15 +29,15 @@ const REWRITE_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
 ]);
 export const REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME = "pak01_dir.vpk";
 const REWRITE_SHOWRANKS_SCRIPT_INCLUDE = "s2r://panorama/scripts/showrank_barebones.vjs_c";
-export const REWRITE_SHOWRANKS_SCRIPT_INCLUDES = Object.freeze([
+const REWRITE_SHOWRANKS_SCRIPT_INCLUDES = Object.freeze([
   ...REWRITE_PRESET_SCRIPT_INCLUDES,
   REWRITE_SHOWRANKS_SCRIPT_INCLUDE
 ]);
 const REWRITE_SHOWRANKS_OPEN_HOOK = "if ($.ShowRankBarebonesEscapeOpen) $.ShowRankBarebonesEscapeOpen();";
 const REWRITE_SHOWRANKS_OUT_HOOK = "if ($.ShowRankBarebonesEscapeOut) $.ShowRankBarebonesEscapeOut();";
-export const REWRITE_SHOWRANKS_MENU_ONLOAD = `$.HPColorsMenuBoot(); ${REWRITE_SHOWRANKS_OPEN_HOOK}`;
-export const REWRITE_SHOWRANKS_MENU_ONMOUSEOVER = REWRITE_SHOWRANKS_OPEN_HOOK;
-export const REWRITE_SHOWRANKS_MENU_ONMOUSEOUT = REWRITE_SHOWRANKS_OUT_HOOK;
+const REWRITE_SHOWRANKS_MENU_ONLOAD = `$.HPColorsMenuBoot(); ${REWRITE_SHOWRANKS_OPEN_HOOK}`;
+const REWRITE_SHOWRANKS_MENU_ONMOUSEOVER = REWRITE_SHOWRANKS_OPEN_HOOK;
+const REWRITE_SHOWRANKS_MENU_ONMOUSEOUT = REWRITE_SHOWRANKS_OUT_HOOK;
 
 export const REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME = "pak01_dir.vpk";
 export const REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH = "templates/hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml";
@@ -362,7 +362,7 @@ function validatePresetCode(rawCode) {
 
 export { encodeUtf16Hex };
 
-export function inspectRewritePresetTemplate(templateText) {
+function inspectRewritePresetTemplate(templateText) {
   return inspectRewriteXml(templateText, { requireEmpty: true });
 }
 
@@ -527,7 +527,6 @@ export function inspectRewriteShowranksPresetTemplate(templateText, { requireEmp
   });
 }
 
-export const validateRewriteShowranksPresetTemplate = inspectRewriteShowranksPresetTemplate;
 
 export function readRewriteShowranksPresetCode(input) {
   const source = sourceTextFromResource(input);

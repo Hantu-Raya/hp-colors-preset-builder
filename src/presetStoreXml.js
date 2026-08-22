@@ -5,8 +5,8 @@ import {
 import { compactHpPresetOverrides, normalizeHpPresetPayload } from "./hpPresetPayload.js";
 import { HP_COLORS_PACKAGE_LIMITS } from "./packageArtifacts.js";
 
-export const PRESET_STORE_PANEL_ID = "HPColorsPresetStore";
-export const PRESET_STORE_LABEL_CLASS = "hp_colors_preset_entry";
+const PRESET_STORE_PANEL_ID = "HPColorsPresetStore";
+const PRESET_STORE_LABEL_CLASS = "hp_colors_preset_entry";
 const XML_INSERT_MARKER = /(<Panel\s+id="AnitaUI_Anchor"[\s\S]*?\/>)/;
 const FATAL_TEXT_DECODER = new TextDecoder("utf-8", { fatal: true });
 

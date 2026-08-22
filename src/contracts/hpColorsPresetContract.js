@@ -165,31 +165,22 @@ const HP_HERO_CATALOG_DEFINITION = [
 ];
 
 export const HP_PRESET_SCHEMA = Object.freeze(HP_SCHEMA_DEFINITION);
-export const HP_SCHEMA = HP_PRESET_SCHEMA;
 export const HP_PRESET_FIELD_IDS = Object.freeze(Object.keys(HP_SCHEMA_DEFINITION));
-export const HP_PRESET_SUPPORTED_FIELD_IDS = HP_PRESET_FIELD_IDS;
 export const HP_PERSIST_ALIASES = Object.freeze(HP_PERSISTENCE_ALIASES);
 export const HP_LEGACY_FIELD_ID_BY_PERSIST_ALIAS = Object.freeze(HP_LEGACY_PERSISTENCE_ALIASES);
 export const HP_FULL_ONLY_EXCLUDED_FIELD_IDS = Object.freeze([]);
-export const HP_FULL_RUNTIME_FIELD_IDS = HP_PRESET_FIELD_IDS;
-export const HP_FULL_RUNTIME_FIELD_COUNT = HP_FULL_RUNTIME_FIELD_IDS.length;
+const HP_FULL_RUNTIME_FIELD_IDS = HP_PRESET_FIELD_IDS;
+const HP_FULL_RUNTIME_FIELD_COUNT = HP_FULL_RUNTIME_FIELD_IDS.length;
 export const HP_PRESET_FIELD_COUNT = HP_PRESET_FIELD_IDS.length;
 export const HP_PRESET_PAYLOAD_VERSION = 1;
 export const HP_RUNTIME_STORAGE_VERSION = 99;
 export const HP_RUNTIME_LEGACY_STORAGE_VERSIONS = Object.freeze([97, 25]);
 export const HP_ACCEPTED_INPUT_VERSIONS = Object.freeze([1, HP_RUNTIME_STORAGE_VERSION, ...HP_RUNTIME_LEGACY_STORAGE_VERSIONS]);
-export const HP_PRESET_INPUT_VERSIONS = HP_ACCEPTED_INPUT_VERSIONS;
-export const HP_ACCEPTED_INPUT_SHAPES = Object.freeze(["verbose", "compact", "minimal", "legacy-tuple"]);
+export const HP_ACCEPTED_INPUT_FORMATS = Object.freeze(["verbose", "compact", "minimal", "legacy-tuple"]);
 export const HP_HERO_CATALOG = Object.freeze(HP_HERO_CATALOG_DEFINITION.map((hero) => Object.freeze({ ...hero, aliases: Object.freeze([...hero.aliases]) })));
-export const HP_PRESET_FIELD_DEFINITIONS = HP_PRESET_SCHEMA;
-export const HP_PRESET_FIELDS = HP_PRESET_SCHEMA;
-export const HP_PRESET_DEFAULTS = Object.freeze(Object.fromEntries(
+const HP_PRESET_DEFAULTS = Object.freeze(Object.fromEntries(
   HP_PRESET_FIELD_IDS.map((id) => [id, HP_PRESET_SCHEMA[id].defaultValue])
 ));
-export const HP_PRESET_ALIASES = HP_PERSIST_ALIASES;
-export const HP_PRESET_EXCLUDED_FIELD_IDS = HP_FULL_ONLY_EXCLUDED_FIELD_IDS;
-export const HP_FULL_ONLY_FIELD_IDS = HP_FULL_ONLY_EXCLUDED_FIELD_IDS;
-export const HP_PAYLOAD_OUTPUT_VERSION = HP_PRESET_PAYLOAD_VERSION;
 
 export const HP_COLORS_PRESET_CONTRACT = Object.freeze({
   fieldIds: HP_PRESET_FIELD_IDS,
@@ -210,7 +201,7 @@ export const HP_COLORS_PRESET_CONTRACT = Object.freeze({
     version: HP_PRESET_PAYLOAD_VERSION,
     outputVersion: HP_PRESET_PAYLOAD_VERSION,
     acceptedInputVersions: HP_ACCEPTED_INPUT_VERSIONS,
-    acceptedInputShapes: HP_ACCEPTED_INPUT_SHAPES
+    acceptedInputFormats: HP_ACCEPTED_INPUT_FORMATS
   }),
   heroes: HP_HERO_CATALOG
 });

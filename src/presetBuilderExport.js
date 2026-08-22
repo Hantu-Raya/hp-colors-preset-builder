@@ -3,8 +3,7 @@ import { HP_COLORS_MOD_VARIANTS } from "./hpModVariants.js";
 import { encodePresetStoreEntry } from "./presetStoreXml.js";
 import { HP_PROFILE_LIMIT } from "./profileStore.js";
 
-export const HP_COLORS_IMPORT_CODE_PREFIX = "[ANITA-v1-hp_colors]:";
-export { HP_PROFILE_LIMIT };
+const HP_COLORS_IMPORT_CODE_PREFIX = "[ANITA-v1-hp_colors]:";
 
 function normalizeExportProfile(profile, index, targetMode) {
   const preset = normalizeHpPresetPayload(profile, { index });

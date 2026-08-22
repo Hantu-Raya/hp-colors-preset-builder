@@ -194,7 +194,7 @@ function StockHoldButton({ active, onPress, onRelease }) {
   );
 }
 
-export function HealthbarPreview({ profileState = null, conversionRequired = false, profileName = '', onConvert = null }) {
+function HealthbarPreview({ profileState = null, conversionRequired = false, profileName = '', onConvert = null }) {
   const [scenario, setScenario] = useState(DEFAULT_SCENARIO);
   const [zoom, setZoom] = useState(DEFAULT_PREVIEW_STATE.zoom);
   const [paused, setPaused] = useState(DEFAULT_PREVIEW_STATE.paused);

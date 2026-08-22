@@ -5,7 +5,7 @@ const SETTINGS_PREFIX = 'HPCR2';
 const PRESET_PREFIX = 'HPCRP1';
 const USER_ID = /^user_\d{4,}$/;
 
-export const REWRITE_KEYS = Object.freeze(REWRITE_FIELD_BINDINGS.map((binding) => binding.canonicalKey));
+const REWRITE_KEYS = Object.freeze(REWRITE_FIELD_BINDINGS.map((binding) => binding.canonicalKey));
 const DEFAULTS = Object.freeze(REWRITE_FIELD_BINDINGS.map((binding) => binding.defaultValue));
 const BOOLEAN_INDEXES = new Set(REWRITE_FIELD_BINDINGS
   .map((binding, index) => binding.canonicalType === 'boolean' ? index : null)

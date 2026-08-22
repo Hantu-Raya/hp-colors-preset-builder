@@ -8,20 +8,20 @@ import {
 import { HP_FIELD_CATALOG } from "./hpSchema.js";
 
 export const DEFAULT_HP_PRESET_NAME = "Web Builder Preset";
-export { HP_PERSIST_ALIASES, HP_PRESET_PAYLOAD_VERSION };
+export { HP_PERSIST_ALIASES };
 
-export const HP_FIELD_ID_BY_PERSIST_ALIAS = Object.freeze({
+const HP_FIELD_ID_BY_PERSIST_ALIAS = Object.freeze({
   ...Object.fromEntries(Object.entries(HP_PERSIST_ALIASES).map(([id, alias]) => [alias, id])),
   ...HP_LEGACY_FIELD_ID_BY_PERSIST_ALIAS
 });
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 
-export const HP_SIGNATURE_OVERRIDE_INELIGIBLE_IDS = Object.freeze({
+const HP_SIGNATURE_OVERRIDE_INELIGIBLE_IDS = Object.freeze({
   hp_precise_pips_enabled: true
 });
 
-export function normalizeHpPresetOverrides(rawOverrides) {
+function normalizeHpPresetOverrides(rawOverrides) {
   if (!isPlainObject(rawOverrides)) return {};
   const canonical = {};
   for (const [rawId, rawRule] of Object.entries(rawOverrides)) {

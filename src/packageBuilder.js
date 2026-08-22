@@ -12,7 +12,6 @@ import { compileSource2Resource, extractSource2Resource } from "./source2Resourc
 import { createVpkArchive, readVpkArchive, writeVpkArchive } from "./vpkArchive.js";
 
 export { DEFAULT_HP_COLORS_MOD_VARIANT, HP_COLORS_MOD_VARIANTS };
-export { HP_COLORS_PACKAGE_LIMITS };
 
 const BASE_STYLE_INCLUDES = [
   "s2r://panorama/styles/base.vcss_c",
@@ -60,7 +59,7 @@ function normalizePackagePresets({ preset, presets, modVariant }) {
   });
 }
 
-export function validateHpColorsBaseHudXml(baseHudXml, modVariant = DEFAULT_HP_COLORS_MOD_VARIANT) {
+function validateHpColorsBaseHudXml(baseHudXml, modVariant = DEFAULT_HP_COLORS_MOD_VARIANT) {
   const activeModVariant = normalizeModVariant(modVariant);
   const xml = String(baseHudXml ?? "");
   const styleIncludes = [...(xml.match(/<styles>[\s\S]*?<\/styles>/)?.[0] || "").matchAll(/src="([^"]+)"/g)].map((match) => match[1]);
@@ -93,7 +92,7 @@ export function createHpColorsPackagePlan({ sourceTexts, preset = null, presets 
   };
 }
 
-export function validateHpColorsPackagePlan(plan) {
+function validateHpColorsPackagePlan(plan) {
   if (!plan || !Array.isArray(plan.artifacts) || plan.artifacts.length !== HP_COLORS_PACKAGE_FILE_PATHS.length) throw new Error("HP Colors package plan must contain exactly base_hud.vxml_c");
   if (!Array.isArray(plan.presets) || plan.presets.length < 1 || plan.presets.length > HP_COLORS_PACKAGE_LIMITS.MAX_PROFILES) throw new Error("HP Colors package must contain 1-128 profiles");
   const artifact = plan.artifacts[0];

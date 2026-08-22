@@ -17,7 +17,7 @@ import { getTargetModeDetails, normalizeTargetMode, saveTargetModeState } from "
 import { saveShowranksCompatibleState } from "./showranksCompatibleStore.js";
 
 export const BASE_HUD_TEMPLATE_PATH = "templates/hp_colors/panorama/layout/base_hud.xml";
-export const PRESET_INSTALL_DIRECTORY = "game/citadel/addons";
+const PRESET_INSTALL_DIRECTORY = "game/citadel/addons";
 
 let buildInFlight = false;
 let rewriteBuildInFlight = false;
@@ -250,7 +250,6 @@ export async function runRewriteQollockPresetBuildWorkflow({
   }
 }
 
-export const runRewritePresetVpkWorkflow = runRewritePresetBuildWorkflow;
 
 
 export async function runPresetConvertWorkflow({ convertFile, targetModVariant, loadBaseHudXml, download = downloadBytes, dispatch, digest = null, installDirectory = PRESET_INSTALL_DIRECTORY }) {

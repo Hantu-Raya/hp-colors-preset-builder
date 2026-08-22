@@ -321,7 +321,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
     canConfirmBuildVariant,
     presetVpkFileName,
     installDirectory,
-    buildVariantWarning
   } = selectedSession;
   const activeGitCommitInfo = freshGitCommitInfo || gitCommitInfo;
   const {
@@ -1120,17 +1119,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 <span>{installValidated ? 'Undo install confirmation' : 'I installed the selected base mod'}</span>
               </button>
             </div>
-            {buildVariantWarning ? (
-              <div className="build-mod-warning" role="alert" aria-live="polite">
-                <span className="build-mod-warning-icon">
-                  <AlertTriangle aria-hidden="true" />
-                </span>
-                <span className="build-mod-warning-copy">
-                  <strong>{buildVariantWarning.title}</strong>
-                  <span>{buildVariantWarning.message}</span>
-                </span>
-              </div>
-            ) : null}
             <div className="build-warning-actions">
               <button type="button" className="secondary-action" onClick={closeBuildWarning}>Cancel</button>
               <button
