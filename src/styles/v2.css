@@ -2779,12 +2779,9 @@
   }
 
   .topbar-supporter-track {
-    animation: none !important;
-    transform: none !important;
-  }
-
-  .topbar-supporter-sequence + .topbar-supporter-sequence {
-    display: none !important;
+    animation: topbar-supporter-scroll var(--topbar-supporter-duration, 4s) linear infinite !important;
+    animation-duration: var(--topbar-supporter-duration, 4s) !important;
+    animation-iteration-count: infinite !important;
   }
 }
 

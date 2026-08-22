@@ -84,8 +84,12 @@ test("v2.css keeps the static supporter ticker clipped, automatic, amount-aware,
   assert.match(css, /@keyframes\s+topbar-supporter-scroll[\s\S]*translate3d\(0,\s*0,\s*0\)[\s\S]*translate3d\(-50%,\s*0,\s*0\)/);
   assert.match(css, /\.topbar-supporter-amount\s*\{[^}]*font-variant-numeric:\s*tabular-nums;/);
 
-  assert.match(css, /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*\.topbar-supporter-track\s*\{[^}]*animation:\s*none\s*!important;/);
-  assert.match(css, /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*\.topbar-supporter-sequence\s*\+\s*\.topbar-supporter-sequence\s*\{[^}]*display:\s*none\s*!important;/);
+  const reducedMotionStart = css.indexOf("@media (prefers-reduced-motion: reduce)");
+  const reducedMotionEnd = css.indexOf("@media (max-width: 1180px)", reducedMotionStart);
+  const reducedMotionCss = css.slice(reducedMotionStart, reducedMotionEnd);
+  assert.match(reducedMotionCss, /\.topbar-supporter-track\s*\{[^}]*animation:\s*topbar-supporter-scroll var\(--topbar-supporter-duration,\s*4s\) linear infinite\s*!important;[^}]*animation-duration:\s*var\(--topbar-supporter-duration,\s*4s\)\s*!important;[^}]*animation-iteration-count:\s*infinite\s*!important;/);
+  assert.doesNotMatch(reducedMotionCss, /\.topbar-supporter-track\s*\{[^}]*animation:\s*none/);
+  assert.doesNotMatch(reducedMotionCss, /\.topbar-supporter-sequence\s*\+\s*\.topbar-supporter-sequence/);
   const mobileStart = css.indexOf("@media (max-width: 740px)");
   assert.notEqual(mobileStart, -1);
   const mobileCss = css.slice(mobileStart);

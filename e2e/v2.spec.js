@@ -168,7 +168,7 @@ test('v2 auto-scrolls the static supporter list without playback controls', asyn
 });
 
 
-test('v2 disables ticker motion and the duplicate sequence for reduced motion', async ({ page }) => {
+test('v2 keeps the supporter ticker moving when the OS requests reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('v2/');
   await chooseRewriteTarget(page);
@@ -176,8 +176,10 @@ test('v2 disables ticker motion and the duplicate sequence for reduced motion', 
   const strip = page.locator('.topbar-supporter-strip');
   const track = strip.locator('.topbar-supporter-track');
   await expect(strip.locator('.topbar-supporter-pause')).toHaveCount(0);
-  await expect(track).toHaveCSS('animation-name', 'none');
-  await expect(track.locator('.topbar-supporter-sequence').nth(1)).toBeHidden();
+  await expect(track).toHaveCSS('animation-name', 'topbar-supporter-scroll');
+  await expect(track).toHaveCSS('animation-play-state', 'running');
+  expect(parseFloat(await track.evaluate((node) => getComputedStyle(node).animationDuration))).toBeGreaterThan(4);
+  await expect(track.locator('.topbar-supporter-sequence').nth(1)).toBeVisible();
 });
 
 test('v2 has no page horizontal overflow at supported header widths', async ({ page }) => {
