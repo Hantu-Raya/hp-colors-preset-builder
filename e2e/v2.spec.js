@@ -247,6 +247,7 @@ test('v2 shows the healthbar preview for both Rewrite targets and hides it on Pr
   await expect(rail).toBeVisible();
   await expect(rail.getByRole('heading', { name: 'Healthbar preview' })).toBeVisible();
 
+
   await page.locator('.target-mode-trigger').click();
   await chooseRewriteQollockTarget(page);
   await expect(rail).toBeVisible();
@@ -255,6 +256,22 @@ test('v2 shows the healthbar preview for both Rewrite targets and hides it on Pr
   await page.getByRole('button', { name: 'Presets', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'PRESET LIBRARY' })).toBeVisible();
   await expect(rail).toHaveCount(0);
+});
+test('v2 settings navigation aligns with tall settings content', async ({ page }) => {
+  await routeKofiLeaderboardScript(page, 'empty');
+  await page.setViewportSize({ width: 1460, height: 838 });
+  await page.goto('v2/');
+  await chooseRewriteTarget(page);
+  await page.locator('.panorama-workspace').evaluate((workspace) => {
+    window.scrollTo(0, workspace.offsetTop);
+  });
+
+  const [workspaceBox, treeBox] = await Promise.all([
+    page.locator('.panorama-workspace').boundingBox(),
+    page.locator('.anita-tree').boundingBox()
+  ]);
+  expect(Math.abs(treeBox.y - workspaceBox.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs((treeBox.y + treeBox.height) - (workspaceBox.y + workspaceBox.height))).toBeLessThanOrEqual(1);
 });
 
 test('v2 preview controls update output, support hold-to-stock, zoom, and reset', async ({ page }) => {

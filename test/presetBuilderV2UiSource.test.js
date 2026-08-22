@@ -198,6 +198,14 @@ test("v2 preview maps each texture role and explicit geometry once", async () =>
   assert.doesNotMatch(css, /healthbar-preview-bar\.is-hidden[\s\S]*!important/);
 });
 
+test("v2 settings navigation spans the workspace without sticky offsets", async () => {
+  const css = await readFile(v2StylesPath, "utf8");
+
+  assert.match(css, /\.anita-tree\s*\{[^}]*position:\s*static;[^}]*align-self:\s*stretch;[^}]*min-height:\s*0;/);
+  assert.doesNotMatch(css, /\.anita-tree\s*\{[^}]*top:\s*104px;/);
+  assert.doesNotMatch(css, /\.anita-tree\s*\{[^}]*min-height:\s*680px;/);
+});
+
 test("v2 topbar keeps workflow, profile, utility, and supporter controls grouped", async () => {
   const [v1Island, v2Island] = await Promise.all([
     readFile(v1IslandPath, "utf8"),

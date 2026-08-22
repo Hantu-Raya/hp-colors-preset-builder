@@ -1164,13 +1164,12 @@
 }
 
 .anita-tree {
-  position: sticky;
-  top: 104px;
-  align-self: start;
+  position: static;
+  align-self: stretch;
   display: grid;
   align-content: start;
   gap: 16px;
-  min-height: 680px;
+  min-height: 0;
   padding: 24px 12px 18px;
   border: 0;
   border-right: 1px solid var(--border);
