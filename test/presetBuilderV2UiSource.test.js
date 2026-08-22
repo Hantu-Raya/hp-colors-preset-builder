@@ -10,7 +10,7 @@ const v2TreePath = new URL("../src/components/schema-tree-v2.jsx", import.meta.u
 const v2PagePath = new URL("../src/pages/v2.astro", import.meta.url);
 const v2TickerPath = new URL("../src/components/KofiLeaderboardTicker.jsx", import.meta.url);
 
-test("v2 owns the Ko-fi leaderboard source while v1 stays request-free", async () => {
+test("v2 owns a static supporter list while both builders stay request-free", async () => {
   const [v1Page, v1Island, v2Page, v2Island, ticker] = await Promise.all([
     readFile(new URL("../src/pages/index.astro", import.meta.url), "utf8"),
     readFile(v1IslandPath, "utf8"),
@@ -18,34 +18,31 @@ test("v2 owns the Ko-fi leaderboard source while v1 stays request-free", async (
     readFile(v2IslandPath, "utf8"),
     readFile(v2TickerPath, "utf8")
   ]);
-  const sourceNodeMatch = v2Page.match(/<[^>]*id="kofi-leaderboard-embed"[^>]*>/);
-  const sourceNodeIndex = v2Page.indexOf('id="kofi-leaderboard-embed"');
-  const islandIndex = v2Page.indexOf("<PresetBuilderV2Island");
 
-  assert.match(v2Page, /<script\s+is:inline\s+defer\s+src="https:\/\/cdn\.ko-fi\.tools\/v2\/js\/leaderboard\.js"\s+onerror="[^"]*data-leaderboard-status[^"]*"\s*><\/script>/);
-  assert.ok(sourceNodeMatch);
-  assert.match(sourceNodeMatch[0], /\bhidden\b/);
-  assert.match(sourceNodeMatch[0], /data-leaderboard-id="X8X31HPU2G"/);
-  assert.match(sourceNodeMatch[0], /data-leaderboard-name="Hanturaya's Leaderboard"/);
-  assert.match(sourceNodeMatch[0], /data-leaderboard-theme="none"/);
-  assert.ok(sourceNodeIndex >= 0 && sourceNodeIndex < islandIndex);
-  assert.doesNotMatch(v2Island, /kofi-leaderboard-embed|cdn\.ko-fi\.tools\/v2\/js\/leaderboard\.js/);
+  assert.doesNotMatch(v2Page, /kofi-leaderboard-embed|cdn\.ko-fi\.tools/i);
+  assert.doesNotMatch(v2Island, /kofi-leaderboard-embed|cdn\.ko-fi\.tools/i);
   assert.doesNotMatch(v1Page, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
   assert.doesNotMatch(v1Island, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
+  assert.doesNotMatch(ticker, /MutationObserver|Loading top supporters|View Ko-fi leaderboard/);
+  assert.doesNotMatch(ticker, /Email|LastestTransactionId|@gmail\.com|@hotmail\.com/);
 
   for (const marker of [
-    "kofi-leaderboard-item",
-    "kofi-leaderboard-supporter-order",
-    "kofi-leaderboard-supporter-name",
-    "MutationObserver",
+    "civo",
+    "100",
+    "dacooder",
+    "20",
+    "DimpuMudit",
+    "17",
+    "Ko-fi Supporter",
+    "10",
+    "greggey",
+    "Timmcd",
     "topbar-supporter-strip",
     "topbar-supporter-window",
     "topbar-supporter-track",
     "topbar-supporter-sequence",
     "topbar-supporter-item",
-    "is-static",
-    "Loading top supporters",
-    "View Ko-fi leaderboard",
+    "topbar-supporter-amount",
     "https://ko-fi.com/hantuaraya/leaderboard",
     "ResizeObserver",
     "SUPPORTER_SPEED_PX_PER_SECOND = 36",

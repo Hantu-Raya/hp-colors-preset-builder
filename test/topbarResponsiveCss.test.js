@@ -75,15 +75,14 @@ test("v2.css gives healthbar preview its own rail and mobile-first ordering", as
   assert.match(mobileCss, /\.healthbar-preview\.is-mobile-collapsed[\s\S]*\.healthbar-preview-content[\s\S]*display:\s*none;/);
 });
 
-test("v2.css keeps the supporter ticker clipped, automatic, static-safe, and mobile-safe", async () => {
+test("v2.css keeps the static supporter ticker clipped, automatic, amount-aware, and mobile-safe", async () => {
   const css = await readStylesheet("v2.css");
 
   assert.match(css, /\.topbar-supporter-strip\s*\{[^}]*display:\s*flex;[^}]*min-width:\s*180px;/);
   assert.match(css, /\.topbar-supporter-window\s*\{[^}]*min-width:\s*0;[^}]*overflow:\s*hidden;[^}]*border-inline:\s*1px/);
   assert.match(css, /\.topbar-supporter-track\s*\{[^}]*animation:\s*topbar-supporter-scroll var\(--topbar-supporter-duration,\s*4s\) linear infinite;/);
   assert.match(css, /@keyframes\s+topbar-supporter-scroll[\s\S]*translate3d\(0,\s*0,\s*0\)[\s\S]*translate3d\(-50%,\s*0,\s*0\)/);
-  assert.match(css, /\.topbar-supporter-strip\.is-static[\s\S]*\.topbar-supporter-track[\s\S]*display:\s*none;/);
-  assert.match(css, /\.topbar-supporter-strip\.is-static[\s\S]*\.topbar-supporter-loading[\s\S]*display:\s*none;/);
+  assert.match(css, /\.topbar-supporter-amount\s*\{[^}]*font-variant-numeric:\s*tabular-nums;/);
 
   assert.match(css, /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*\.topbar-supporter-track\s*\{[^}]*animation:\s*none\s*!important;/);
   assert.match(css, /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*\.topbar-supporter-sequence\s*\+\s*\.topbar-supporter-sequence\s*\{[^}]*display:\s*none\s*!important;/);

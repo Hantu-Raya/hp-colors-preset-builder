@@ -12,39 +12,16 @@ const REWRITE_TEMPLATE_URL = new URL('../public/templates/hp_colors_rewrite/pano
 
 const KOFI_SCRIPT_URL = 'https://cdn.ko-fi.tools/v2/js/leaderboard.js';
 const KOFI_LEADERBOARD_URL = 'https://ko-fi.com/hantuaraya/leaderboard';
-const KOFI_SUPPORTERS = [
-  { rank: '1', name: 'Ada Lovelace' },
-  { rank: '2', name: 'Grace Hopper' },
-  { rank: '3', name: 'Katherine Johnson' }
+const STATIC_SUPPORTER_LABEL = 'Ko-fi top supporters: 1 civo $100, 2 dacooder $20, 3 DimpuMudit $17, 4 Ko-fi Supporter $10, 5 Ko-fi Supporter $5, 6 greggey $5, 7 Timmcd $5';
+const STATIC_SUPPORTER_TEXT = [
+  '1civo$100',
+  '2dacooder$20',
+  '3DimpuMudit$17',
+  '4Ko-fi Supporter$10',
+  '5Ko-fi Supporter$5',
+  '6greggey$5',
+  '7Timmcd$5'
 ];
-
-function createKofiStubBody(mode) {
-  if (mode === 'timeout') return 'window.__kofiStubLoaded = true;';
-  const supporters = mode === 'single' ? KOFI_SUPPORTERS.slice(0, 1) : KOFI_SUPPORTERS;
-  const markup = mode === 'empty'
-    ? '<div class="kofi-leaderboard-item"></div>'
-    : supporters.map(({ rank, name }) => (
-      `<div class="kofi-leaderboard-item"><span class="kofi-leaderboard-supporter-order">${rank}</span><span class="kofi-leaderboard-supporter-name">${name}</span></div>`
-    )).join('');
-  return `(() => {
-    const source = document.getElementById('kofi-leaderboard-embed');
-    if (source) source.innerHTML = ${JSON.stringify(markup)};
-  })();`;
-}
-
-async function routeKofiLeaderboardScript(page, mode = 'populated') {
-  await page.route(KOFI_SCRIPT_URL, async (route) => {
-    if (mode === 'error') {
-      await route.abort('failed');
-      return;
-    }
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/javascript',
-      body: createKofiStubBody(mode)
-    });
-  });
-}
 
 async function routeRewriteTemplate(page) {
   const template = await readFile(REWRITE_TEMPLATE_URL, 'utf8');
@@ -101,7 +78,7 @@ async function readPreviewStorage(page) {
   });
 }
 
-test('v1 never requests the V2 Ko-fi leaderboard script', async ({ page }) => {
+test('v1 and v2 never request the remote Ko-fi leaderboard script', async ({ page }) => {
   let requestCount = 0;
   await page.route(KOFI_SCRIPT_URL, async (route) => {
     requestCount += 1;
@@ -110,19 +87,17 @@ test('v1 never requests the V2 Ko-fi leaderboard script', async ({ page }) => {
 
   await page.goto('.');
   await expect(page.getByRole('option', { name: /^GENERAL/ })).toBeVisible();
+  await page.goto('v2/');
+  await expect(page.locator('.topbar-supporter-strip')).toBeVisible();
   expect(requestCount).toBe(0);
 });
 
-test('v2 keeps the wide title row ordered and renders stubbed top supporters', async ({ page }) => {
+test('v2 keeps the wide title row ordered and renders static supporters with donation totals', async ({ page }) => {
   await page.setViewportSize({ width: 1460, height: 900 });
-  await routeKofiLeaderboardScript(page);
   await page.goto('v2/');
   await chooseRewriteTarget(page);
-  await expect(page.locator('#kofi-leaderboard-embed')).toBeHidden();
-  await expect(page.locator('#kofi-leaderboard-embed')).toHaveAttribute('data-leaderboard-id', 'X8X31HPU2G');
-  await expect(page.locator('#kofi-leaderboard-embed')).toHaveAttribute('data-leaderboard-name', "Hanturaya's Leaderboard");
-  await expect(page.locator('#kofi-leaderboard-embed')).toHaveAttribute('data-leaderboard-theme', 'none');
-  await expect(page.locator(`script[src="${KOFI_SCRIPT_URL}"]`)).toHaveCount(1);
+  await expect(page.locator('#kofi-leaderboard-embed')).toHaveCount(0);
+  await expect(page.locator(`script[src="${KOFI_SCRIPT_URL}"]`)).toHaveCount(0);
 
   const titleRow = page.locator('.panorama-title-row');
   await expect(titleRow.locator('.commit-version-link')).toBeVisible();
@@ -147,36 +122,40 @@ test('v2 keeps the wide title row ordered and renders stubbed top supporters', a
 
   const strip = page.locator('.topbar-supporter-strip');
   const window = strip.locator('.topbar-supporter-window');
-  await expect(window).toHaveAttribute(
-    'aria-label',
-    'Ko-fi top supporters: 1 Ada Lovelace, 2 Grace Hopper, 3 Katherine Johnson'
-  );
-  await expect(strip.locator('.topbar-supporter-loading')).toHaveCount(0);
+  await expect(window).toHaveAttribute('href', KOFI_LEADERBOARD_URL);
+  await expect(window).toHaveAttribute('aria-label', STATIC_SUPPORTER_LABEL);
   const track = strip.locator('.topbar-supporter-track');
   await expect(track).toHaveAttribute('aria-hidden', 'true');
   await expect(track.locator('.topbar-supporter-sequence')).toHaveCount(2);
   await expect(track.locator('.topbar-supporter-sequence').nth(1)).toHaveAttribute('aria-hidden', 'true');
-  await expect(track.locator('.topbar-supporter-item').first()).toContainText(/1\s*Ada Lovelace/);
-  const podiumItems = track.locator('.topbar-supporter-sequence').first().locator('.topbar-supporter-item');
+  const supporterItems = track.locator('.topbar-supporter-sequence').first().locator('.topbar-supporter-item');
+  await expect(supporterItems).toHaveCount(7);
+  expect(await supporterItems.allTextContents()).toEqual(STATIC_SUPPORTER_TEXT);
+  const firstItemClasses = await supporterItems.first().locator(':scope > *').evaluateAll((nodes) => (
+    nodes.map((node) => node.className)
+  ));
+  expect(firstItemClasses).toEqual([
+    'topbar-supporter-rank',
+    'topbar-supporter-name',
+    'topbar-supporter-amount'
+  ]);
   for (let index = 0; index < 3; index += 1) {
-    await expect(podiumItems.nth(index)).toHaveClass(new RegExp(`topbar-supporter-place-${index + 1}`));
+    await expect(supporterItems.nth(index)).toHaveClass(new RegExp(`topbar-supporter-place-${index + 1}`));
   }
-  const podiumShadows = await podiumItems.evaluateAll((items) => (
+  const podiumShadows = await supporterItems.evaluateAll((items) => (
     items.slice(0, 3).map((item) => getComputedStyle(item).textShadow)
   ));
   expect(new Set(podiumShadows).size).toBe(3);
   expect(podiumShadows.every((shadow) => shadow !== 'none')).toBe(true);
 
-
   await page.locator('#presetName').fill('Ticker survives rerender');
   await page.locator('#presetName').press('Tab');
   await expect(page.locator('#presetName')).toHaveValue('Ticker survives rerender');
-  await expect(window).toHaveAttribute('aria-label', /^Ko-fi top supporters:/);
+  await expect(window).toHaveAttribute('aria-label', STATIC_SUPPORTER_LABEL);
   await expect(track).toBeVisible();
 });
 
-test('v2 auto-scrolls a single supporter without playback controls', async ({ page }) => {
-  await routeKofiLeaderboardScript(page, 'single');
+test('v2 auto-scrolls the static supporter list without playback controls', async ({ page }) => {
   await page.goto('v2/');
   await chooseRewriteTarget(page);
 
@@ -185,28 +164,12 @@ test('v2 auto-scrolls a single supporter without playback controls', async ({ pa
   await expect(strip.locator('.topbar-supporter-pause')).toHaveCount(0);
   await expect(track).toHaveCSS('animation-name', 'topbar-supporter-scroll');
   await expect(track).toHaveCSS('animation-play-state', 'running');
-  expect(parseFloat(await track.evaluate((node) => getComputedStyle(node).animationDuration))).toBeLessThanOrEqual(4);
+  expect(parseFloat(await track.evaluate((node) => getComputedStyle(node).animationDuration))).toBeGreaterThan(4);
 });
 
-test('v2 shows the static Ko-fi fallback for empty, error, and timeout scripts', async ({ page }) => {
-  test.setTimeout(40_000);
-  for (const mode of ['empty', 'error', 'timeout']) {
-    await routeKofiLeaderboardScript(page, mode);
-    await page.goto('v2/');
-
-    const strip = page.locator('.topbar-supporter-strip');
-    const fallback = strip.getByRole('link', { name: 'View Ko-fi leaderboard' });
-    await expect(fallback).toBeVisible({ timeout: mode === 'timeout' ? 12_000 : 7_000 });
-    await expect(fallback).toHaveAttribute('href', KOFI_LEADERBOARD_URL);
-    await expect(strip).toHaveClass(/is-static/);
-    await expect(strip.locator('.topbar-supporter-track')).toHaveCount(0);
-    await page.unroute(KOFI_SCRIPT_URL);
-  }
-});
 
 test('v2 disables ticker motion and the duplicate sequence for reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await routeKofiLeaderboardScript(page);
   await page.goto('v2/');
   await chooseRewriteTarget(page);
 
@@ -218,7 +181,6 @@ test('v2 disables ticker motion and the duplicate sequence for reduced motion', 
 });
 
 test('v2 has no page horizontal overflow at supported header widths', async ({ page }) => {
-  await routeKofiLeaderboardScript(page, 'empty');
   for (const viewport of [
     { width: 1460, height: 900 },
     { width: 1133, height: 917 },
@@ -258,7 +220,6 @@ test('v2 shows the healthbar preview for both Rewrite targets and hides it on Pr
   await expect(rail).toHaveCount(0);
 });
 test('v2 settings navigation aligns with tall settings content', async ({ page }) => {
-  await routeKofiLeaderboardScript(page, 'empty');
   await page.setViewportSize({ width: 1460, height: 838 });
   await page.goto('v2/');
   await chooseRewriteTarget(page);

@@ -224,6 +224,11 @@
   white-space: nowrap;
 }
 
+.topbar-supporter-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 760;
+}
+
 .topbar-supporter-place-1 {
   color: #f2cf73;
   text-shadow: 0 0 7px rgb(242 207 115 / 45%);
@@ -239,41 +244,6 @@
   text-shadow: 0 0 7px rgb(213 154 120 / 42%);
 }
 
-.topbar-supporter-loading,
-.topbar-supporter-static {
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  min-width: 0;
-  color: var(--muted-foreground);
-  font-size: 0.72rem;
-  font-weight: 680;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.topbar-supporter-static {
-  display: none;
-  color: var(--accent-foreground);
-  text-decoration: none;
-}
-
-.topbar-supporter-static:hover {
-  color: var(--foreground);
-}
-
-
-
-.topbar-supporter-strip.is-static .topbar-supporter-track,
-.topbar-supporter-strip.is-static .topbar-supporter-loading {
-  display: none;
-}
-
-.topbar-supporter-strip.is-static .topbar-supporter-static {
-  display: inline-flex;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 
 .panorama-brand {

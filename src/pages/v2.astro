@@ -24,14 +24,6 @@ const gitCommitInfo = getGitCommitInfo();
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
-    <div
-      id="kofi-leaderboard-embed"
-      hidden
-      data-leaderboard-id="X8X31HPU2G"
-      data-leaderboard-name="Hanturaya's Leaderboard"
-      data-leaderboard-theme="none"
-    ></div>
-    <script is:inline defer src="https://cdn.ko-fi.tools/v2/js/leaderboard.js" onerror="document.getElementById('kofi-leaderboard-embed')?.setAttribute('data-leaderboard-status', 'error')"></script>
     <main id="main-content" class="shell">
       <PresetBuilderV2Island gitCommitInfo={gitCommitInfo} client:load />
     </main>
