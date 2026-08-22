@@ -1297,7 +1297,7 @@
 
 .schema-field-row {
   display: grid;
-  grid-template-columns: minmax(190px, 1fr) minmax(300px, 1.1fr);
+  grid-template-columns: minmax(170px, 1fr) minmax(0, 1.1fr);
   gap: 22px;
   align-items: center;
   min-height: 72px;
@@ -1403,7 +1403,7 @@
 
 .anita-slider-group {
   display: grid;
-  grid-template-columns: 132px minmax(120px, 1fr);
+  grid-template-columns: minmax(96px, 132px) minmax(72px, 1fr);
   gap: 12px;
   align-items: center;
   min-width: 0;
@@ -3133,6 +3133,10 @@
   align-items: center;
 }
 
+.healthbar-preview-team-switch {
+  grid-template-columns: auto repeat(3, minmax(0, 1fr));
+}
+
 .healthbar-preview-relation > span,
 .healthbar-preview-zoom > span {
   color: var(--muted-foreground);
@@ -3149,10 +3153,10 @@
 .healthbar-preview-pause-control button,
 .healthbar-preview-collapse {
   min-height: 32px;
-  padding: 0 9px;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--secondary);
+  white-space: nowrap;
   color: var(--muted-foreground);
   font-size: 0.68rem;
   font-weight: 760;
@@ -3490,6 +3494,25 @@
   align-items: center;
 }
 
+
+@media (max-width: 1240px) {
+  .schema-field-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .schema-field-control {
+    grid-template-columns: minmax(0, 1fr) 32px 32px;
+  }
+
+  .healthbar-preview-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .healthbar-preview-zoom {
+    grid-column: 1 / -1;
+  }
+}
 .healthbar-preview-stock.is-active {
   border-color: color-mix(in srgb, var(--warning-text) 70%, var(--border));
   background: var(--warning-bg);

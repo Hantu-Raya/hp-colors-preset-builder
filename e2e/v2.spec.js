@@ -112,7 +112,7 @@ test('v2 preview controls update output, support hold-to-stock, zoom, and reset'
   await expect(preview.locator('.healthbar-preview-status')).toHaveText('ALLY');
 
   await expect(canvas).toHaveAttribute('data-zoom', 'fit');
-  await preview.getByRole('radio', { name: '2x inspection' }).click();
+  await preview.getByRole('radio', { name: '2x zoom' }).click();
   await expect(canvas).toHaveAttribute('data-zoom', '2x');
   await expect(canvas).toHaveClass(/is-zoomed/);
 
@@ -195,6 +195,60 @@ test('v2 preview keeps high-health pip groups readable', async ({ page }) => {
     return element.getBoundingClientRect().width * percent / 100;
   });
   expect(minorStepPixels).toBeGreaterThanOrEqual(4);
+});
+
+test('v2 preview switches team colors when Use team color at high HP is enabled', async ({ page }) => {
+  await page.goto('v2/');
+  await clearPreviewStorage(page);
+  await chooseRewriteQollockTarget(page);
+
+  const teamSwitch = page.locator('.healthbar-preview-team-switch');
+  await expect(teamSwitch).toHaveCount(0);
+
+  await page.getByRole('option', { name: '02 ENEMY' }).click();
+  const teamToggle = page.getByRole('checkbox', { name: 'Use team color at high HP' });
+  await teamToggle.click();
+  await expect(teamToggle).toHaveAttribute('aria-checked', 'true');
+
+  await expect(teamSwitch).toBeVisible();
+  const fill = page.locator('.healthbar-preview-health-layer');
+  const defaultColor = await fill.evaluate((element) => getComputedStyle(element).backgroundColor);
+
+  await teamSwitch.getByRole('radio', { name: 'Team 1' }).click();
+  const team1Color = await fill.evaluate((element) => getComputedStyle(element).backgroundColor);
+  await teamSwitch.getByRole('radio', { name: 'Team 2' }).click();
+  const team2Color = await fill.evaluate((element) => getComputedStyle(element).backgroundColor);
+
+  expect(team1Color).not.toEqual(defaultColor);
+  expect(team2Color).not.toEqual(team1Color);
+
+  await teamSwitch.getByRole('radio', { name: 'Default' }).click();
+  const restoredColor = await fill.evaluate((element) => getComputedStyle(element).backgroundColor);
+  expect(restoredColor).toEqual(defaultColor);
+});
+
+test('v2 schema rows and preview actions hold together at narrow window sizes', async ({ page }) => {
+  await page.setViewportSize({ width: 1133, height: 917 });
+  await page.goto('v2/');
+  await clearPreviewStorage(page);
+  await chooseRewriteQollockTarget(page);
+
+  await page.getByRole('option', { name: '02 ENEMY' }).click();
+  const row = page.locator('.schema-field-row').filter({ hasText: 'Low HP starts at %' });
+  await row.scrollIntoViewIfNeeded();
+
+  const range = await row.locator('.anita-range').boundingBox();
+  const star = await row.locator('.field-condition-button').boundingBox();
+  expect(range).not.toBeNull();
+  expect(star).not.toBeNull();
+  expect(star.x).toBeGreaterThanOrEqual(range.x + range.width - 1);
+
+  const rowBox = await row.boundingBox();
+  expect(star.x + star.width).toBeLessThanOrEqual(rowBox.x + rowBox.width + 1);
+
+  const zoomRadio = await page.getByRole('radio', { name: '2x zoom' }).boundingBox();
+  expect(zoomRadio).not.toBeNull();
+  expect(zoomRadio.height).toBeLessThanOrEqual(36);
 });
 
 test('v2 preview keeps scenario and mobile collapse in session storage across reload', async ({ page }) => {

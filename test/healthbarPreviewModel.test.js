@@ -413,6 +413,30 @@ test("pip geometry preserves stock groups without collapsing below four pixels",
   assert.ok((dense.minorStepPercent / 100) * 126 >= 4);
 });
 
+test("team colors override the high HP bucket only for team1 and team2 scenarios", () => {
+  const team1 = createHealthbarPreviewModel(
+    state({ hp_pulse_enabled: false, hp_team_colors: true }),
+    scenario({ healthPercent: 95, team: "team1" })
+  );
+  const team2 = createHealthbarPreviewModel(
+    state({ hp_pulse_enabled: false, hp_team_colors: true }),
+    scenario({ healthPercent: 95, team: "team2" })
+  );
+  const toggleOff = createHealthbarPreviewModel(
+    state({ hp_pulse_enabled: false }),
+    scenario({ healthPercent: 95, team: "team1" })
+  );
+  const nonTeam = createHealthbarPreviewModel(
+    state({ hp_pulse_enabled: false, hp_team_colors: true }),
+    scenario({ healthPercent: 95 })
+  );
+
+  assert.equal(team1.bar.color, "#e7b659");
+  assert.equal(team1.readout.color, "#e7b659");
+  assert.equal(team2.bar.color, "#5b79e6");
+  assert.equal(toggleOff.bar.color, nonTeam.bar.color);
+});
+
 test("healing, damage, bullet shield, and tech shield remain independent layers", () => {
   const model = createHealthbarPreviewModel(state({ hp_pulse_enabled: false }), scenario({
     maxHealth: 2000,

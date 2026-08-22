@@ -102,7 +102,7 @@ test("v2 preview renders only on Rewrite settings pages and keeps state outside 
   assert.match(preview, /Show stock/);
   assert.match(preview, /onPointerDown=\{onPress\}/);
   assert.match(preview, /onKeyDown=\{handleKeyDown\}/);
-  assert.match(preview, /2x inspection/);
+  assert.match(preview, /2x zoom/);
   assert.match(preview, /healthbar-preview-scenario/);
   assert.match(preview, /animationPaused/);
   assert.match(preview, /Reset/);
@@ -129,8 +129,15 @@ test("v2 preview maps each texture role and explicit geometry once", async () =>
   assert.doesNotMatch(preview, /scaleX|barScale|widthScalePercent/);
   assert.match(css, /\.healthbar-preview-missing-layer[\s\S]*right:\s*0;[\s\S]*left:\s*auto;/);
   assert.match(css, /\.healthbar-preview-pips[\s\S]*rgba\(5,\s*8,\s*8,[\s\S]*left top[\s\S]*--healthbar-minor-pip-step\)\s*45%[\s\S]*--healthbar-major-pip-step\)\s*100%/);
+  assert.match(css, /\.schema-field-row\s*\{[^}]*grid-template-columns:\s*minmax\(170px,\s*1fr\)\s*minmax\(0,\s*1\.1fr\)/);
+  assert.match(css, /\.anita-slider-group\s*\{[^}]*grid-template-columns:\s*minmax\(96px,\s*132px\)\s*minmax\(72px,\s*1fr\)/);
+  assert.match(css, /@media \(max-width:\s*1240px\)\s*\{[\s\S]*?\.schema-field-row\s*\{[^}]*grid-template-columns:\s*1fr/);
+  assert.match(css, /@media \(max-width:\s*1240px\)\s*\{[\s\S]*?\.healthbar-preview-actions\s*\{[^}]*1fr 1fr/);
+  assert.match(css, /\.healthbar-preview-relation button,[\s\S]*?white-space:\s*nowrap;/);
   assert.match(css, /\.healthbar-preview-health-layer img[\s\S]*mix-blend-mode:\s*multiply;[\s\S]*opacity:\s*0\.48;/);
   assert.doesNotMatch(css, /\.healthbar-preview-ult-ready\s*\{[^}]*filter:/);
+  assert.match(preview, /hp_team_colors[\s\S]*healthbar-preview-team-switch/);
+  assert.match(css, /\.healthbar-preview-team-switch\s*\{[^}]*grid-template-columns:\s*auto repeat\(3/);
   assert.match(css, /\.healthbar-preview-unit-info[\s\S]*transform:\s*translateX\(30%\)/);
   assert.match(css, /\.healthbar-preview-level[\s\S]*z-index:\s*6;[\s\S]*transform:\s*translateX\(-70%\)/);
   assert.match(css, /\.healthbar-preview-unit-info[\s\S]*z-index:\s*9;/);
