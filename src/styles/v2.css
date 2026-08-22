@@ -170,7 +170,7 @@
   align-items: center;
   flex: 1 1 auto;
   gap: 8px;
-  min-width: 0;
+  min-width: 180px;
 }
 
 .topbar-supporter-label {
@@ -2910,6 +2910,7 @@
 
   .topbar-supporter-strip {
     grid-area: ticker;
+    min-width: 0;
   }
 
   .topbar-supporter-label {

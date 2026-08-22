@@ -77,7 +77,7 @@ test("v2.css gives healthbar preview its own rail and mobile-first ordering", as
 test("v2.css keeps the supporter ticker clipped, pausable, static-safe, and mobile-safe", async () => {
   const css = await readStylesheet("v2.css");
 
-  assert.match(css, /\.topbar-supporter-strip\s*\{[^}]*display:\s*flex;[^}]*min-width:\s*0;/);
+  assert.match(css, /\.topbar-supporter-strip\s*\{[^}]*display:\s*flex;[^}]*min-width:\s*180px;/);
   assert.match(css, /\.topbar-supporter-window\s*\{[^}]*min-width:\s*0;[^}]*overflow:\s*hidden;[^}]*border-inline:\s*1px/);
   assert.match(css, /\.topbar-supporter-track\s*\{[^}]*animation:\s*topbar-supporter-scroll var\(--topbar-supporter-duration,\s*18s\) linear infinite;/);
   assert.match(css, /@keyframes\s+topbar-supporter-scroll[\s\S]*translate3d\(0,\s*0,\s*0\)[\s\S]*translate3d\(-50%,\s*0,\s*0\)/);
@@ -94,6 +94,6 @@ test("v2.css keeps the supporter ticker clipped, pausable, static-safe, and mobi
   assert.match(mobileCss, /\.panorama-title-row\s*\{[\s\S]*grid-template-areas:\s*"title commit"\s*"ticker actions";/);
   assert.match(mobileCss, /\.panorama-brand\s*\{[^}]*grid-area:\s*title;/);
   assert.match(mobileCss, /\.commit-version-link\s*\{[^}]*grid-area:\s*commit;/);
-  assert.match(mobileCss, /\.topbar-supporter-strip\s*\{[^}]*grid-area:\s*ticker;/);
+  assert.match(mobileCss, /\.topbar-supporter-strip\s*\{[^}]*grid-area:\s*ticker;[^}]*min-width:\s*0;/);
   assert.match(mobileCss, /\.topbar-support-actions\s*\{[^}]*grid-area:\s*actions;/);
 });
