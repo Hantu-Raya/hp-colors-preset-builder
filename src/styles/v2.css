@@ -199,7 +199,7 @@
   display: flex;
   flex: 0 0 auto;
   min-width: max-content;
-  animation: topbar-supporter-scroll var(--topbar-supporter-duration, 18s) linear infinite;
+  animation: topbar-supporter-scroll var(--topbar-supporter-duration, 4s) linear infinite;
   will-change: transform;
 }
 
@@ -247,40 +247,10 @@
   color: var(--foreground);
 }
 
-.topbar-supporter-pause {
-  display: inline-grid;
-  flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
-  place-items: center;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--muted-foreground);
-  cursor: pointer;
-}
 
-.topbar-supporter-pause:hover {
-  border-color: var(--ring);
-  background: var(--accent);
-  color: var(--foreground);
-}
-
-.topbar-supporter-pause svg {
-  width: 13px;
-  height: 13px;
-}
-
-.topbar-supporter-strip:hover .topbar-supporter-track,
-.topbar-supporter-strip:focus-within .topbar-supporter-track,
-.topbar-supporter-strip.is-paused .topbar-supporter-track {
-  animation-play-state: paused;
-}
 
 .topbar-supporter-strip.is-static .topbar-supporter-track,
-.topbar-supporter-strip.is-static .topbar-supporter-loading,
-.topbar-supporter-strip.is-static .topbar-supporter-pause {
+.topbar-supporter-strip.is-static .topbar-supporter-loading {
   display: none;
 }
 

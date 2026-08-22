@@ -20,9 +20,10 @@ const KOFI_SUPPORTERS = [
 
 function createKofiStubBody(mode) {
   if (mode === 'timeout') return 'window.__kofiStubLoaded = true;';
+  const supporters = mode === 'single' ? KOFI_SUPPORTERS.slice(0, 1) : KOFI_SUPPORTERS;
   const markup = mode === 'empty'
     ? '<div class="kofi-leaderboard-item"></div>'
-    : KOFI_SUPPORTERS.map(({ rank, name }) => (
+    : supporters.map(({ rank, name }) => (
       `<div class="kofi-leaderboard-item"><span class="kofi-leaderboard-supporter-order">${rank}</span><span class="kofi-leaderboard-supporter-name">${name}</span></div>`
     )).join('');
   return `(() => {
@@ -150,25 +151,25 @@ test('v2 keeps the wide title row ordered and renders stubbed top supporters', a
   await expect(track.locator('.topbar-supporter-sequence').nth(1)).toHaveAttribute('aria-hidden', 'true');
   await expect(track.locator('.topbar-supporter-item').first()).toContainText(/1\s*Ada Lovelace/);
 
-  const pause = strip.locator('.topbar-supporter-pause');
-  await pause.click();
-  await expect(strip).toHaveClass(/is-paused/);
-  await expect(pause).toHaveAttribute('aria-label', 'Resume supporter ticker');
-  await pause.click();
-  await expect(pause).toHaveAttribute('aria-label', 'Pause supporter ticker');
 
   await page.locator('#presetName').fill('Ticker survives rerender');
   await page.locator('#presetName').press('Tab');
   await expect(page.locator('#presetName')).toHaveValue('Ticker survives rerender');
   await expect(window).toHaveAttribute('aria-label', /^Ko-fi top supporters:/);
   await expect(track).toBeVisible();
+});
 
-  await page.evaluate(() => {
-    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
-    document.dispatchEvent(new Event('visibilitychange'));
-  });
-  await expect(strip).toHaveClass(/is-paused/);
-  await expect(strip.getByRole('button', { name: 'Resume supporter ticker' })).toBeVisible();
+test('v2 auto-scrolls a single supporter without playback controls', async ({ page }) => {
+  await routeKofiLeaderboardScript(page, 'single');
+  await page.goto('v2/');
+  await chooseRewriteTarget(page);
+
+  const strip = page.locator('.topbar-supporter-strip');
+  const track = strip.locator('.topbar-supporter-track');
+  await expect(strip.locator('.topbar-supporter-pause')).toHaveCount(0);
+  await expect(track).toHaveCSS('animation-name', 'topbar-supporter-scroll');
+  await expect(track).toHaveCSS('animation-play-state', 'running');
+  expect(parseFloat(await track.evaluate((node) => getComputedStyle(node).animationDuration))).toBeLessThanOrEqual(4);
 });
 
 test('v2 shows the static Ko-fi fallback for empty, error, and timeout scripts', async ({ page }) => {
@@ -195,10 +196,9 @@ test('v2 disables ticker motion and the duplicate sequence for reduced motion', 
 
   const strip = page.locator('.topbar-supporter-strip');
   const track = strip.locator('.topbar-supporter-track');
-  await expect(strip).toHaveClass(/is-paused/);
+  await expect(strip.locator('.topbar-supporter-pause')).toHaveCount(0);
   await expect(track).toHaveCSS('animation-name', 'none');
   await expect(track.locator('.topbar-supporter-sequence').nth(1)).toBeHidden();
-  await expect(strip.getByRole('button', { name: 'Resume supporter ticker' })).toBeVisible();
 });
 
 test('v2 has no page horizontal overflow at supported header widths', async ({ page }) => {

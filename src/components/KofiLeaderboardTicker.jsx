@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { Pause, Play } from 'lucide-preact';
 
 const KOFI_LEADERBOARD_URL = 'https://ko-fi.com/hantuaraya/leaderboard';
 const KOFI_LOAD_TIMEOUT_MS = 8000;
 const SUPPORTER_SPEED_PX_PER_SECOND = 36;
-const MIN_ANIMATION_SECONDS = 18;
+const MIN_ANIMATION_SECONDS = 4;
 
 function cleanText(value) {
   return String(value || '').trim().replace(/\s+/g, ' ');
@@ -38,9 +37,6 @@ export default function KofiLeaderboardTicker() {
   const [entries, setEntries] = useState([]);
   const [status, setStatus] = useState('loading');
   const [duration, setDuration] = useState(MIN_ANIMATION_SECONDS);
-  const [userPaused, setUserPaused] = useState(false);
-  const [documentHidden, setDocumentHidden] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
   const sequenceRef = useRef(null);
 
   useEffect(() => {
@@ -101,28 +97,6 @@ export default function KofiLeaderboardTicker() {
     };
   }, []);
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return undefined;
-
-    const updateDocumentVisibility = () => setDocumentHidden(document.hidden);
-    updateDocumentVisibility();
-    document.addEventListener('visibilitychange', updateDocumentVisibility);
-    return () => document.removeEventListener('visibilitychange', updateDocumentVisibility);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
-
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const updateReducedMotion = () => setReducedMotion(mediaQuery.matches);
-    updateReducedMotion();
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', updateReducedMotion);
-      return () => mediaQuery.removeEventListener('change', updateReducedMotion);
-    }
-    mediaQuery.addListener?.(updateReducedMotion);
-    return () => mediaQuery.removeListener?.(updateReducedMotion);
-  }, []);
 
   useEffect(() => {
     if (status !== 'populated' || typeof window === 'undefined') return undefined;
@@ -144,12 +118,9 @@ export default function KofiLeaderboardTicker() {
     return () => window.removeEventListener('resize', measureSequence);
   }, [entries, status]);
 
-  const isPaused = userPaused || documentHidden || reducedMotion;
-  const className = [
-    'topbar-supporter-strip',
-    isPaused ? 'is-paused' : '',
-    status === 'static' ? 'is-static' : ''
-  ].filter(Boolean).join(' ');
+  const className = status === 'static'
+    ? 'topbar-supporter-strip is-static'
+    : 'topbar-supporter-strip';
   const accessibleLabel = entries.length
     ? `Ko-fi top supporters: ${entries.map(({ rank, name }) => `${rank} ${name}`).join(', ')}`
     : undefined;
@@ -177,16 +148,6 @@ export default function KofiLeaderboardTicker() {
           </div>
         ) : null}
       </a>
-      <button
-        type="button"
-        className="topbar-supporter-pause"
-        aria-label={isPaused ? 'Resume supporter ticker' : 'Pause supporter ticker'}
-        aria-pressed={isPaused}
-        disabled={status !== 'populated'}
-        onClick={() => setUserPaused((current) => !current)}
-      >
-        {isPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
-      </button>
     </div>
   );
 }
