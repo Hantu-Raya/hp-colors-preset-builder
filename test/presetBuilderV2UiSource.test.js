@@ -61,7 +61,9 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
   assert.match(supportersData, /MAX_SUPPORTERS = 10/);
   assert.match(supportersCsv, /^rank,display_name,total_usd/m);
   assert.match(supportersCsv, /Ko-fi Supporter/);
-  assert.match(stripStyles, /animation:\s*supporter-strip-scroll 24s linear infinite/);
+  assert.match(stripStyles, /animation:\s*supporter-strip-scroll 27s linear infinite/);
+  assert.match(stripStyles, /88\.8889%[\s\S]*100%/);
+  assert.match(stripStyles, /"VALVEOracle", "Reaver", "Radiance"/);
 
   for (const marker of [
     "topbar-supporter-strip",

@@ -103,18 +103,55 @@ test('supporter strip is static, passive, and uses the reviewed rows', async ({ 
 
   const strip = page.locator('.supporter-strip');
   const track = strip.locator('.supporter-strip-track');
-  const sequences = track.locator('.supporter-strip-sequence');
+  const sequence = track.locator('.supporter-strip-sequence');
+  const thanks = track.locator('.supporter-strip-thanks');
   await expect(strip).toBeVisible();
-  await expect(sequences).toHaveCount(2);
-  await expect(sequences.first().locator('.supporter-strip-item')).toHaveCount(7);
-  expect(await sequences.first().locator('.supporter-strip-item').allTextContents()).toEqual(STATIC_SUPPORTER_TEXT);
+  await expect(sequence.locator('.supporter-strip-item')).toHaveCount(7);
+  expect(await sequence.locator('.supporter-strip-item').allTextContents()).toEqual(STATIC_SUPPORTER_TEXT);
+  await expect(thanks).toHaveCount(1);
+  await expect(thanks).toContainText('HP COLORS COMMUNITY');
+  await expect(thanks).toContainText('Thank you for supporting my work');
+  await expect(thanks.locator('.supporter-strip-thanks-copy')).toHaveCSS(
+    'font-family',
+    /VALVEOracle/,
+  );
   await expect(track).toHaveCSS('animation-name', 'supporter-strip-scroll');
-  await expect(track).toHaveCSS('animation-duration', '24s');
+  await expect(track).toHaveCSS('animation-duration', '27s');
   await expect(strip).toHaveCSS('background-color', 'rgb(25, 30, 23)');
   await expect(strip).toHaveCSS(
     'background-image',
     /supporters-strip-header(?:\.[^"/)]+)?\.png/,
   );
+  const hold = await track.evaluate((element) => {
+    const [animation] = element.getAnimations();
+    const keyframes = animation.effect.getKeyframes();
+    const holdOffset = keyframes.at(-2).offset;
+    const duration = animation.effect.getTiming().duration;
+    animation.pause();
+    animation.currentTime = duration * holdOffset;
+    const startTransform = getComputedStyle(element).transform;
+    animation.currentTime = duration - 1;
+    const endTransform = getComputedStyle(element).transform;
+    animation.currentTime = 25_000;
+    return {
+      duration,
+      holdDuration: duration * (1 - holdOffset),
+      startTransform,
+      endTransform
+    };
+  });
+  expect(hold.duration).toBe(27_000);
+  expect(hold.holdDuration).toBeCloseTo(3_000, 2);
+  expect(hold.endTransform).toBe(hold.startTransform);
+  await expect(thanks).toBeInViewport({ ratio: 0.99 });
+  const [stripBox, thanksBox] = await Promise.all([strip.boundingBox(), thanks.boundingBox()]);
+  expect(stripBox).not.toBeNull();
+  expect(thanksBox).not.toBeNull();
+  expect(Math.abs(thanksBox.x - stripBox.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(thanksBox.width - stripBox.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(
+    thanksBox.y + thanksBox.height / 2 - (stripBox.y + stripBox.height / 2),
+  )).toBeLessThanOrEqual(1);
   await expect(page.locator('a, button, input, form')).toHaveCount(0);
   expect(externalRequests).toEqual([]);
 });
