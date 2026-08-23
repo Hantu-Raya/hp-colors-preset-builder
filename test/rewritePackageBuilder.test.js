@@ -143,6 +143,7 @@ test("showranks package merges the ShowRank escape-menu hooks and round-trips HP
       `<CitadelHudEscapeMenu onload="$.HPColorsMenuBoot(); if ($.ShowRankBarebonesEscapeOpen) $.ShowRankBarebonesEscapeOpen();" oncancel="${ESCAPE_FALLBACK_XML}" onmouseover="if ($.ShowRankBarebonesEscapeOpen) $.ShowRankBarebonesEscapeOpen();" onmouseout="if ($.ShowRankBarebonesEscapeOut) $.ShowRankBarebonesEscapeOut();">`
     )
   );
+  assert.match(built.sourceText, /id="HPColorsReadoutMaxTeamColorToggle"/);
   const inspected = inspectRewriteShowranksPresetTemplate(built.sourceText, { requireEmpty: false });
   assert.deepEqual(inspected.scriptIncludes, [
     "s2r://panorama/scripts/hp_colors_contract.vjs_c",
