@@ -269,6 +269,7 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
 
   const readoutFormat = enumValue(state, "hp_counter_format", ["hp", "percent", "current"], "hp");
   const readoutEnabled = !stock && globalEnabled && enemyRole && !excluded && !!state.hp_counter_visible;
+  const readoutHasMaximum = readoutEnabled && readoutFormat === "hp" && readoutMaximum > 0;
   const readoutText = readoutEnabled
     ? readoutFormat === "percent"
       ? `${sampledPercent}%`
@@ -276,8 +277,9 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
         ? ""
         : readoutFormat === "current"
           ? String(readoutCurrent)
-          : `${readoutCurrent} / ${readoutMaximum}`
+          : `${readoutCurrent} / `
     : "";
+  const readoutMaxText = readoutHasMaximum ? String(readoutMaximum) : "";
   const readoutColorMode = enumValue(state, "hp_text_color_mode", ["bar", "custom"], "bar");
   const readoutMode = readoutColorMode === "custom"
     ? enumValue(state, "hp_readout_mode", ["fixed", "gradient"], "fixed")
@@ -288,6 +290,13 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
   const readoutColor = readoutEnabled && readoutText
     ? thresholdColor(sampledPercent, readoutLow, readoutMid, readoutHigh, readoutMode, lowThreshold, highThreshold)
     : "";
+  const readoutMaxColor = readoutMaxText && !!state.hp_readout_max_team_color
+    ? team === "team1"
+      ? STOCK.team1
+      : team === "team2"
+        ? STOCK.team2
+        : readoutColor
+    : readoutColor;
   const readoutFont = enumValue(state, "hp_readout_font", ["default", "oracle", "pulp"], "default");
   const readoutModifiers = pulseActive && enemyRole && !!state.hp_pulse_readout_modifiers && readoutEnabled;
   const readoutSize = readoutModifiers ? state.hp_pulse_text_scale : state.hp_counter_size;
@@ -408,6 +417,8 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
       visible: !!readoutText,
       text: readoutText,
       color: readoutColor,
+      maxText: readoutMaxText,
+      maxColor: readoutMaxColor,
       fontFamily: FONT_FAMILIES[readoutFont],
       fontSize: readoutText ? readoutSize : 0,
       offsetX: readoutText ? readoutOffsetX : 0,

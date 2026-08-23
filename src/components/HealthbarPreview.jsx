@@ -387,7 +387,21 @@ function HealthbarPreview({ profileState = null, conversionRequired = false, pro
                   '--healthbar-offset-y': `${barOffsetY}px`
                 }}
               >
-                {readout.visible ? <span className="healthbar-preview-readout" style={{ color: readout.color || undefined, fontFamily: readout.fontFamily || undefined, fontSize: readoutFontSize ? `${readoutFontSize}px` : undefined, transform: `translate(${readoutOffsetX}px, ${readoutOffsetY}px)` }}>{readout.text || `${amountForPercent(healthPercent, modelScenario.maxHealth)} / ${formatNumber(modelScenario.maxHealth)} HP`}</span> : null}
+                {readout.visible ? (
+                  <span
+                    className="healthbar-preview-readout"
+                    style={{
+                      fontFamily: readout.fontFamily || undefined,
+                      fontSize: readoutFontSize ? `${readoutFontSize}px` : undefined,
+                      transform: `translate(${readoutOffsetX}px, ${readoutOffsetY}px)`
+                    }}
+                  >
+                    <span style={{ color: readout.color || undefined }}>
+                      {readout.text || `${amountForPercent(healthPercent, modelScenario.maxHealth)} / ${formatNumber(modelScenario.maxHealth)} HP`}
+                    </span>
+                    {readout.maxText ? <span style={{ color: readout.maxColor || undefined }}>{readout.maxText}</span> : null}
+                  </span>
+                ) : null}
                 {level.visible !== false ? <span className={`healthbar-preview-level ${level.className || ''}`} style={{ color: level.color || undefined }}>{level.value ?? modelScenario.level}</span> : null}
                 <span className="healthbar-preview-unit-info" aria-label="Stock unit information and ultimate-ready indicator">
                   <img className="healthbar-preview-unit-info-bg" src={PREVIEW_ASSETS.unitInfo} alt="" aria-hidden="true" />

@@ -344,7 +344,8 @@ const REWRITE_BINDING_DATA = [
   ["enemyKillMarkerColor", "hp_kill_zone_color", "colorpicker", "Marker color", "ENEMY|KILL MARKER", "#FF2222"],
   ["excludeGhouls", "hp_exclude_ghouls", "toggle", "Exclude ghoul colors", "ENEMY|BAR", false],
   ["ghoulOpacityEnabled", "hp_ghoul_opacity_enabled", "toggle", "Use custom ghoul opacity", "ENEMY|BAR", false],
-  ["ghoulOpacity", "hp_ghoul_opacity", "slider", "Ghoul HUD opacity", "ENEMY|BAR", 100, { min: 0, max: 100, step: 1 }]
+  ["ghoulOpacity", "hp_ghoul_opacity", "slider", "Ghoul HUD opacity", "ENEMY|BAR", 100, { min: 0, max: 100, step: 1 }],
+  ["readoutMaxTeamColor", "hp_readout_max_team_color", "toggle", "Team color max HP", "HEALTH INFO|HP TEXT", false]
 ];
 
 function freezeRewriteBinding(data) {

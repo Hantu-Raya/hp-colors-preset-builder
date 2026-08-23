@@ -201,7 +201,8 @@ const MENU_DEFINITION = Object.freeze([
           "readoutMode",
           "readoutLow",
           "readoutMid",
-          "readoutHigh"
+          "readoutHigh",
+          "readoutMaxTeamColor"
         ]
       },
       {

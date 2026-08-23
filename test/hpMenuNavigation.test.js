@@ -38,9 +38,9 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
     "hp_pulse_text_position"
   ];
 
-  assert.equal(fields.length, 70);
-  assert.equal(new Set(fields.map((field) => field.id)).size, 70);
-  assert.equal(new Set(canonicalKeys).size, 70);
+  assert.equal(fields.length, 71);
+  assert.equal(new Set(fields.map((field) => field.id)).size, 71);
+  assert.equal(new Set(canonicalKeys).size, 71);
   assert.deepEqual(canonicalKeys.sort(), REWRITE_FIELD_CATALOG.bindings.map((binding) => binding.canonicalKey).sort());
   assert.equal(fields.some((field) => forbiddenIds.includes(field.id)), false);
   assert.equal(fields.some((field) => field.canonicalKey === "precisePipsEnabled" && field.conditionEligible === false), true);
@@ -57,6 +57,7 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
   assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "ghoulOpacity"), true);
   assert.equal(healthText.fields.some((field) => field.canonicalKey === "lowThreshold"), false);
   assert.equal(healthText.fields.some((field) => field.canonicalKey === "highThreshold"), false);
+  assert.equal(healthText.fields.some((field) => field.canonicalKey === "readoutMaxTeamColor"), true);
 });
 
 test("reset boundaries keep pulse and kill-marker settings on separate pages", () => {

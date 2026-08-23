@@ -47,6 +47,7 @@ test("Rewrite QOLLOCK template mirrors the composite include and panel contract"
     templateText,
     /<CitadelHTMLPanel id="HPColorsSupporterTicker"[^>]*hittest="false"[^>]*acceptsfocus="false"/
   );
+  assert.match(templateText, /id="HPColorsReadoutMaxTeamColorToggle"/);
   for (const id of ["newgame", "watchgame", "guides"]) {
     assert.match(templateText, new RegExp(`id="${id}"`), id);
   }

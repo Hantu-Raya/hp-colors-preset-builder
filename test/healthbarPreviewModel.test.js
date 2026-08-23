@@ -253,14 +253,37 @@ test("readout formats current HP, percent, color, font, and shield-adjusted maxi
   const baseScenario = scenario({ healthPercent: 72, maxHealth: 1000, bulletShieldPercent: 18, techShieldPercent: 6 });
   const hp = createHealthbarPreviewModel(profile, baseScenario);
 
-  assert.equal(hp.readout.text, "720 / 760");
+  assert.equal(hp.readout.text, "720 / ");
+  assert.equal(hp.readout.maxText, "760");
   assert.equal(hp.readout.color, "#333333");
+  assert.equal(hp.readout.maxColor, "#333333");
   assert.equal(hp.readout.fontFamily, "VALVEOracle, Reaver, sans-serif");
   assert.equal(hp.readout.fontSize, 180);
   assert.deepEqual({ x: hp.readout.offsetX, y: hp.readout.offsetY }, { x: 31, y: 420 });
 
   assert.equal(createHealthbarPreviewModel({ ...profile, hp_counter_format: 1 }, baseScenario).readout.text, "94%");
   assert.equal(createHealthbarPreviewModel({ ...profile, hp_counter_format: 2 }, baseScenario).readout.text, "720");
+});
+
+test("maximum HP preview uses team color without recoloring current HP", () => {
+  const model = createHealthbarPreviewModel(
+    state({
+      hp_counter_format: 0,
+      hp_readout_max_team_color: true,
+      hp_text_color_mode: 1,
+      hp_readout_mode: 0,
+      hp_text_color_low: "#111111",
+      hp_text_color_mid: "#222222",
+      hp_text_color_high: "#333333",
+      hp_pulse_enabled: false
+    }),
+    scenario({ healthPercent: 50, team: "team2" })
+  );
+
+  assert.equal(model.readout.text, "500 / ");
+  assert.equal(model.readout.maxText, "760");
+  assert.equal(model.readout.color, "#222222");
+  assert.equal(model.readout.maxColor, "#5B79E6");
 });
 
 test("bar-sourced readout color follows the active bar gradient mode", () => {

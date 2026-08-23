@@ -72,6 +72,7 @@ test("rewrite template keeps the native menu entry and shared threshold ownershi
   assert.doesNotMatch(templateText, /HPColorsMenuAccent|HPColorsMenuSwatch|HPColorsMenuBinding/);
   assert.match(templateText, /id="HPColorsSharedLowThresholdSliderHost"/);
   assert.match(templateText, /id="HPColorsSharedHighThresholdSliderHost"/);
+  assert.match(templateText, /id="HPColorsReadoutMaxTeamColorToggle"/);
   assert.doesNotMatch(templateText, /id="HPColorsLowThresholdSliderHost"|id="HPColorsHighThresholdSliderHost"/);
 });
 
