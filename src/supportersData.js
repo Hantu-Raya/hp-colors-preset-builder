@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-export const SUPPORTERS_CSV_PATH = resolve(process.cwd(), 'public/data/supporters.csv');
+const SUPPORTERS_CSV_PATH = resolve(process.cwd(), 'public/data/supporters.csv');
 
 const EXPECTED_HEADER = ['rank', 'display_name', 'total_usd'];
 const MAX_SUPPORTERS = 10;

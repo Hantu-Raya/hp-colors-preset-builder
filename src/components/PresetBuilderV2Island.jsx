@@ -1457,7 +1457,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
 
       <footer className="page-footer" aria-label="Project notices">
         <p>
-          Unofficial fan-made tool. Not affiliated with Valve. Runs locally; preset files stay local while supporter names load from Ko-fi Tools. Built by
+          Unofficial fan-made tool. Not affiliated with Valve. Preset files stay local. The page includes reviewed public supporter aliases from this repository. Built by
           {' '}
           <a href="https://github.com/Hantu-Raya" target="_blank" rel="noreferrer">Hantu-Raya</a>.
           {' '}

@@ -73,14 +73,15 @@ Use a current Chromium (Chrome or Edge), Firefox, or Safari release on desktop o
 
 ## Supporter ticker maintenance
 
-V2 uses a manually maintained supporter list instead of loading the remote Ko-fi leaderboard script. Update `SUPPORTERS` in `src/components/KofiLeaderboardTicker.jsx` when a new donation arrives:
+V2 and the in-game Rewrite strip use `public/data/supporters.csv`. Astro validates the file during the build and embeds the same rows in both pages. Neither page fetches Ko-fi or the CSV in the browser.
 
-1. Copy only the public supporter name and total donation from the Ko-fi supporters CSV.
-2. Keep totals as numeric USD values; the ticker formats them as `$100`, `$20`, and so on.
-3. Sort entries by total donated from highest to lowest. Keep the newest supporter first when totals match.
-4. Never commit email addresses, transaction IDs, or other private CSV fields.
+1. Keep the exact `rank,display_name,total_usd` header.
+2. Use contiguous ranks starting at 1, with no more than 10 rows.
+3. Use approved public aliases only. Email addresses and private transaction fields are forbidden. Duplicate public labels are allowed.
+4. Use positive USD totals with at most two decimal places, sorted from highest to lowest. The explicit rank controls ties.
+5. Run `npm test` and `npm run build` before publishing.
 
-The ticker displays each total immediately after the supporter name and links to the public Ko-fi leaderboard.
+The V2 ticker links to the public Ko-fi leaderboard. The in-game strip has no links or input handling.
 
 ## Run locally
 
