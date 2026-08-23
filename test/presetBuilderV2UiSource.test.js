@@ -67,11 +67,14 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
   assert.match(supportersData, /MAX_SUPPORTERS = 10/);
   assert.match(supportersCsv, /^rank,display_name,total_usd/m);
   assert.match(supportersCsv, /Ko-fi Supporter/);
-  assert.match(stripStyles, /animation:\s*supporter-strip-scroll 30s linear 1 forwards/);
-  assert.match(stripStyles, /80%[\s\S]*90%[\s\S]*100%/);
+  assert.match(stripStyles, /animation:\s*supporter-strip-scroll 32s linear 1 forwards/);
+  assert.match(stripStyles, /6\.25%[\s\S]*75%[\s\S]*84\.375%[\s\S]*100%/);
+  assert.match(stripStyles, /supporter-strip-cycle-gap[\s\S]*96px/);
   assert.match(stripStyles, /translate3d\(-50%, 0, 0\)/);
   assert.match(stripLoop, /animationend/);
-  assert.match(stripLoop, /CYCLE_MS = 30000/);
+  assert.match(stripLoop, /CYCLE_MS = 32000/);
+  assert.match(stripPage, />Thank you for supporting</);
+  assert.doesNotMatch(stripPage, /Thank you for supporting my work/);
   assert.match(stripStyles, /"VALVEOracle", "Reaver", "Radiance"/);
   assert.doesNotMatch(stripPage, /HP COLORS COMMUNITY/);
   assert.doesNotMatch(stripStyles, /prefers-reduced-motion/);

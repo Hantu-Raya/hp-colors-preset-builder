@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const CYCLE_MS = 30000;
+  const CYCLE_MS = 32000;
   const RESTART_GRACE_MS = 250;
   const track = document.querySelector(".supporter-strip-track");
   if (!track) return;

@@ -36,7 +36,7 @@ body {
 }
 
 .supporter-strip-track-running {
-  animation: supporter-strip-scroll 30s linear 1 forwards;
+  animation: supporter-strip-scroll 32s linear 1 forwards;
 }
 
 .supporter-strip-cycle {
@@ -45,6 +45,12 @@ body {
   align-items: center;
   height: 100%;
 }
+.supporter-strip-cycle-gap {
+  flex: 0 0 96px;
+  width: 96px;
+  height: 100%;
+}
+
 
 .supporter-strip-sequence {
   display: flex;
@@ -127,16 +133,17 @@ body {
 }
 
 @keyframes supporter-strip-scroll {
-  0% {
+  0%,
+  6.25% {
     transform: translate3d(0, 0, 0);
   }
 
-  80% {
-    transform: translate3d(calc(-50% + 100vw), 0, 0);
+  75% {
+    transform: translate3d(calc(-50% + 100vw + 96px), 0, 0);
   }
 
-  90% {
-    transform: translate3d(calc(-50% + 100vw), 0, 0);
+  84.375% {
+    transform: translate3d(calc(-50% + 100vw + 96px), 0, 0);
   }
 
   100% {

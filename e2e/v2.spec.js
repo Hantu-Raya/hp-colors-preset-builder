@@ -92,7 +92,7 @@ test('v1 and v2 never request the remote Ko-fi leaderboard script', async ({ pag
   expect(requestCount).toBe(0);
 });
 
-test('supporter strip loops through thanks into the next donor without a jump', async ({ page }) => {
+test('supporter strip holds donor one and resets through a protected transition', async ({ page }) => {
   const externalRequests = [];
   page.on('request', (request) => {
     const url = new URL(request.url());
@@ -121,14 +121,14 @@ test('supporter strip loops through thanks into the next donor without a jump', 
   );
   await expect(primary.locator('.supporter-strip-thanks')).toHaveCount(1);
   await expect(duplicate.locator('.supporter-strip-thanks')).toHaveCount(1);
-  await expect(thanks).toContainText('Thank you for supporting my work');
+  await expect(thanks).toContainText('Thank you for supporting');
   await expect(thanks).not.toContainText('HP COLORS COMMUNITY');
   await expect(thanks.locator('.supporter-strip-thanks-copy')).toHaveCSS(
     'font-family',
     /VALVEOracle/,
   );
   await expect(track).toHaveCSS('animation-name', 'supporter-strip-scroll');
-  await expect(track).toHaveCSS('animation-duration', '30s');
+  await expect(track).toHaveCSS('animation-duration', '32s');
   await expect(track).toHaveCSS('animation-iteration-count', '1');
   await expect(strip).toHaveCSS('background-color', 'rgb(25, 30, 23)');
   await expect(strip).toHaveCSS(
@@ -140,17 +140,24 @@ test('supporter strip loops through thanks into the next donor without a jump', 
     const [animation] = element.getAnimations();
     const keyframes = animation.effect.getKeyframes();
     const duration = animation.effect.getTiming().duration;
-    animation.pause();
-    animation.currentTime = duration * keyframes[1].offset;
-    const holdStartTransform = getComputedStyle(element).transform;
-    animation.currentTime = duration * keyframes[2].offset;
-    const holdEndTransform = getComputedStyle(element).transform;
     const stripBox = element.parentElement.getBoundingClientRect();
+    const primaryFirstDonor = element.querySelector(
+      '[data-cycle="primary"] .supporter-strip-item',
+    );
     const primaryThanks = element.querySelector('[data-cycle="primary"] .supporter-strip-thanks');
     const duplicateFirstDonor = element.querySelector(
       '[data-cycle="duplicate"] .supporter-strip-item',
     );
-    animation.currentTime = 28_500;
+    animation.pause();
+    animation.currentTime = 0;
+    const startDonorBox = primaryFirstDonor.getBoundingClientRect();
+    animation.currentTime = 1_999;
+    const heldDonorBox = primaryFirstDonor.getBoundingClientRect();
+    animation.currentTime = duration * keyframes[2].offset;
+    const holdStartTransform = getComputedStyle(element).transform;
+    animation.currentTime = duration * keyframes[3].offset;
+    const holdEndTransform = getComputedStyle(element).transform;
+    animation.currentTime = 29_500;
     const transitionTransform = getComputedStyle(element).transform;
     const transitionThanksBox = primaryThanks.getBoundingClientRect();
     const transitionDonorBox = duplicateFirstDonor.getBoundingClientRect();
@@ -162,11 +169,16 @@ test('supporter strip loops through thanks into the next donor without a jump', 
     const [restartedAnimation] = element.getAnimations();
     return {
       duration,
-      holdDuration: duration * (keyframes[2].offset - keyframes[1].offset),
+      initialHoldDuration: duration * keyframes[1].offset,
+      holdDuration: duration * (keyframes[3].offset - keyframes[2].offset),
+      transitionDuration: duration * (1 - keyframes[3].offset),
       holdStartTransform,
       holdEndTransform,
       transitionTransform,
+      startDonorX: startDonorBox.x,
+      heldDonorX: heldDonorBox.x,
       transitionThanksX: transitionThanksBox.x,
+      transitionThanksRight: transitionThanksBox.right,
       transitionDonorX: transitionDonorBox.x,
       stripX: stripBox.x,
       stripRight: stripBox.right,
@@ -175,11 +187,16 @@ test('supporter strip loops through thanks into the next donor without a jump', 
       restartTime: restartedAnimation.currentTime
     };
   });
-  expect(loop.duration).toBe(30_000);
+  expect(loop.duration).toBe(32_000);
+  expect(loop.initialHoldDuration).toBeCloseTo(2_000, 2);
   expect(loop.holdDuration).toBeCloseTo(3_000, 2);
+  expect(loop.transitionDuration).toBeCloseTo(5_000, 2);
+  expect(Math.abs(loop.startDonorX - loop.stripX)).toBeLessThanOrEqual(1);
+  expect(Math.abs(loop.heldDonorX - loop.stripX)).toBeLessThanOrEqual(1);
   expect(loop.holdEndTransform).toBe(loop.holdStartTransform);
   expect(loop.transitionTransform).not.toBe(loop.holdEndTransform);
   expect(loop.transitionThanksX).toBeLessThan(loop.stripX);
+  expect(loop.transitionDonorX - loop.transitionThanksRight).toBeGreaterThanOrEqual(90);
   expect(loop.transitionDonorX).toBeGreaterThan(loop.stripX);
   expect(loop.transitionDonorX).toBeLessThan(loop.stripRight);
   expect(Math.abs(loop.endDonorX - loop.stripX)).toBeLessThanOrEqual(1);
