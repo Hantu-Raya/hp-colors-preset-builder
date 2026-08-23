@@ -64,6 +64,8 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
   assert.match(stripStyles, /animation:\s*supporter-strip-scroll 27s linear infinite/);
   assert.match(stripStyles, /88\.8889%[\s\S]*100%/);
   assert.match(stripStyles, /"VALVEOracle", "Reaver", "Radiance"/);
+  assert.doesNotMatch(stripPage, /HP COLORS COMMUNITY/);
+  assert.doesNotMatch(stripStyles, /prefers-reduced-motion/);
 
   for (const marker of [
     "topbar-supporter-strip",

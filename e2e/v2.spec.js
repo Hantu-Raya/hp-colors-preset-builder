@@ -99,6 +99,7 @@ test('supporter strip is static, passive, and uses the reviewed rows', async ({ 
     if (url.hostname !== '127.0.0.1') externalRequests.push(request.url());
   });
 
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('supporters-strip/');
 
   const strip = page.locator('.supporter-strip');
@@ -109,8 +110,8 @@ test('supporter strip is static, passive, and uses the reviewed rows', async ({ 
   await expect(sequence.locator('.supporter-strip-item')).toHaveCount(7);
   expect(await sequence.locator('.supporter-strip-item').allTextContents()).toEqual(STATIC_SUPPORTER_TEXT);
   await expect(thanks).toHaveCount(1);
-  await expect(thanks).toContainText('HP COLORS COMMUNITY');
   await expect(thanks).toContainText('Thank you for supporting my work');
+  await expect(thanks).not.toContainText('HP COLORS COMMUNITY');
   await expect(thanks.locator('.supporter-strip-thanks-copy')).toHaveCSS(
     'font-family',
     /VALVEOracle/,
