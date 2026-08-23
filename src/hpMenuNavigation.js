@@ -133,7 +133,7 @@ const MENU_DEFINITION = Object.freeze([
         description: "Choose low, mid, and high ally colors using the shared health thresholds.",
         pageId: "ally-bar",
         fieldIds: ["hp_friend_enabled", "hp_friend_color_low", "hp_friend_color_mid", "hp_friend_color_high"],
-        rewriteKeys: ["allyEnabled", "allyVisible", "allyMode", "allyLow", "allyMid", "allyHigh"]
+        rewriteKeys: ["allyEnabled", "allyVisible", "allyMode", "allyLow", "allyMid", "allyHigh", "allyTeamHigh"]
       },
       {
         name: "HEAL & DAMAGE",

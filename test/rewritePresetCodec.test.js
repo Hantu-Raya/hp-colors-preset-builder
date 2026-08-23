@@ -76,13 +76,15 @@ test('web edits override mapped values while rewrite-only values survive', () =>
 });
 
 test('imports and exports HPCR2 settings separately from preset bundles', () => {
-  const code = 'HPCR2{"v":[[7,"fixed"],[31,"pulp"],[56,700],[70,true]],"c":{"enemyPulseThreshold":{"slot":2,"minTier":1,"value":20}}}';
+  const code = 'HPCR2{"v":[[7,"fixed"],[31,"pulp"],[56,700],[70,true],[71,true]],"c":{"enemyPulseThreshold":{"slot":2,"minTier":1,"value":20}}}';
   const profile = decodeRewriteTransfer(code).profiles[0];
   assert.equal(profile.rewrite.values[31], 'pulp');
   assert.equal(profile.rewrite.webValues.hp_readout_max_team_color, true);
+  assert.equal(profile.rewrite.webValues.hp_friend_team_colors, true);
   const exported = payload(createRewriteSettingsCode(profile), 'HPCR2');
   assert.ok(exported.v.some(([index, value]) => index === 56 && value === 700));
   assert.ok(exported.v.some(([index, value]) => index === 70 && value === true));
+  assert.ok(exported.v.some(([index, value]) => index === 71 && value === true));
   assert.deepEqual(exported.c.enemyPulseThreshold, { slot: 2, minTier: 1, value: 20 });
 });
 

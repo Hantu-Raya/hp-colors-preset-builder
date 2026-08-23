@@ -345,7 +345,8 @@ const REWRITE_BINDING_DATA = [
   ["excludeGhouls", "hp_exclude_ghouls", "toggle", "Exclude ghoul colors", "ENEMY|BAR", false],
   ["ghoulOpacityEnabled", "hp_ghoul_opacity_enabled", "toggle", "Use custom ghoul opacity", "ENEMY|BAR", false],
   ["ghoulOpacity", "hp_ghoul_opacity", "slider", "Ghoul HUD opacity", "ENEMY|BAR", 100, { min: 0, max: 100, step: 1 }],
-  ["readoutMaxTeamColor", "hp_readout_max_team_color", "toggle", "Team color max HP", "HEALTH INFO|HP TEXT", false]
+  ["readoutMaxTeamColor", "hp_readout_max_team_color", "toggle", "Team color max HP", "HEALTH INFO|HP TEXT", false],
+  ["allyTeamHigh", "hp_friend_team_colors", "toggle", "Use team color at high HP", "ALLY|BAR", false]
 ];
 
 function freezeRewriteBinding(data) {

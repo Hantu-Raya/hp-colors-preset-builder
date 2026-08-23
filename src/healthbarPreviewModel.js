@@ -232,7 +232,8 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
   let low = enemyRole ? state.hp_color_low : state.hp_friend_color_low;
   let mid = enemyRole ? state.hp_color_mid : state.hp_friend_color_mid;
   let high = enemyRole ? state.hp_color_high : state.hp_friend_color_high;
-  if (enemyRole && state.hp_team_colors && (team === "team1" || team === "team2")) {
+  const teamHighEnabled = enemyRole ? state.hp_team_colors : relation === "ally" ? state.hp_friend_team_colors : false;
+  if (teamHighEnabled && (team === "team1" || team === "team2")) {
     high = team === "team1" ? STOCK.team1 : STOCK.team2;
   }
 

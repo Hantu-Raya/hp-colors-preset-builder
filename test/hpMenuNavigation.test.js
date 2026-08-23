@@ -38,15 +38,18 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
     "hp_pulse_text_position"
   ];
 
-  assert.equal(fields.length, 71);
-  assert.equal(new Set(fields.map((field) => field.id)).size, 71);
-  assert.equal(new Set(canonicalKeys).size, 71);
+  assert.equal(fields.length, 72);
+  assert.equal(new Set(fields.map((field) => field.id)).size, 72);
+  assert.equal(new Set(canonicalKeys).size, 72);
   assert.deepEqual(canonicalKeys.sort(), REWRITE_FIELD_CATALOG.bindings.map((binding) => binding.canonicalKey).sort());
   assert.equal(fields.some((field) => forbiddenIds.includes(field.id)), false);
   assert.equal(fields.some((field) => field.canonicalKey === "precisePipsEnabled" && field.conditionEligible === false), true);
   const enemyBar = groups
     .find((group) => group.name === "ENEMY")
     .children.find((page) => page.pageId === "enemy-bar");
+  const allyBar = groups
+    .find((group) => group.name === "ALLY")
+    .children.find((page) => page.pageId === "ally-bar");
   const healthText = groups
     .find((group) => group.name === "HEALTH INFO")
     .children.find((page) => page.pageId === "health-text");
@@ -55,6 +58,7 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
   assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "excludeGhouls"), true);
   assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "ghoulOpacityEnabled"), true);
   assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "ghoulOpacity"), true);
+  assert.equal(allyBar.fields.some((field) => field.canonicalKey === "allyTeamHigh"), true);
   assert.equal(healthText.fields.some((field) => field.canonicalKey === "lowThreshold"), false);
   assert.equal(healthText.fields.some((field) => field.canonicalKey === "highThreshold"), false);
   assert.equal(healthText.fields.some((field) => field.canonicalKey === "readoutMaxTeamColor"), true);

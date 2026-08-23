@@ -270,7 +270,10 @@ function HealthbarPreview({ profileState = null, conversionRequired = false, pro
   const pulseActive = pulseVisible && !paused;
   const pulsePaused = pulseVisible && paused;
   const healthPercent = clampPercent(modelScenario.healthPercent);
-  const teamColorActive = !!profileState?.hp_team_colors && modelScenario.relation === 'enemy';
+  const teamColorActive = modelScenario.relation === 'enemy'
+    ? !!profileState?.hp_team_colors
+    : modelScenario.relation === 'ally' && !!profileState?.hp_friend_team_colors;
+  const defaultTeam = modelScenario.relation === 'ally' ? 'ally' : 'enemy';
   const teamSelected = modelScenario.team === 'team1' || modelScenario.team === 'team2';
   const barWidthPx = Math.max(1, Number(bar.widthPx) || 900);
   const barHeightPx = Math.max(1, Number(bar.heightPx) || 130);
@@ -361,7 +364,7 @@ function HealthbarPreview({ profileState = null, conversionRequired = false, pro
           {teamColorActive ? (
             <div className="healthbar-preview-relation healthbar-preview-team-switch" role="radiogroup" aria-label="Team color preview">
               <span>Team color</span>
-              <button type="button" role="radio" aria-checked={!teamSelected} className={teamSelected ? '' : 'is-active'} onClick={() => updateScenario('team', 'enemy')}>Default</button>
+              <button type="button" role="radio" aria-checked={!teamSelected} className={teamSelected ? '' : 'is-active'} onClick={() => updateScenario('team', defaultTeam)}>Default</button>
               <button type="button" role="radio" aria-checked={modelScenario.team === 'team1'} className={modelScenario.team === 'team1' ? 'is-active' : ''} onClick={() => updateScenario('team', 'team1')}>Team 1</button>
               <button type="button" role="radio" aria-checked={modelScenario.team === 'team2'} className={modelScenario.team === 'team2' ? 'is-active' : ''} onClick={() => updateScenario('team', 'team2')}>Team 2</button>
             </div>

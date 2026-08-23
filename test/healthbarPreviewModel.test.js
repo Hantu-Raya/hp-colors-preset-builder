@@ -453,11 +453,47 @@ test("team colors override the high HP bucket only for team1 and team2 scenarios
     state({ hp_pulse_enabled: false, hp_team_colors: true }),
     scenario({ healthPercent: 95 })
   );
+  const allyTeam1 = createHealthbarPreviewModel(
+    state({
+      hp_friend_enabled: true,
+      hp_friend_team_colors: true,
+      hp_friend_pulse_enabled: false
+    }),
+    scenario({ relation: "ally", healthPercent: 95, team: "team1" })
+  );
+  const allyTeam2 = createHealthbarPreviewModel(
+    state({
+      hp_friend_enabled: true,
+      hp_friend_team_colors: true,
+      hp_friend_pulse_enabled: false
+    }),
+    scenario({ relation: "ally", healthPercent: 95, team: "team2" })
+  );
+  const allyUnknown = createHealthbarPreviewModel(
+    state({
+      hp_friend_enabled: true,
+      hp_friend_team_colors: true,
+      hp_friend_color_high: "#ABCDEF",
+      hp_friend_pulse_enabled: false
+    }),
+    scenario({ relation: "ally", healthPercent: 95 })
+  );
+  const neutralTeam = createHealthbarPreviewModel(
+    state({
+      hp_friend_team_colors: true,
+      hp_friend_pulse_enabled: false
+    }),
+    scenario({ relation: "neutral", healthPercent: 95, team: "team1" })
+  );
 
   assert.equal(team1.bar.color, "#e7b659");
   assert.equal(team1.readout.color, "#e7b659");
   assert.equal(team2.bar.color, "#5b79e6");
   assert.equal(toggleOff.bar.color, nonTeam.bar.color);
+  assert.equal(allyTeam1.bar.color, "#E7B659");
+  assert.equal(allyTeam2.bar.color, "#5B79E6");
+  assert.equal(allyUnknown.bar.color, "#ABCDEF");
+  assert.equal(neutralTeam.bar.color, "#5BEFB5");
 });
 
 test("healing, damage, bullet shield, and tech shield remain independent layers", () => {

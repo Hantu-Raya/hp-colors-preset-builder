@@ -73,6 +73,7 @@ test("rewrite template keeps the native menu entry and shared threshold ownershi
   assert.match(templateText, /id="HPColorsSharedLowThresholdSliderHost"/);
   assert.match(templateText, /id="HPColorsSharedHighThresholdSliderHost"/);
   assert.match(templateText, /id="HPColorsReadoutMaxTeamColorToggle"/);
+  assert.match(templateText, /id="HPColorsAllyTeamHighToggle"/);
   assert.doesNotMatch(templateText, /id="HPColorsLowThresholdSliderHost"|id="HPColorsHighThresholdSliderHost"/);
 });
 
@@ -144,6 +145,7 @@ test("showranks package merges the ShowRank escape-menu hooks and round-trips HP
     )
   );
   assert.match(built.sourceText, /id="HPColorsReadoutMaxTeamColorToggle"/);
+  assert.match(built.sourceText, /id="HPColorsAllyTeamHighToggle"/);
   const inspected = inspectRewriteShowranksPresetTemplate(built.sourceText, { requireEmpty: false });
   assert.deepEqual(inspected.scriptIncludes, [
     "s2r://panorama/scripts/hp_colors_contract.vjs_c",

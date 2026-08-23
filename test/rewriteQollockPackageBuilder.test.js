@@ -48,6 +48,7 @@ test("Rewrite QOLLOCK template mirrors the composite include and panel contract"
     /<CitadelHTMLPanel id="HPColorsSupporterTicker"[^>]*hittest="false"[^>]*acceptsfocus="false"/
   );
   assert.match(templateText, /id="HPColorsReadoutMaxTeamColorToggle"/);
+  assert.match(templateText, /id="HPColorsAllyTeamHighToggle"/);
   for (const id of ["newgame", "watchgame", "guides"]) {
     assert.match(templateText, new RegExp(`id="${id}"`), id);
   }
@@ -67,6 +68,7 @@ test("Rewrite QOLLOCK package emits one composite layout and round-trips HPCRP1"
   assert.equal(readRewriteQollockPresetCode(archive.files[0].bytes), PRESET_CODE);
   assert.equal(built.presetCode, PRESET_CODE);
   assert.match(built.sourceText, new RegExp(`text="${encodeUtf16Hex(PRESET_CODE)}"`));
+  assert.match(built.sourceText, /id="HPColorsAllyTeamHighToggle"/);
   assert.equal(validateRewriteQollockPresetVpk(built.vpkBytes).files.length, 1);
 });
 
