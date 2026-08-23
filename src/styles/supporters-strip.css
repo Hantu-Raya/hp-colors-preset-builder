@@ -20,6 +20,10 @@ body {
   height: 100%;
   overflow: hidden;
   color: #a9a6a0;
+  background-color: #191e17;
+  background-image: url("../assets/supporters-strip-header.png");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
 }
 
 .supporter-strip-track {

@@ -13,9 +13,21 @@ const supportersDataPath = new URL("../src/supportersData.js", import.meta.url);
 const supportersCsvPath = new URL("../public/data/supporters.csv", import.meta.url);
 const supportersStripPagePath = new URL("../src/pages/supporters-strip.astro", import.meta.url);
 const supportersStripStylesPath = new URL("../src/styles/supporters-strip.css", import.meta.url);
+const supportersStripBackgroundPath = new URL("../src/assets/supporters-strip-header.png", import.meta.url);
 
 test("v2 and the static strip share one reviewed supporter CSV", async () => {
-  const [v1Page, v1Island, v2Page, v2Island, ticker, supportersData, supportersCsv, stripPage, stripStyles] = await Promise.all([
+  const [
+    v1Page,
+    v1Island,
+    v2Page,
+    v2Island,
+    ticker,
+    supportersData,
+    supportersCsv,
+    stripPage,
+    stripStyles,
+    stripBackground
+  ] = await Promise.all([
     readFile(new URL("../src/pages/index.astro", import.meta.url), "utf8"),
     readFile(v1IslandPath, "utf8"),
     readFile(v2PagePath, "utf8"),
@@ -24,7 +36,8 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
     readFile(supportersDataPath, "utf8"),
     readFile(supportersCsvPath, "utf8"),
     readFile(supportersStripPagePath, "utf8"),
-    readFile(supportersStripStylesPath, "utf8")
+    readFile(supportersStripStylesPath, "utf8"),
+    readFile(supportersStripBackgroundPath)
   ]);
 
   assert.doesNotMatch(v2Page, /kofi-leaderboard-embed|cdn\.ko-fi\.tools/i);
@@ -39,6 +52,11 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
   assert.match(v2Island, /KofiLeaderboardTicker supporters=\{supporters\}/);
   assert.match(stripPage, /loadSupporters/);
   assert.match(stripPage, /supporters-strip\.css/);
+  assert.match(stripPage, /img-src 'self'/);
+  assert.match(stripStyles, /background-image:\s*url\("\.\.\/assets\/supporters-strip-header\.png"\)/);
+  assert.equal(stripBackground.subarray(1, 4).toString("ascii"), "PNG");
+  assert.equal(stripBackground.readUInt32BE(16), 520);
+  assert.equal(stripBackground.readUInt32BE(20), 60);
   assert.match(supportersData, /readFile\(SUPPORTERS_CSV_PATH/);
   assert.match(supportersData, /MAX_SUPPORTERS = 10/);
   assert.match(supportersCsv, /^rank,display_name,total_usd/m);

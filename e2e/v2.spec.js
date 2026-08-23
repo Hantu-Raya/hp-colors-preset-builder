@@ -110,6 +110,11 @@ test('supporter strip is static, passive, and uses the reviewed rows', async ({ 
   expect(await sequences.first().locator('.supporter-strip-item').allTextContents()).toEqual(STATIC_SUPPORTER_TEXT);
   await expect(track).toHaveCSS('animation-name', 'supporter-strip-scroll');
   await expect(track).toHaveCSS('animation-duration', '24s');
+  await expect(strip).toHaveCSS('background-color', 'rgb(25, 30, 23)');
+  await expect(strip).toHaveCSS(
+    'background-image',
+    /supporters-strip-header(?:\.[^"/)]+)?\.png/,
+  );
   await expect(page.locator('a, button, input, form')).toHaveCount(0);
   expect(externalRequests).toEqual([]);
 });
