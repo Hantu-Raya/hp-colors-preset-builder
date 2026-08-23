@@ -52,7 +52,7 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
   assert.match(v2Island, /KofiLeaderboardTicker supporters=\{supporters\}/);
   assert.match(stripPage, /loadSupporters/);
   assert.match(stripPage, /supporters-strip\.css/);
-  assert.match(stripPage, /img-src 'self'/);
+  assert.match(stripPage, /img-src 'self' data:/);
   assert.match(stripStyles, /background-image:\s*url\("\.\.\/assets\/supporters-strip-header\.png"\)/);
   assert.equal(stripBackground.subarray(1, 4).toString("ascii"), "PNG");
   assert.equal(stripBackground.readUInt32BE(16), 520);
