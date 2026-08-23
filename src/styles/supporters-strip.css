@@ -32,8 +32,18 @@ body {
   align-items: center;
   min-width: max-content;
   height: 100%;
-  animation: supporter-strip-scroll 27s linear infinite;
   will-change: transform;
+}
+
+.supporter-strip-track-running {
+  animation: supporter-strip-scroll 30s linear 1 forwards;
+}
+
+.supporter-strip-cycle {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 100%;
 }
 
 .supporter-strip-sequence {
@@ -118,12 +128,19 @@ body {
 
 @keyframes supporter-strip-scroll {
   0% {
-    transform: translate3d(100vw, 0, 0);
+    transform: translate3d(0, 0, 0);
   }
 
-  88.8889%,
+  80% {
+    transform: translate3d(calc(-50% + 100vw), 0, 0);
+  }
+
+  90% {
+    transform: translate3d(calc(-50% + 100vw), 0, 0);
+  }
+
   100% {
-    transform: translate3d(calc(-100% + 100vw), 0, 0);
+    transform: translate3d(-50%, 0, 0);
   }
 }
 

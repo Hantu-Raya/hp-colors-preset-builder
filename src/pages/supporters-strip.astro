@@ -20,28 +20,33 @@ const accessibleLabel = `Ko-fi top supporters: ${supporters
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'none'; connect-src 'none'; img-src 'self' data:; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+      content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'none'; img-src 'self' data:; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
     <title>HP Colors top supporters</title>
   </head>
   <body>
     <div class="supporter-strip" role="group" aria-label={accessibleLabel}>
       <div class="supporter-strip-track" aria-hidden="true">
-        <div class="supporter-strip-sequence">
-          {supporters.map(({ rank, displayName, totalUsd }) => (
-            <span class:list={['supporter-strip-item', rank <= 3 && `supporter-strip-place-${rank}`]}>
-              <span class="supporter-strip-rank">{rank}</span>
-              <span class="supporter-strip-name">{displayName}</span>
-              <span class="supporter-strip-amount">{usdFormatter.format(totalUsd)}</span>
-            </span>
-          ))}
-        </div>
-        <div class="supporter-strip-thanks">
-          <div class="supporter-strip-thanks-copy">
-            <span class="supporter-strip-thanks-message">Thank you for supporting my work</span>
+        {['primary', 'duplicate'].map((cycle) => (
+          <div class="supporter-strip-cycle" data-cycle={cycle}>
+            <div class="supporter-strip-sequence">
+              {supporters.map(({ rank, displayName, totalUsd }) => (
+                <span class:list={['supporter-strip-item', rank <= 3 && `supporter-strip-place-${rank}`]}>
+                  <span class="supporter-strip-rank">{rank}</span>
+                  <span class="supporter-strip-name">{displayName}</span>
+                  <span class="supporter-strip-amount">{usdFormatter.format(totalUsd)}</span>
+                </span>
+              ))}
+            </div>
+            <div class="supporter-strip-thanks">
+              <div class="supporter-strip-thanks-copy">
+                <span class="supporter-strip-thanks-message">Thank you for supporting my work</span>
+              </div>
+            </div>
           </div>
-        </div>
+        ))}
       </div>
+      <script src={`${import.meta.env.BASE_URL}supporters-strip-loop.js`} defer></script>
     </div>
   </body>
 </html>

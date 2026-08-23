@@ -13,6 +13,7 @@ const supportersDataPath = new URL("../src/supportersData.js", import.meta.url);
 const supportersCsvPath = new URL("../public/data/supporters.csv", import.meta.url);
 const supportersStripPagePath = new URL("../src/pages/supporters-strip.astro", import.meta.url);
 const supportersStripStylesPath = new URL("../src/styles/supporters-strip.css", import.meta.url);
+const supportersStripLoopPath = new URL("../public/supporters-strip-loop.js", import.meta.url);
 const supportersStripBackgroundPath = new URL("../src/assets/supporters-strip-header.png", import.meta.url);
 
 test("v2 and the static strip share one reviewed supporter CSV", async () => {
@@ -26,6 +27,7 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
     supportersCsv,
     stripPage,
     stripStyles,
+    stripLoop,
     stripBackground
   ] = await Promise.all([
     readFile(new URL("../src/pages/index.astro", import.meta.url), "utf8"),
@@ -37,6 +39,7 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
     readFile(supportersCsvPath, "utf8"),
     readFile(supportersStripPagePath, "utf8"),
     readFile(supportersStripStylesPath, "utf8"),
+    readFile(supportersStripLoopPath, "utf8"),
     readFile(supportersStripBackgroundPath)
   ]);
 
@@ -46,7 +49,10 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
   assert.doesNotMatch(v1Island, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
   assert.doesNotMatch(ticker, /MutationObserver|Loading top supporters|View Ko-fi leaderboard|const SUPPORTERS/);
   assert.doesNotMatch(ticker, /Email|LastestTransactionId|@gmail\.com|@hotmail\.com/);
-  assert.doesNotMatch(stripPage, /<script|client:|fetch\(|https?:\/\//i);
+  assert.doesNotMatch(stripPage, /client:|fetch\(|https?:\/\//i);
+  assert.match(stripPage, /script-src 'self'/);
+  assert.match(stripPage, /supporters-strip-loop\.js/);
+  assert.doesNotMatch(stripLoop, /fetch\(|XMLHttpRequest|WebSocket|sendBeacon|localStorage|sessionStorage/i);
   assert.match(v2Page, /loadSupporters/);
   assert.match(v2Page, /supporters=\{supporters\}/);
   assert.match(v2Island, /KofiLeaderboardTicker supporters=\{supporters\}/);
@@ -61,8 +67,11 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
   assert.match(supportersData, /MAX_SUPPORTERS = 10/);
   assert.match(supportersCsv, /^rank,display_name,total_usd/m);
   assert.match(supportersCsv, /Ko-fi Supporter/);
-  assert.match(stripStyles, /animation:\s*supporter-strip-scroll 27s linear infinite/);
-  assert.match(stripStyles, /88\.8889%[\s\S]*100%/);
+  assert.match(stripStyles, /animation:\s*supporter-strip-scroll 30s linear 1 forwards/);
+  assert.match(stripStyles, /80%[\s\S]*90%[\s\S]*100%/);
+  assert.match(stripStyles, /translate3d\(-50%, 0, 0\)/);
+  assert.match(stripLoop, /animationend/);
+  assert.match(stripLoop, /CYCLE_MS = 30000/);
   assert.match(stripStyles, /"VALVEOracle", "Reaver", "Radiance"/);
   assert.doesNotMatch(stripPage, /HP COLORS COMMUNITY/);
   assert.doesNotMatch(stripStyles, /prefers-reduced-motion/);

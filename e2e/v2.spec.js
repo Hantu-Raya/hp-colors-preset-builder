@@ -92,7 +92,7 @@ test('v1 and v2 never request the remote Ko-fi leaderboard script', async ({ pag
   expect(requestCount).toBe(0);
 });
 
-test('supporter strip is static, passive, and uses the reviewed rows', async ({ page }) => {
+test('supporter strip loops through thanks into the next donor without a jump', async ({ page }) => {
   const externalRequests = [];
   page.on('request', (request) => {
     const url = new URL(request.url());
@@ -104,12 +104,23 @@ test('supporter strip is static, passive, and uses the reviewed rows', async ({ 
 
   const strip = page.locator('.supporter-strip');
   const track = strip.locator('.supporter-strip-track');
-  const sequence = track.locator('.supporter-strip-sequence');
-  const thanks = track.locator('.supporter-strip-thanks');
+  const cycles = track.locator('.supporter-strip-cycle');
+  const primary = cycles.nth(0);
+  const duplicate = cycles.nth(1);
+  const primarySequence = primary.locator('.supporter-strip-sequence');
+  const duplicateSequence = duplicate.locator('.supporter-strip-sequence');
+  const thanks = primary.locator('.supporter-strip-thanks');
   await expect(strip).toBeVisible();
-  await expect(sequence.locator('.supporter-strip-item')).toHaveCount(7);
-  expect(await sequence.locator('.supporter-strip-item').allTextContents()).toEqual(STATIC_SUPPORTER_TEXT);
-  await expect(thanks).toHaveCount(1);
+  await expect(cycles).toHaveCount(2);
+  await expect(primarySequence.locator('.supporter-strip-item')).toHaveCount(7);
+  expect(await primarySequence.locator('.supporter-strip-item').allTextContents()).toEqual(
+    STATIC_SUPPORTER_TEXT,
+  );
+  expect(await duplicateSequence.locator('.supporter-strip-item').allTextContents()).toEqual(
+    STATIC_SUPPORTER_TEXT,
+  );
+  await expect(primary.locator('.supporter-strip-thanks')).toHaveCount(1);
+  await expect(duplicate.locator('.supporter-strip-thanks')).toHaveCount(1);
   await expect(thanks).toContainText('Thank you for supporting my work');
   await expect(thanks).not.toContainText('HP COLORS COMMUNITY');
   await expect(thanks.locator('.supporter-strip-thanks-copy')).toHaveCSS(
@@ -117,43 +128,64 @@ test('supporter strip is static, passive, and uses the reviewed rows', async ({ 
     /VALVEOracle/,
   );
   await expect(track).toHaveCSS('animation-name', 'supporter-strip-scroll');
-  await expect(track).toHaveCSS('animation-duration', '27s');
+  await expect(track).toHaveCSS('animation-duration', '30s');
+  await expect(track).toHaveCSS('animation-iteration-count', '1');
   await expect(strip).toHaveCSS('background-color', 'rgb(25, 30, 23)');
   await expect(strip).toHaveCSS(
     'background-image',
     /supporters-strip-header(?:\.[^"/)]+)?\.png/,
   );
-  const hold = await track.evaluate((element) => {
+
+  const loop = await track.evaluate((element) => {
     const [animation] = element.getAnimations();
     const keyframes = animation.effect.getKeyframes();
-    const holdOffset = keyframes.at(-2).offset;
     const duration = animation.effect.getTiming().duration;
     animation.pause();
-    animation.currentTime = duration * holdOffset;
-    const startTransform = getComputedStyle(element).transform;
+    animation.currentTime = duration * keyframes[1].offset;
+    const holdStartTransform = getComputedStyle(element).transform;
+    animation.currentTime = duration * keyframes[2].offset;
+    const holdEndTransform = getComputedStyle(element).transform;
+    const stripBox = element.parentElement.getBoundingClientRect();
+    const primaryThanks = element.querySelector('[data-cycle="primary"] .supporter-strip-thanks');
+    const duplicateFirstDonor = element.querySelector(
+      '[data-cycle="duplicate"] .supporter-strip-item',
+    );
+    animation.currentTime = 28_500;
+    const transitionTransform = getComputedStyle(element).transform;
+    const transitionThanksBox = primaryThanks.getBoundingClientRect();
+    const transitionDonorBox = duplicateFirstDonor.getBoundingClientRect();
     animation.currentTime = duration - 1;
-    const endTransform = getComputedStyle(element).transform;
-    animation.currentTime = 25_000;
+    const endDonorBox = duplicateFirstDonor.getBoundingClientRect();
+    element.dispatchEvent(
+      new AnimationEvent('animationend', { animationName: 'supporter-strip-scroll' }),
+    );
+    const [restartedAnimation] = element.getAnimations();
     return {
       duration,
-      holdDuration: duration * (1 - holdOffset),
-      startTransform,
-      endTransform
+      holdDuration: duration * (keyframes[2].offset - keyframes[1].offset),
+      holdStartTransform,
+      holdEndTransform,
+      transitionTransform,
+      transitionThanksX: transitionThanksBox.x,
+      transitionDonorX: transitionDonorBox.x,
+      stripX: stripBox.x,
+      stripRight: stripBox.right,
+      endDonorX: endDonorBox.x,
+      restarted: restartedAnimation !== animation,
+      restartTime: restartedAnimation.currentTime
     };
   });
-  expect(hold.duration).toBe(27_000);
-  expect(hold.holdDuration).toBeCloseTo(3_000, 2);
-  expect(hold.endTransform).toBe(hold.startTransform);
-  await expect(thanks).toBeInViewport({ ratio: 0.99 });
-  const [stripBox, thanksBox] = await Promise.all([strip.boundingBox(), thanks.boundingBox()]);
-  expect(stripBox).not.toBeNull();
-  expect(thanksBox).not.toBeNull();
-  expect(Math.abs(thanksBox.x - stripBox.x)).toBeLessThanOrEqual(1);
-  expect(Math.abs(thanksBox.width - stripBox.width)).toBeLessThanOrEqual(1);
-  expect(Math.abs(
-    thanksBox.y + thanksBox.height / 2 - (stripBox.y + stripBox.height / 2),
-  )).toBeLessThanOrEqual(1);
-  await expect(page.locator('a, button, input, form')).toHaveCount(0);
+  expect(loop.duration).toBe(30_000);
+  expect(loop.holdDuration).toBeCloseTo(3_000, 2);
+  expect(loop.holdEndTransform).toBe(loop.holdStartTransform);
+  expect(loop.transitionTransform).not.toBe(loop.holdEndTransform);
+  expect(loop.transitionThanksX).toBeLessThan(loop.stripX);
+  expect(loop.transitionDonorX).toBeGreaterThan(loop.stripX);
+  expect(loop.transitionDonorX).toBeLessThan(loop.stripRight);
+  expect(Math.abs(loop.endDonorX - loop.stripX)).toBeLessThanOrEqual(1);
+  expect(loop.restarted).toBe(true);
+  expect(loop.restartTime).toBeLessThan(100);
+  await expect(strip.locator('a, button, input, form')).toHaveCount(0);
   expect(externalRequests).toEqual([]);
 });
 
