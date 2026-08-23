@@ -88,6 +88,7 @@ export const REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   "guides",
   "HPColorsMenuButton",
   "HPColorsEditorRoot",
+  "HPColorsSupporterTicker",
   REWRITE_PRESET_STORE_PANEL_ID
 ]);
 const REWRITE_MENU_ONCANCEL = "if (!$.HPColorsMenuCancel()) $.DispatchEvent('CitadelResumePlaying', $.GetContextPanel())";
