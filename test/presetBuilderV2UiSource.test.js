@@ -51,7 +51,7 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
   assert.doesNotMatch(ticker, /Email|LastestTransactionId|@gmail\.com|@hotmail\.com/);
   assert.doesNotMatch(stripPage, /client:|fetch\(|https?:\/\//i);
   assert.match(stripPage, /script-src 'self'/);
-  assert.match(stripPage, /supporters-strip-loop\.js/);
+  assert.match(stripPage, /supporters-strip-loop\.js\?v=32000/);
   assert.doesNotMatch(stripLoop, /fetch\(|XMLHttpRequest|WebSocket|sendBeacon|localStorage|sessionStorage/i);
   assert.match(v2Page, /loadSupporters/);
   assert.match(v2Page, /supporters=\{supporters\}/);
