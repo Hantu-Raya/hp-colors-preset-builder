@@ -3,15 +3,6 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 const KOFI_LEADERBOARD_URL = 'https://ko-fi.com/hantuaraya/leaderboard';
 const SUPPORTER_SPEED_PX_PER_SECOND = 36;
 const MIN_ANIMATION_SECONDS = 4;
-const SUPPORTERS = [
-  { name: 'civo', total: 100 },
-  { name: 'dacooder', total: 20 },
-  { name: 'DimpuMudit', total: 17 },
-  { name: 'Ko-fi Supporter', total: 10 },
-  { name: 'Ko-fi Supporter', total: 5 },
-  { name: 'greggey', total: 5 },
-  { name: 'Timmcd', total: 5 }
-];
 const USD_FORMATTER = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -23,21 +14,21 @@ function formatDonation(total) {
   return USD_FORMATTER.format(total);
 }
 
-function renderSequence(sequenceKey, sequenceRef = null, duplicate = false) {
+function renderSequence(supporters, sequenceKey, sequenceRef = null, duplicate = false) {
   return (
     <div className="topbar-supporter-sequence" ref={sequenceRef} aria-hidden={duplicate ? 'true' : undefined}>
-      {SUPPORTERS.map((entry, index) => (
-        <span className={`topbar-supporter-item${index < 3 ? ` topbar-supporter-place-${index + 1}` : ''}`} key={`${sequenceKey}-${entry.name}-${index}`}>
-          <span className="topbar-supporter-rank">{index + 1}</span>
-          <span className="topbar-supporter-name">{entry.name}</span>
-          <span className="topbar-supporter-amount">{formatDonation(entry.total)}</span>
+      {supporters.map((entry) => (
+        <span className={`topbar-supporter-item${entry.rank <= 3 ? ` topbar-supporter-place-${entry.rank}` : ''}`} key={`${sequenceKey}-${entry.rank}`}>
+          <span className="topbar-supporter-rank">{entry.rank}</span>
+          <span className="topbar-supporter-name">{entry.displayName}</span>
+          <span className="topbar-supporter-amount">{formatDonation(entry.totalUsd)}</span>
         </span>
       ))}
     </div>
   );
 }
 
-export default function KofiLeaderboardTicker() {
+export default function KofiLeaderboardTicker({ supporters }) {
   const [duration, setDuration] = useState(MIN_ANIMATION_SECONDS);
   const sequenceRef = useRef(null);
 
@@ -59,8 +50,8 @@ export default function KofiLeaderboardTicker() {
     return () => window.removeEventListener('resize', measureSequence);
   }, []);
 
-  const accessibleLabel = `Ko-fi top supporters: ${SUPPORTERS
-    .map(({ name, total }, index) => `${index + 1} ${name} ${formatDonation(total)}`)
+  const accessibleLabel = `Ko-fi top supporters: ${supporters
+    .map(({ rank, displayName, totalUsd }) => `${rank} ${displayName} ${formatDonation(totalUsd)}`)
     .join(', ')}`;
 
   return (
@@ -78,8 +69,8 @@ export default function KofiLeaderboardTicker() {
           aria-hidden="true"
           style={{ '--topbar-supporter-duration': `${duration}s` }}
         >
-          {renderSequence('primary', sequenceRef)}
-          {renderSequence('duplicate', null, true)}
+          {renderSequence(supporters, 'primary', sequenceRef)}
+          {renderSequence(supporters, 'duplicate', null, true)}
         </div>
       </a>
     </div>

@@ -9,34 +9,43 @@ const v2StylesPath = new URL("../src/styles/v2.css", import.meta.url);
 const v2TreePath = new URL("../src/components/schema-tree-v2.jsx", import.meta.url);
 const v2PagePath = new URL("../src/pages/v2.astro", import.meta.url);
 const v2TickerPath = new URL("../src/components/KofiLeaderboardTicker.jsx", import.meta.url);
+const supportersDataPath = new URL("../src/supportersData.js", import.meta.url);
+const supportersCsvPath = new URL("../public/data/supporters.csv", import.meta.url);
+const supportersStripPagePath = new URL("../src/pages/supporters-strip.astro", import.meta.url);
+const supportersStripStylesPath = new URL("../src/styles/supporters-strip.css", import.meta.url);
 
-test("v2 owns a static supporter list while both builders stay request-free", async () => {
-  const [v1Page, v1Island, v2Page, v2Island, ticker] = await Promise.all([
+test("v2 and the static strip share one reviewed supporter CSV", async () => {
+  const [v1Page, v1Island, v2Page, v2Island, ticker, supportersData, supportersCsv, stripPage, stripStyles] = await Promise.all([
     readFile(new URL("../src/pages/index.astro", import.meta.url), "utf8"),
     readFile(v1IslandPath, "utf8"),
     readFile(v2PagePath, "utf8"),
     readFile(v2IslandPath, "utf8"),
-    readFile(v2TickerPath, "utf8")
+    readFile(v2TickerPath, "utf8"),
+    readFile(supportersDataPath, "utf8"),
+    readFile(supportersCsvPath, "utf8"),
+    readFile(supportersStripPagePath, "utf8"),
+    readFile(supportersStripStylesPath, "utf8")
   ]);
 
   assert.doesNotMatch(v2Page, /kofi-leaderboard-embed|cdn\.ko-fi\.tools/i);
   assert.doesNotMatch(v2Island, /kofi-leaderboard-embed|cdn\.ko-fi\.tools/i);
   assert.doesNotMatch(v1Page, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
   assert.doesNotMatch(v1Island, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
-  assert.doesNotMatch(ticker, /MutationObserver|Loading top supporters|View Ko-fi leaderboard/);
+  assert.doesNotMatch(ticker, /MutationObserver|Loading top supporters|View Ko-fi leaderboard|const SUPPORTERS/);
   assert.doesNotMatch(ticker, /Email|LastestTransactionId|@gmail\.com|@hotmail\.com/);
+  assert.doesNotMatch(stripPage, /<script|client:|fetch\(|https?:\/\//i);
+  assert.match(v2Page, /loadSupporters/);
+  assert.match(v2Page, /supporters=\{supporters\}/);
+  assert.match(v2Island, /KofiLeaderboardTicker supporters=\{supporters\}/);
+  assert.match(stripPage, /loadSupporters/);
+  assert.match(stripPage, /supporters-strip\.css/);
+  assert.match(supportersData, /readFile\(SUPPORTERS_CSV_PATH/);
+  assert.match(supportersData, /MAX_SUPPORTERS = 10/);
+  assert.match(supportersCsv, /^rank,display_name,total_usd/m);
+  assert.match(supportersCsv, /Ko-fi Supporter/);
+  assert.match(stripStyles, /animation:\s*supporter-strip-scroll 24s linear infinite/);
 
   for (const marker of [
-    "civo",
-    "100",
-    "dacooder",
-    "20",
-    "DimpuMudit",
-    "17",
-    "Ko-fi Supporter",
-    "10",
-    "greggey",
-    "Timmcd",
     "topbar-supporter-strip",
     "topbar-supporter-window",
     "topbar-supporter-track",
@@ -52,7 +61,6 @@ test("v2 owns a static supporter list while both builders stay request-free", as
   ]) {
     assert.match(ticker, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
-  assert.match(v2Island, /KofiLeaderboardTicker/);
 });
 const rewriteTemplatePath = new URL("../public/templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml", import.meta.url);
 const rewriteQollockTemplatePath = new URL("../public/templates/hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml", import.meta.url);
@@ -216,7 +224,7 @@ test("v2 topbar keeps workflow, profile, utility, and supporter controls grouped
   assert.match(v2Island, /className="topbar-utility-bar"/);
   assert.match(v2Island, /className="topbar-support-actions"/);
   assert.ok(titleRowMatch);
-  assert.match(titleRowMatch[1], /<span className="panorama-brand">HP Colors<\/span>[\s\S]*?className="commit-version-link"[\s\S]*?<KofiLeaderboardTicker\s*\/>/);
+  assert.match(titleRowMatch[1], /<span className="panorama-brand">HP Colors<\/span>[\s\S]*?className="commit-version-link"[\s\S]*?<KofiLeaderboardTicker supporters=\{supporters\}\s*\/>/);
   assert.doesNotMatch(titleRowMatch[1], /topbar-support-actions/);
   assert.match(
     v2Island,

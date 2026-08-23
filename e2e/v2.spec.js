@@ -92,6 +92,28 @@ test('v1 and v2 never request the remote Ko-fi leaderboard script', async ({ pag
   expect(requestCount).toBe(0);
 });
 
+test('supporter strip is static, passive, and uses the reviewed rows', async ({ page }) => {
+  const externalRequests = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.hostname !== '127.0.0.1') externalRequests.push(request.url());
+  });
+
+  await page.goto('supporters-strip/');
+
+  const strip = page.locator('.supporter-strip');
+  const track = strip.locator('.supporter-strip-track');
+  const sequences = track.locator('.supporter-strip-sequence');
+  await expect(strip).toBeVisible();
+  await expect(sequences).toHaveCount(2);
+  await expect(sequences.first().locator('.supporter-strip-item')).toHaveCount(7);
+  expect(await sequences.first().locator('.supporter-strip-item').allTextContents()).toEqual(STATIC_SUPPORTER_TEXT);
+  await expect(track).toHaveCSS('animation-name', 'supporter-strip-scroll');
+  await expect(track).toHaveCSS('animation-duration', '24s');
+  await expect(page.locator('a, button, input, form')).toHaveCount(0);
+  expect(externalRequests).toEqual([]);
+});
+
 test('v2 keeps the wide title row ordered and renders static supporters with donation totals', async ({ page }) => {
   await page.setViewportSize({ width: 1460, height: 900 });
   await page.goto('v2/');

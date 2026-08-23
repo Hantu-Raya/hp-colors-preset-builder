@@ -1,0 +1,45 @@
+---
+import { loadSupporters } from '../supportersData.js';
+import '../styles/supporters-strip.css';
+
+const supporters = await loadSupporters();
+const sequences = ['primary', 'duplicate'];
+const usdFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2
+});
+const accessibleLabel = `Ko-fi top supporters: ${supporters
+  .map(({ rank, displayName, totalUsd }) => `${rank} ${displayName} ${usdFormatter.format(totalUsd)}`)
+  .join(', ')}`;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'none'; connect-src 'none'; img-src 'none'; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>HP Colors top supporters</title>
+  </head>
+  <body>
+    <div class="supporter-strip" role="group" aria-label={accessibleLabel}>
+      <div class="supporter-strip-track" aria-hidden="true">
+        {sequences.map((sequence) => (
+          <div class="supporter-strip-sequence" data-sequence={sequence}>
+            {supporters.map(({ rank, displayName, totalUsd }) => (
+              <span class:list={['supporter-strip-item', rank <= 3 && `supporter-strip-place-${rank}`]}>
+                <span class="supporter-strip-rank">{rank}</span>
+                <span class="supporter-strip-name">{displayName}</span>
+                <span class="supporter-strip-amount">{usdFormatter.format(totalUsd)}</span>
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  </body>
+</html>

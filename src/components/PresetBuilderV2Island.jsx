@@ -302,7 +302,7 @@ function PrecisePipsDialog({ initialMode = 'precise', onModeChange = null, onClo
 }
 
 
-export default function PresetBuilderIsland({ gitCommitInfo = null }) {
+export default function PresetBuilderIsland({ gitCommitInfo = null, supporters = [] }) {
   const defaultState = useMemo(() => HP_FIELD_CATALOG.createDefaultState(), []);
   const rewriteDefaultState = useMemo(() => REWRITE_FIELD_CATALOG.createDefaultState(), []);
   const [freshGitCommitInfo, setFreshGitCommitInfo] = useState(gitCommitInfo);
@@ -744,7 +744,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                   <code>{activeGitCommitInfo.shortHash}</code>
                 </a>
               ) : null}
-              <KofiLeaderboardTicker />
+              <KofiLeaderboardTicker supporters={supporters} />
             </div>
           </div>
           <div className="panorama-header-actions">

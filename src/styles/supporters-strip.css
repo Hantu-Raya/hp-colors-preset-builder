@@ -1,0 +1,82 @@
+:root {
+  color-scheme: dark;
+  font-family: "Radiance", "Arial", sans-serif;
+  background: transparent;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.supporter-strip {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  color: #a9a6a0;
+}
+
+.supporter-strip-track {
+  display: flex;
+  flex: 0 0 auto;
+  min-width: max-content;
+  animation: supporter-strip-scroll 24s linear infinite;
+  will-change: transform;
+}
+
+.supporter-strip-sequence {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 18px;
+  padding-right: 30px;
+  white-space: nowrap;
+}
+
+.supporter-strip-item {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.supporter-strip-rank,
+.supporter-strip-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.supporter-strip-place-1 {
+  color: #f2cf73;
+  text-shadow: 0 0 7px rgb(242 207 115 / 45%);
+}
+
+.supporter-strip-place-2 {
+  color: #d5dce5;
+  text-shadow: 0 0 7px rgb(213 220 229 / 38%);
+}
+
+.supporter-strip-place-3 {
+  color: #d59a78;
+  text-shadow: 0 0 7px rgb(213 154 120 / 42%);
+}
+
+@keyframes supporter-strip-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}

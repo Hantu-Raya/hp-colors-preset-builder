@@ -1,9 +1,11 @@
 ---
 import PresetBuilderV2Island from '../components/PresetBuilderV2Island.jsx';
 import { getGitCommitInfo } from '../gitCommitInfo.js';
+import { loadSupporters } from '../supportersData.js';
 import '../styles/v2.css';
 
 const gitCommitInfo = getGitCommitInfo();
+const supporters = await loadSupporters();
 ---
 
 <html lang="en">
@@ -25,7 +27,7 @@ const gitCommitInfo = getGitCommitInfo();
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
     <main id="main-content" class="shell">
-      <PresetBuilderV2Island gitCommitInfo={gitCommitInfo} client:load />
+      <PresetBuilderV2Island gitCommitInfo={gitCommitInfo} supporters={supporters} client:load />
     </main>
   </body>
 </html>
