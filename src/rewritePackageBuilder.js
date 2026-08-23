@@ -90,6 +90,8 @@ export const REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   "HPColorsEditorRoot",
   REWRITE_PRESET_STORE_PANEL_ID
 ]);
+const REWRITE_MENU_ONCANCEL = "if (!$.HPColorsMenuCancel()) $.DispatchEvent('CitadelResumePlaying', $.GetContextPanel())";
+const REWRITE_MENU_ONCANCEL_XML = REWRITE_MENU_ONCANCEL.replaceAll("'", "&apos;");
 const REWRITE_QOLLOCK_MENU_ONCANCEL = "if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { $.DispatchEvent('CitadelResumePlaying', $.GetContextPanel()); }";
 
 const XML_TOKEN = /<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<![\s\S]*?>|<[^>]*>|[^<]+/g;
@@ -221,7 +223,7 @@ function requireMenuContract(
   root,
   {
     expectedOnload = "$.HPColorsMenuBoot()",
-    expectedOncancel = "if (!$.HPColorsMenuCancel()) CitadelResumePlaying()",
+    expectedOncancel = REWRITE_MENU_ONCANCEL,
     expectedMenuAttributes = null,
     requiredPanelIds = REWRITE_PRESET_REQUIRED_PANEL_IDS
   } = {}
@@ -293,7 +295,7 @@ function inspectRewriteXml(
     scriptIncludes = REWRITE_PRESET_SCRIPT_INCLUDES,
     requiredPanelIds = REWRITE_PRESET_REQUIRED_PANEL_IDS,
     expectedOnload = "$.HPColorsMenuBoot()",
-    expectedOncancel = "if (!$.HPColorsMenuCancel()) CitadelResumePlaying()",
+    expectedOncancel = REWRITE_MENU_ONCANCEL,
     expectedMenuAttributes = null
   } = {}
 ) {
@@ -499,11 +501,11 @@ export function buildRewritePresetPackage(input, positionalTemplateText = null) 
 
 function mergeRewriteShowranksTemplate(templateText) {
   const inspected = inspectRewritePresetTemplate(templateText);
-  const canonicalMenuTag = '<CitadelHudEscapeMenu onload="$.HPColorsMenuBoot()" oncancel="if (!$.HPColorsMenuCancel()) CitadelResumePlaying()">';
+  const canonicalMenuTag = `<CitadelHudEscapeMenu onload="$.HPColorsMenuBoot()" oncancel="${REWRITE_MENU_ONCANCEL_XML}">`;
   const lastScriptInclude = `    <include src="${REWRITE_PRESET_SCRIPT_INCLUDES[REWRITE_PRESET_SCRIPT_INCLUDES.length - 1]}" />`;
   const showrankInclude = `    <include src="${REWRITE_SHOWRANKS_SCRIPT_INCLUDE}" />`;
   const newline = inspected.text.includes("\r\n") ? "\r\n" : "\n";
-  const showranksMenuTag = `<CitadelHudEscapeMenu onload="${REWRITE_SHOWRANKS_MENU_ONLOAD}" oncancel="if (!$.HPColorsMenuCancel()) CitadelResumePlaying()" onmouseover="${REWRITE_SHOWRANKS_MENU_ONMOUSEOVER}" onmouseout="${REWRITE_SHOWRANKS_MENU_ONMOUSEOUT}">`;
+  const showranksMenuTag = `<CitadelHudEscapeMenu onload="${REWRITE_SHOWRANKS_MENU_ONLOAD}" oncancel="${REWRITE_MENU_ONCANCEL_XML}" onmouseover="${REWRITE_SHOWRANKS_MENU_ONMOUSEOVER}" onmouseout="${REWRITE_SHOWRANKS_MENU_ONMOUSEOUT}">`;
   if (!inspected.text.includes(canonicalMenuTag)) {
     throw new Error("Rewrite XML menu lifecycle contract is stale or incompatible");
   }

@@ -23,6 +23,7 @@ import { createVpkArchive, readVpkArchive, writeVpkArchive } from "../src/vpkArc
 
 const TEMPLATE_PATH = new URL("../public/templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml", import.meta.url);
 const PRESET_CODE = `HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Unicode ${String.fromCodePoint(0x1f680)} / \\"safe\\"","mode":"all","heroes":[],"values":[],"conditions":null}],"selectedPresetId":"user_0001"}`;
+const ESCAPE_FALLBACK_XML = "if (!$.HPColorsMenuCancel()) $.DispatchEvent(&apos;CitadelResumePlaying&apos;, $.GetContextPanel())";
 
 const templateText = await readFile(TEMPLATE_PATH, "utf8");
 
@@ -48,10 +49,13 @@ test("rewrite template loads the shared settings contract and preserves native E
     templateText,
     /<include src="s2r:\/\/panorama\/scripts\/hp_colors_contract\.vjs_c" \/>\s*<include src="s2r:\/\/panorama\/scripts\/hp_colors_state\.vjs_c" \/>/
   );
-  assert.match(
-    templateText,
-    /<CitadelHudEscapeMenu onload="\$\.HPColorsMenuBoot\(\)" oncancel="if \(!\$\.HPColorsMenuCancel\(\)\) CitadelResumePlaying\(\)">/
+  assert.ok(
+    templateText.includes(
+      `<CitadelHudEscapeMenu onload="$.HPColorsMenuBoot()" oncancel="${ESCAPE_FALLBACK_XML}">`
+    )
   );
+  assert.equal(templateText.split(ESCAPE_FALLBACK_XML).length - 1, 3);
+  assert.doesNotMatch(templateText, /CitadelResumePlaying\(\)/);
 });
 
 test("rewrite template keeps the native menu entry and shared threshold ownership", () => {
@@ -99,7 +103,7 @@ test("rewrite package rejects stale, malformed, populated, and incompatible XML 
   assert.throws(
     () => validateRewritePresetTemplate(
       templateText.replace(
-        'oncancel="if (!$.HPColorsMenuCancel()) CitadelResumePlaying()"',
+        `oncancel="${ESCAPE_FALLBACK_XML}"`,
         'oncancel="$.HPColorsMenuCancel()"'
       )
     ),
@@ -133,9 +137,10 @@ test("rewrite VPK rejects any asset besides the XML layout", () => {
 test("showranks package merges the ShowRank escape-menu hooks and round-trips HPCRP1", () => {
   const built = buildRewriteShowranksPresetPackage({ templateText, presetCode: PRESET_CODE });
   assert.match(built.sourceText, /<include src="s2r:\/\/panorama\/scripts\/showrank_barebones\.vjs_c" \/>/);
-  assert.match(
-    built.sourceText,
-    /<CitadelHudEscapeMenu onload="\$\.HPColorsMenuBoot\(\); if \(\$\.ShowRankBarebonesEscapeOpen\) \$\.ShowRankBarebonesEscapeOpen\(\);" oncancel="if \(!\$\.HPColorsMenuCancel\(\)\) CitadelResumePlaying\(\)" onmouseover="if \(\$\.ShowRankBarebonesEscapeOpen\) \$\.ShowRankBarebonesEscapeOpen\(\);" onmouseout="if \(\$\.ShowRankBarebonesEscapeOut\) \$\.ShowRankBarebonesEscapeOut\(\);">/
+  assert.ok(
+    built.sourceText.includes(
+      `<CitadelHudEscapeMenu onload="$.HPColorsMenuBoot(); if ($.ShowRankBarebonesEscapeOpen) $.ShowRankBarebonesEscapeOpen();" oncancel="${ESCAPE_FALLBACK_XML}" onmouseover="if ($.ShowRankBarebonesEscapeOpen) $.ShowRankBarebonesEscapeOpen();" onmouseout="if ($.ShowRankBarebonesEscapeOut) $.ShowRankBarebonesEscapeOut();">`
+    )
   );
   const inspected = inspectRewriteShowranksPresetTemplate(built.sourceText, { requireEmpty: false });
   assert.deepEqual(inspected.scriptIncludes, [
