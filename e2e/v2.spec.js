@@ -464,34 +464,66 @@ test('v2 preview keeps high-health pip groups readable', async ({ page }) => {
   expect(minorStepPixels).toBeGreaterThanOrEqual(4);
 });
 
-test('v2 preview switches team colors when Use team color at high HP is enabled', async ({ page }) => {
+test('v2 preview starts the enemy pulse at its configured threshold', async ({ page }) => {
   await page.goto('v2/');
   await clearPreviewStorage(page);
   await chooseRewriteQollockTarget(page);
 
-  const teamSwitch = page.locator('.healthbar-preview-team-switch');
+  const health = page.locator('#healthbar-preview-health');
+  await health.evaluate((input) => {
+    input.value = '25';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+
+  const pulse = page.locator('.healthbar-preview-pulse-overlay');
+  const pulseBox = await pulse.boundingBox();
+  expect(pulseBox.width).toBeGreaterThan(0);
+  await expect(pulse).toHaveClass(/is-active/);
+  await expect(pulse).toHaveCSS('animation-name', 'healthbar-preview-pulse');
+});
+
+test('v2 preview offers only Team 1 and Team 2 for enabled enemy and ally team colors', async ({ page }) => {
+  await page.goto('v2/');
+  await clearPreviewStorage(page);
+  await chooseRewriteQollockTarget(page);
+
+  const preview = page.locator('.healthbar-preview');
+  const teamSwitch = preview.locator('.healthbar-preview-team-switch');
+  const fill = preview.locator('.healthbar-preview-health-layer');
   await expect(teamSwitch).toHaveCount(0);
 
   await page.getByRole('option', { name: '02 ENEMY' }).click();
-  const teamToggle = page.getByRole('checkbox', { name: 'Use team color at high HP' });
-  await teamToggle.click();
-  await expect(teamToggle).toHaveAttribute('aria-checked', 'true');
+  const enemyToggle = page.getByRole('checkbox', { name: 'Use team color at high HP' });
+  await enemyToggle.click();
+  await expect(enemyToggle).toHaveAttribute('aria-checked', 'true');
 
   await expect(teamSwitch).toBeVisible();
-  const fill = page.locator('.healthbar-preview-health-layer');
-  const defaultColor = await fill.evaluate((element) => getComputedStyle(element).backgroundColor);
+  await expect(teamSwitch.getByRole('radio')).toHaveCount(2);
+  await expect(teamSwitch.getByRole('radio', { name: 'Default' })).toHaveCount(0);
+  await expect(teamSwitch.getByRole('radio', { name: 'Team 1' })).toHaveAttribute('aria-checked', 'true');
+  const enemyTeam1Color = await fill.evaluate((element) => getComputedStyle(element).backgroundColor);
 
-  await teamSwitch.getByRole('radio', { name: 'Team 1' }).click();
-  const team1Color = await fill.evaluate((element) => getComputedStyle(element).backgroundColor);
   await teamSwitch.getByRole('radio', { name: 'Team 2' }).click();
-  const team2Color = await fill.evaluate((element) => getComputedStyle(element).backgroundColor);
+  const enemyTeam2Color = await fill.evaluate((element) => getComputedStyle(element).backgroundColor);
+  expect(enemyTeam2Color).not.toEqual(enemyTeam1Color);
 
-  expect(team1Color).not.toEqual(defaultColor);
-  expect(team2Color).not.toEqual(team1Color);
+  await page.getByRole('option', { name: '03 ALLY' }).click();
+  const allyEnabled = page.getByRole('checkbox', { name: 'Color ally HP bars' });
+  await allyEnabled.click();
+  await expect(allyEnabled).toHaveAttribute('aria-checked', 'true');
+  const allyToggle = page.getByRole('checkbox', { name: 'Use team color at high HP' });
+  await allyToggle.click();
+  await expect(allyToggle).toHaveAttribute('aria-checked', 'true');
+  await preview.getByRole('radio', { name: 'ALLY' }).click();
 
-  await teamSwitch.getByRole('radio', { name: 'Default' }).click();
-  const restoredColor = await fill.evaluate((element) => getComputedStyle(element).backgroundColor);
-  expect(restoredColor).toEqual(defaultColor);
+  await expect(teamSwitch).toBeVisible();
+  await expect(teamSwitch.getByRole('radio')).toHaveCount(2);
+  await expect(teamSwitch.getByRole('radio', { name: 'Default' })).toHaveCount(0);
+  await teamSwitch.getByRole('radio', { name: 'Team 1' }).click();
+  const allyTeam1Color = await fill.evaluate((element) => getComputedStyle(element).backgroundColor);
+  await teamSwitch.getByRole('radio', { name: 'Team 2' }).click();
+  const allyTeam2Color = await fill.evaluate((element) => getComputedStyle(element).backgroundColor);
+  expect(allyTeam2Color).not.toEqual(allyTeam1Color);
 });
 
 test('v2 schema rows and preview actions hold together at narrow window sizes', async ({ page }) => {

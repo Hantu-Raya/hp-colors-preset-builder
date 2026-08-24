@@ -102,6 +102,12 @@ test("rewrite package rejects stale, malformed, populated, and incompatible XML 
   assert.throws(() => validateRewritePresetTemplate(templateText.replace("hp_colors_rewrite_preset_version=\"1\"", "hp_colors_rewrite_preset_version=\"2\"")), /stale or incompatible/);
   assert.throws(() => validateRewritePresetTemplate(templateText.replace("hp_colors_menu.vjs_c", "hp_colors_builder_presets.vjs_c")), /stale or incompatible/);
   assert.throws(() => validateRewritePresetTemplate(templateText.replace("HPColorsRewritePresetStore", "OtherStore")), /exactly one HPColorsRewritePresetStore/);
+  for (const id of ["HPColorsReadoutMaxTeamColorToggle", "HPColorsAllyTeamHighToggle"]) {
+    assert.throws(
+      () => validateRewritePresetTemplate(templateText.replace(`id="${id}"`, `id="Missing${id}"`)),
+      /panel contract is stale or incompatible/
+    );
+  }
   assert.throws(
     () => validateRewritePresetTemplate(
       templateText.replace(

@@ -47,8 +47,6 @@ test("Rewrite QOLLOCK template mirrors the composite include and panel contract"
     templateText,
     /<CitadelHTMLPanel id="HPColorsSupporterTicker"[^>]*hittest="false"[^>]*acceptsfocus="false"/
   );
-  assert.match(templateText, /id="HPColorsReadoutMaxTeamColorToggle"/);
-  assert.match(templateText, /id="HPColorsAllyTeamHighToggle"/);
   for (const id of ["newgame", "watchgame", "guides"]) {
     assert.match(templateText, new RegExp(`id="${id}"`), id);
   }
@@ -83,6 +81,12 @@ test("Rewrite QOLLOCK VPK rejects runtime assets and stale composite layouts", (
     () => validateRewriteQollockPresetTemplate(templateText.replace("qollock_hp_colors_bridge.vjs_c", "hp_colors_menu.vjs_c")),
     /stale or incompatible/
   );
+  for (const id of ["HPColorsReadoutMaxTeamColorToggle", "HPColorsAllyTeamHighToggle"]) {
+    assert.throws(
+      () => validateRewriteQollockPresetTemplate(templateText.replace(`id="${id}"`, `id="Missing${id}"`)),
+      /panel contract is stale or incompatible/
+    );
+  }
   assert.throws(
     () => inspectRewriteQollockPresetTemplate(templateText.replace('<Button id="ModSettingsBtn"', '<Button id="OtherSettingsBtn"')),
     /panel contract is stale or incompatible/

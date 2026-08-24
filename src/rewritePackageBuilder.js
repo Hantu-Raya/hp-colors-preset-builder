@@ -25,6 +25,7 @@ const REWRITE_PRESET_SCRIPT_INCLUDES = Object.freeze([
 const REWRITE_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   "HPColorsMenuButton",
   "HPColorsEditorRoot",
+  "HPColorsReadoutMaxTeamColorToggle",
   "HPColorsAllyTeamHighToggle",
   REWRITE_PRESET_STORE_PANEL_ID
 ]);
@@ -89,6 +90,7 @@ export const REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   "guides",
   "HPColorsMenuButton",
   "HPColorsEditorRoot",
+  "HPColorsReadoutMaxTeamColorToggle",
   "HPColorsAllyTeamHighToggle",
   "HPColorsSupporterTicker",
   REWRITE_PRESET_STORE_PANEL_ID

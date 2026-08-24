@@ -3284,10 +3284,6 @@
   align-items: center;
 }
 
-.healthbar-preview-team-switch {
-  grid-template-columns: auto repeat(3, minmax(0, 1fr));
-}
-
 .healthbar-preview-relation > span,
 .healthbar-preview-zoom > span {
   color: var(--muted-foreground);

@@ -232,7 +232,7 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
   let low = enemyRole ? state.hp_color_low : state.hp_friend_color_low;
   let mid = enemyRole ? state.hp_color_mid : state.hp_friend_color_mid;
   let high = enemyRole ? state.hp_color_high : state.hp_friend_color_high;
-  const teamHighEnabled = enemyRole ? state.hp_team_colors : relation === "ally" ? state.hp_friend_team_colors : false;
+  const teamHighEnabled = roleOwned && (enemyRole ? state.hp_team_colors : state.hp_friend_team_colors);
   if (teamHighEnabled && (team === "team1" || team === "team2")) {
     high = team === "team1" ? STOCK.team1 : STOCK.team2;
   }
@@ -256,7 +256,6 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
     ? enumValue(state, "hp_pulse_color_mode", ["fixed", "gradient"], "gradient")
     : "fixed";
   const configuredPulseColor = enemyRole ? state.hp_pulse_color : state.hp_friend_pulse_color;
-  const colorPulse = pulseActive && enemyRole && pulseColorEnabled && pulseColorMode === "gradient";
   let barColor = normalColor;
   if (pulseActive && pulseColorEnabled && (pulseColorMode === "fixed" || !enemyRole)) barColor = configuredPulseColor;
 
@@ -371,6 +370,7 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
 
   const pulseDuration = pulseActive ? `${(60 / pulseBpm).toFixed(3)}s` : "";
   const pulseClassName = pulseActive ? pulseIntensity === 0 ? "subtle" : pulseIntensity === 2 ? "intense" : "medium" : "";
+  const pulseColor = pulseActive ? (pulseColorEnabled ? configuredPulseColor : barColor) : "";
   const pulse = {
     active: pulseActive,
     paused: pulseActive && normalizedScenario.animationPaused,
@@ -378,14 +378,14 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
     className: pulseClassName,
     bpm: pulseBpm,
     duration: pulseDuration,
-    color: pulseActive ? (pulseColorEnabled ? configuredPulseColor : barColor) : "",
+    color: pulseColor,
     colorMode: pulseColorMode,
     hideBar,
     readoutActive: pulseActive && enemyRole && !!state.hp_pulse_text_enabled && readoutEnabled,
     readoutModifiers,
-    overlayVisible: colorPulse,
-    overlayWidth: colorPulse ? normalizedScenario.healthPercent : 0,
-    overlayColor: colorPulse ? configuredPulseColor : ""
+    overlayVisible: pulseActive,
+    overlayWidth: pulseActive ? normalizedScenario.healthPercent : 0,
+    overlayColor: pulseColor
   };
   const marker = {
     visible: markerEnabled,

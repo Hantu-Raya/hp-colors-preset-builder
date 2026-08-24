@@ -226,7 +226,10 @@ test("v2 preview maps each texture role and explicit geometry once", async () =>
   assert.doesNotMatch(css, /\.healthbar-preview-ult-ready\s*\{[^}]*filter:/);
   assert.match(preview, /hp_team_colors[\s\S]*healthbar-preview-team-switch/);
   assert.match(preview, /hp_friend_team_colors[\s\S]*healthbar-preview-team-switch/);
-  assert.match(css, /\.healthbar-preview-team-switch\s*\{[^}]*grid-template-columns:\s*auto repeat\(3/);
+  assert.doesNotMatch(preview, /defaultTeam|>Default<\/button>/);
+  assert.match(preview, /if \(!teamColorActive \|\| teamSelected\) return;[\s\S]*updateScenario\('team', 'team1'\)/);
+  assert.match(css, /\.healthbar-preview-relation,[\s\S]*grid-template-columns:\s*auto repeat\(2/);
+  assert.doesNotMatch(css, /\.healthbar-preview-team-switch\s*\{/);
   assert.match(css, /\.healthbar-preview-unit-info[\s\S]*transform:\s*translateX\(30%\)/);
   assert.match(css, /\.healthbar-preview-level[\s\S]*z-index:\s*6;[\s\S]*transform:\s*translateX\(-70%\)/);
   assert.match(css, /\.healthbar-preview-unit-info[\s\S]*z-index:\s*9;/);

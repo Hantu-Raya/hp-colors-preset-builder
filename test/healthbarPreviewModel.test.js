@@ -125,6 +125,9 @@ test("pulse threshold uses sampled health percent with shields", () => {
 
   assert.equal(rawThreshold.pulse.active, false);
   assert.equal(sampledThreshold.pulse.active, true);
+  assert.equal(sampledThreshold.pulse.overlayVisible, true);
+  assert.equal(sampledThreshold.pulse.overlayWidth, 19);
+  assert.equal(sampledThreshold.pulse.overlayColor, sampledThreshold.bar.color);
 });
 
 test("kill marker requires a positive parent and unowned ghoul bars stay stock", () => {
