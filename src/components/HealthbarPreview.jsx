@@ -424,7 +424,7 @@ function HealthbarPreview({ profileState = null, conversionRequired = false, pro
                   </div>
                   {killMarker.visible ? <span className="healthbar-preview-kill-marker" style={{ left: `${killMarkerLeftPercent}%`, width: `${killMarkerWidthPercent}%`, backgroundColor: killMarker.color || undefined, color: killMarker.color || undefined }} aria-label={`Kill zone threshold ${formatNumber(killMarker.thresholdPercent)} percent`} /> : null}
                   <Pips pips={pips} maxHealth={modelScenario.maxHealth} renderWidth={Math.max(1, barWidth - 4)} />
-                  <span className={`healthbar-preview-pulse-overlay${pulseVisible ? ' is-active' : ''}${pulsePaused ? ' is-paused' : ''}`} style={{ width: `${clampPercent(pulse.overlayWidth, 100)}%`, backgroundColor: pulse.overlayColor || pulse.color || undefined, animationDuration: pulse.duration || undefined }} aria-hidden="true" />
+                  <span className={`healthbar-preview-pulse-overlay${pulseVisible ? ' is-active' : ''}${pulsePaused ? ' is-paused' : ''}`} style={{ width: `${clampPercent(pulse.overlayWidth, 100)}%`, backgroundColor: pulse.overlayColor || pulse.color || undefined, '--healthbar-preview-pulse-duration': pulse.duration || undefined }} aria-hidden="true" />
                 </div>
               </div>
             </div>
@@ -452,7 +452,7 @@ function HealthbarPreview({ profileState = null, conversionRequired = false, pro
             <PercentageControl id="healthbar-preview-damage" label="Damage layer" value={modelScenario.damagePercent} maxHealth={modelScenario.maxHealth} onChange={(value) => updateScenario('damagePercent', value)} />
             <PercentageControl id="healthbar-preview-bullet-shield" label="Bullet shield" value={modelScenario.bulletShieldPercent} maxHealth={modelScenario.maxHealth} onChange={(value) => updateScenario('bulletShieldPercent', value)} />
             <PercentageControl id="healthbar-preview-tech-shield" label="Tech shield" value={modelScenario.techShieldPercent} maxHealth={modelScenario.maxHealth} onChange={(value) => updateScenario('techShieldPercent', value)} />
-            <label className="healthbar-preview-pause-control"><span><strong>Animation</strong><small>Pulse starts automatically unless paused or reduced motion applies.</small></span><button type="button" role="switch" aria-checked={paused} className={paused ? 'is-active' : ''} onClick={() => updatePaused(!paused)}>{paused ? 'Paused' : 'Running'}</button></label>
+            <label className="healthbar-preview-pause-control"><span><strong>Animation</strong><small>Pulse starts automatically unless paused.</small></span><button type="button" role="switch" aria-checked={paused} className={paused ? 'is-active' : ''} onClick={() => updatePaused(!paused)}>{paused ? 'Paused' : 'Running'}</button></label>
           </div>
         </details>
       </div>

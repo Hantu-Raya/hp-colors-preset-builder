@@ -237,7 +237,9 @@ test("v2 preview maps each texture role and explicit geometry once", async () =>
   assert.match(css, /\.healthbar-preview-canvas\.is-zoomed[\s\S]*overflow:\s*auto;/);
   assert.match(css, /\.healthbar-preview-hud[\s\S]*transform:\s*translate\(/);
   assert.doesNotMatch(css, /\.healthbar-preview-bar[\s\S]*scaleX/);
-  assert.match(css, /prefers-reduced-motion[\s\S]*animation:\s*none/);
+  assert.match(preview, /--healthbar-preview-pulse-duration/);
+  assert.match(css, /prefers-reduced-motion[\s\S]*healthbar-preview-pulse-overlay\.is-active[\s\S]*animation:\s*healthbar-preview-pulse var\(--healthbar-preview-pulse-duration,\s*0\.8s\) ease-in-out infinite !important/);
+  assert.doesNotMatch(css, /healthbar-preview-pulse-overlay\.is-active\s*\{[^}]*animation:\s*none/);
   assert.doesNotMatch(css, /healthbar-preview-bar\.is-hidden[\s\S]*!important/);
 });
 

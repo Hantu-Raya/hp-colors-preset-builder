@@ -3562,7 +3562,7 @@
 }
 
 .healthbar-preview-pulse-overlay.is-active {
-  animation: healthbar-preview-pulse 0.8s ease-in-out infinite;
+  animation: healthbar-preview-pulse var(--healthbar-preview-pulse-duration, 0.8s) ease-in-out infinite;
 }
 
 .healthbar-preview-pulse-overlay.is-paused {
@@ -3820,7 +3820,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .healthbar-preview-pulse-overlay.is-active {
-    animation: none;
-    opacity: 0.12;
+    animation: healthbar-preview-pulse var(--healthbar-preview-pulse-duration, 0.8s) ease-in-out infinite !important;
   }
 }

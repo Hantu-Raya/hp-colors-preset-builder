@@ -464,7 +464,8 @@ test('v2 preview keeps high-health pip groups readable', async ({ page }) => {
   expect(minorStepPixels).toBeGreaterThanOrEqual(4);
 });
 
-test('v2 preview starts the enemy pulse at its configured threshold', async ({ page }) => {
+test('v2 preview starts the enemy pulse at its configured threshold with reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('v2/');
   await clearPreviewStorage(page);
   await chooseRewriteQollockTarget(page);
@@ -474,11 +475,12 @@ test('v2 preview starts the enemy pulse at its configured threshold', async ({ p
     input.value = '25';
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
+  await expect(health).toHaveValue('25');
 
   const pulse = page.locator('.healthbar-preview-pulse-overlay');
+  await expect(pulse).toHaveClass(/is-active/);
   const pulseBox = await pulse.boundingBox();
   expect(pulseBox.width).toBeGreaterThan(0);
-  await expect(pulse).toHaveClass(/is-active/);
   await expect(pulse).toHaveCSS('animation-name', 'healthbar-preview-pulse');
 });
 
