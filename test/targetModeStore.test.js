@@ -4,6 +4,7 @@ import test from "node:test";
 import { HP_COLORS_MOD_VARIANTS } from "../src/hpModVariants.js";
 import {
   TARGET_MODE_STORAGE_KEY,
+  V2_TARGET_MODE_STORAGE_KEY,
   getTargetModeDetails,
   loadTargetModeState,
   normalizeTargetMode,
@@ -54,6 +55,21 @@ test("loadTargetModeState restores a saved full target without opening the picke
   });
 });
 
+test("loadTargetModeState does not carry a V1 Full target into V2", () => {
+  const state = loadTargetModeState(createStorage({
+    [TARGET_MODE_STORAGE_KEY]: HP_COLORS_MOD_VARIANTS.FULL
+  }), {
+    storageKey: V2_TARGET_MODE_STORAGE_KEY,
+    profileStorageKey: "hp_colors_preset_builder_profiles_v2"
+  });
+
+  assert.deepEqual(state, {
+    targetMode: HP_COLORS_MOD_VARIANTS.MINIMAL,
+    shouldShowPicker: true,
+    isUpgradePrompt: false
+  });
+});
+
 test("loadTargetModeState restores Rewrite QOLLOCK without opening the picker", () => {
   const state = loadTargetModeState(createStorage({
     [TARGET_MODE_STORAGE_KEY]: HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK
@@ -76,6 +92,12 @@ test("saveTargetModeState writes only normalized known target values", () => {
   assert.equal(storage.getItem(TARGET_MODE_STORAGE_KEY), HP_COLORS_MOD_VARIANTS.FULL);
 
   saveTargetModeState(storage, HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
+  assert.equal(storage.getItem(TARGET_MODE_STORAGE_KEY), HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
+
+  saveTargetModeState(storage, HP_COLORS_MOD_VARIANTS.FULL, {
+    storageKey: V2_TARGET_MODE_STORAGE_KEY
+  });
+  assert.equal(storage.getItem(V2_TARGET_MODE_STORAGE_KEY), HP_COLORS_MOD_VARIANTS.FULL);
   assert.equal(storage.getItem(TARGET_MODE_STORAGE_KEY), HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
 });
 

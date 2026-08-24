@@ -1,6 +1,7 @@
 import { DEFAULT_HP_COLORS_MOD_VARIANT, HP_COLORS_MOD_VARIANTS } from "./hpModVariants.js";
 
 export const TARGET_MODE_STORAGE_KEY = "hp_colors_preset_builder_target_mode_v1";
+export const V2_TARGET_MODE_STORAGE_KEY = "hp_colors_preset_builder_target_mode_v2";
 
 export const TARGET_MODE_CHOICES = Object.freeze([
   Object.freeze({
@@ -60,8 +61,8 @@ export function normalizeTargetMode(targetMode) {
 export function isRewriteQollockTarget(targetMode) {
   return normalizeTargetMode(targetMode) === HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK;
 }
-function readSavedTargetMode(storage) {
-  const raw = storage?.getItem?.(TARGET_MODE_STORAGE_KEY);
+function readSavedTargetMode(storage, storageKey) {
+  const raw = storage?.getItem?.(storageKey);
   if (!raw) return null;
   if (isKnownTargetMode(raw)) return raw;
   try {
@@ -72,9 +73,12 @@ function readSavedTargetMode(storage) {
   }
 }
 
-export function loadTargetModeState(storage, { profileStorageKey = null } = {}) {
+export function loadTargetModeState(storage, {
+  profileStorageKey = null,
+  storageKey = TARGET_MODE_STORAGE_KEY
+} = {}) {
   try {
-    const saved = readSavedTargetMode(storage);
+    const saved = readSavedTargetMode(storage, storageKey);
     if (isKnownTargetMode(saved)) {
       return {
         targetMode: saved,
@@ -98,10 +102,14 @@ export function loadTargetModeState(storage, { profileStorageKey = null } = {}) 
   }
 }
 
-export function saveTargetModeState(storage, targetMode) {
+export function saveTargetModeState(
+  storage,
+  targetMode,
+  { storageKey = TARGET_MODE_STORAGE_KEY } = {}
+) {
   if (!storage?.setItem) return { ok: true, error: null };
   try {
-    storage.setItem(TARGET_MODE_STORAGE_KEY, normalizeTargetMode(targetMode));
+    storage.setItem(storageKey, normalizeTargetMode(targetMode));
     return { ok: true, error: null };
   } catch (error) {
     return {

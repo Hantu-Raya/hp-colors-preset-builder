@@ -32,7 +32,11 @@ import {
 } from '../hpHeroData.js';
 import { HP_COLORS_MOD_VARIANTS } from '../hpModVariants.js';
 import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitCommitInfoRefresh.js';
-import { TARGET_MODE_CHOICES, isRewriteQollockTarget } from '../targetModeStore.js';
+import {
+  TARGET_MODE_CHOICES,
+  V2_TARGET_MODE_STORAGE_KEY,
+  isRewriteQollockTarget
+} from '../targetModeStore.js';
 import { copyText, downloadText } from '../download.js';
 import {
   cleanProfileName,
@@ -429,7 +433,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
       const targeted = commitPresetBuilderTargetMode({
         session: previous,
         targetMode: HP_COLORS_MOD_VARIANTS.FULL,
-        storage
+        storage,
+        targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY
       });
       return reducePresetBuilderSession(targeted, { type: 'ENSURE_REWRITE_PROFILES' }, {
         catalog: activeCatalog,
@@ -471,7 +476,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
     setSession((previous) => commitPresetBuilderTargetMode({
       session: previous,
       targetMode: nextMode,
-      storage
+      storage,
+      targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY
     }));
   }
 
@@ -495,7 +501,10 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
   useEffect(() => {
     const storage = typeof window !== 'undefined' ? window.localStorage : null;
     const migration = migrateLegacyV2ProfileState(storage, defaultState);
-    const loaded = loadPresetBuilderSession(storage, defaultState, { profileStorageKey: V2_STORAGE_KEY });
+    const loaded = loadPresetBuilderSession(storage, defaultState, {
+      profileStorageKey: V2_STORAGE_KEY,
+      targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY
+    });
     if (migration.error) loaded.feedback = { type: 'error', message: migration.error };
     setSession(loaded);
   }, [defaultState]);

@@ -182,9 +182,15 @@ export function createPresetBuilderSession(defaultState) {
   };
 }
 
-export function loadPresetBuilderSession(storage, defaultState, { profileStorageKey = PROFILE_STORAGE_KEY } = {}) {
+export function loadPresetBuilderSession(storage, defaultState, {
+  profileStorageKey = PROFILE_STORAGE_KEY,
+  targetModeStorageKey
+} = {}) {
   const profileState = loadProfileState(storage, defaultState, profileStorageKey);
-  const targetModeState = loadTargetModeState(storage, { profileStorageKey });
+  const targetModeState = loadTargetModeState(storage, {
+    profileStorageKey,
+    storageKey: targetModeStorageKey
+  });
   const showranksState = loadShowranksCompatibleState(storage);
   const storageError = profileState.error || targetModeState.error || showranksState.error || null;
   return {

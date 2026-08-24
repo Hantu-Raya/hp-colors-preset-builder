@@ -70,9 +70,16 @@ export function createRewriteQollockPresetTemplateLoader({ baseUrl = "/", fetchI
   };
 }
 
-export function commitPresetBuilderTargetMode({ session, targetMode, storage = null }) {
+export function commitPresetBuilderTargetMode({
+  session,
+  targetMode,
+  storage = null,
+  targetModeStorageKey
+}) {
   const normalizedTargetMode = normalizeTargetMode(targetMode);
-  const saved = saveTargetModeState(storage, normalizedTargetMode);
+  const saved = saveTargetModeState(storage, normalizedTargetMode, {
+    storageKey: targetModeStorageKey
+  });
   const nextSession = reducePresetBuilderSession(session, { type: "COMMIT_TARGET_MODE", targetMode: normalizedTargetMode });
   if (saved.ok) return nextSession;
   return reducePresetBuilderSession(nextSession, {
