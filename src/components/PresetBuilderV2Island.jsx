@@ -585,10 +585,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
     dispatchSessionIntent({ type: 'CLEAR_HEROES' });
   }
 
-  function handleDisableHeroSelection() {
-    dispatchSessionIntent({ type: 'DISABLE_HERO_SELECTION' });
-  }
-
   function handleSelectGroup(group) {
     let cursor = group;
     while (cursor?.children?.length) cursor = cursor.children[0];
@@ -720,7 +716,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
   }, [busy, dispatchSessionIntent]);
 
   const heroOptions = [
-    { id: 'off', label: 'Hero select off', avatar: 'Off', selected: activeHeroMode === HP_HERO_SCOPE_OFF, onSelect: handleDisableHeroSelection },
     { id: 'all', label: 'All heroes', avatar: 'All', selected: activeHeroMode === HP_HERO_SCOPE_ALL, onSelect: handleClearHeroes },
     ...HP_HEROES.map((hero) => ({
       id: hero.id,

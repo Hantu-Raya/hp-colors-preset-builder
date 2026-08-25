@@ -127,6 +127,7 @@ test.describe('desktop builder workflow', () => {
     await expect(profiles.locator('.profile-row-name').first()).toHaveText('Beta');
 
     await page.locator('.hero-selector-trigger').click();
+    await expect(page.getByRole('option', { name: 'Hero select off', exact: true })).toHaveCount(0);
     await page.getByRole('option', { name: 'Warden' }).click();
     await expect(page.locator('.hero-selector-value')).toHaveText(/Warden/);
     await page.locator('.hero-selector-trigger').click();

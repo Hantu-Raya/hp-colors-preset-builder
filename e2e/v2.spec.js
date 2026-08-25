@@ -709,6 +709,9 @@ test('v2 rewrite profiles build a rewrite-only pak96 and retain code-copy contro
   await page.goto('v2/');
   await chooseRewriteTarget(page);
   await openV2Presets(page);
+  await page.locator('.hero-selector-trigger').click();
+  await expect(page.getByRole('option', { name: 'Hero select off', exact: true })).toHaveCount(0);
+  await page.locator('.hero-selector-trigger').click();
 
   const actions = page.locator('.preset-overview-actions');
   await actions.getByRole('button', { name: 'Add preset' }).click();
