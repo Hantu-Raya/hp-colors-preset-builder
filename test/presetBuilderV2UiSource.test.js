@@ -48,8 +48,8 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
   assert.doesNotMatch(v1Page, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
   assert.doesNotMatch(v1Island, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
   assert.doesNotMatch(ticker, /MutationObserver|Loading top supporters|View Ko-fi leaderboard|const SUPPORTERS/);
-  assert.doesNotMatch(ticker, /Email|LastestTransactionId|@gmail\.com|@hotmail\.com/);
-  assert.doesNotMatch(stripPage, /client:|fetch\(|https?:\/\//i);
+  assert.doesNotMatch(ticker, /Email|LastestTransactionId|@gmail\.com|@hotmail\.com|totalUsd|supporter-(?:rank|amount)/);
+  assert.doesNotMatch(stripPage, /client:|fetch\(|https?:\/\/|totalUsd|supporter-strip-(?:rank|amount)/i);
   assert.match(stripPage, /script-src 'self'/);
   assert.match(stripPage, /supporters-strip-loop\.js\?v=32000/);
   assert.doesNotMatch(stripLoop, /fetch\(|XMLHttpRequest|WebSocket|sendBeacon|localStorage|sessionStorage/i);
@@ -65,8 +65,10 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
   assert.equal(stripBackground.readUInt32BE(20), 60);
   assert.match(supportersData, /readFile\(SUPPORTERS_CSV_PATH/);
   assert.match(supportersData, /MAX_SUPPORTERS = 10/);
-  assert.match(supportersCsv, /^rank,display_name,total_usd/m);
-  assert.match(supportersCsv, /Ko-fi Supporter/);
+  assert.match(supportersCsv, /^display_name$/m);
+  assert.match(supportersCsv, /^oOBansh33$/m);
+  assert.doesNotMatch(supportersCsv, /Ko-fi Supporter|rank|total_usd|@|LastSupportedDateUTC|TransactionId/i);
+  assert.match(supportersData, /must not identify an anonymous supporter/);
   assert.match(stripStyles, /animation:\s*supporter-strip-scroll 32s linear 1 forwards/);
   assert.match(stripStyles, /6\.25%[\s\S]*75%[\s\S]*84\.375%[\s\S]*100%/);
   assert.match(stripStyles, /supporter-strip-cycle-gap[\s\S]*96px/);
@@ -85,7 +87,6 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
     "topbar-supporter-track",
     "topbar-supporter-sequence",
     "topbar-supporter-item",
-    "topbar-supporter-amount",
     "https://ko-fi.com/hantuaraya/leaderboard",
     "ResizeObserver",
     "SUPPORTER_SPEED_PX_PER_SECOND = 36",

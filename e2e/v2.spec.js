@@ -12,15 +12,14 @@ const REWRITE_TEMPLATE_URL = new URL('../public/templates/hp_colors_rewrite/pano
 
 const KOFI_SCRIPT_URL = 'https://cdn.ko-fi.tools/v2/js/leaderboard.js';
 const KOFI_LEADERBOARD_URL = 'https://ko-fi.com/hantuaraya/leaderboard';
-const STATIC_SUPPORTER_LABEL = 'Ko-fi top supporters: 1 civo $100, 2 dacooder $20, 3 DimpuMudit $17, 4 Ko-fi Supporter $10, 5 Ko-fi Supporter $5, 6 greggey $5, 7 Timmcd $5';
+const STATIC_SUPPORTER_LABEL = 'Ko-fi supporters: civo, dacooder, DimpuMudit, greggey, oOBansh33, Timmcd';
 const STATIC_SUPPORTER_TEXT = [
-  '1civo$100',
-  '2dacooder$20',
-  '3DimpuMudit$17',
-  '4Ko-fi Supporter$10',
-  '5Ko-fi Supporter$5',
-  '6greggey$5',
-  '7Timmcd$5'
+  'civo',
+  'dacooder',
+  'DimpuMudit',
+  'greggey',
+  'oOBansh33',
+  'Timmcd'
 ];
 
 async function routeRewriteTemplate(page) {
@@ -112,7 +111,7 @@ test('supporter strip holds donor one and resets through a protected transition'
   const thanks = primary.locator('.supporter-strip-thanks');
   await expect(strip).toBeVisible();
   await expect(cycles).toHaveCount(2);
-  await expect(primarySequence.locator('.supporter-strip-item')).toHaveCount(7);
+  await expect(primarySequence.locator('.supporter-strip-item')).toHaveCount(6);
   expect(await primarySequence.locator('.supporter-strip-item').allTextContents()).toEqual(
     STATIC_SUPPORTER_TEXT,
   );
@@ -206,7 +205,7 @@ test('supporter strip holds donor one and resets through a protected transition'
   expect(externalRequests).toEqual([]);
 });
 
-test('v2 keeps the wide title row ordered and renders static supporters with donation totals', async ({ page }) => {
+test('v2 keeps the wide title row ordered and renders public supporter names', async ({ page }) => {
   await page.setViewportSize({ width: 1460, height: 900 });
   await page.goto('v2/');
   await chooseRewriteTarget(page);
@@ -243,24 +242,12 @@ test('v2 keeps the wide title row ordered and renders static supporters with don
   await expect(track.locator('.topbar-supporter-sequence')).toHaveCount(2);
   await expect(track.locator('.topbar-supporter-sequence').nth(1)).toHaveAttribute('aria-hidden', 'true');
   const supporterItems = track.locator('.topbar-supporter-sequence').first().locator('.topbar-supporter-item');
-  await expect(supporterItems).toHaveCount(7);
+  await expect(supporterItems).toHaveCount(6);
   expect(await supporterItems.allTextContents()).toEqual(STATIC_SUPPORTER_TEXT);
   const firstItemClasses = await supporterItems.first().locator(':scope > *').evaluateAll((nodes) => (
     nodes.map((node) => node.className)
   ));
-  expect(firstItemClasses).toEqual([
-    'topbar-supporter-rank',
-    'topbar-supporter-name',
-    'topbar-supporter-amount'
-  ]);
-  for (let index = 0; index < 3; index += 1) {
-    await expect(supporterItems.nth(index)).toHaveClass(new RegExp(`topbar-supporter-place-${index + 1}`));
-  }
-  const podiumShadows = await supporterItems.evaluateAll((items) => (
-    items.slice(0, 3).map((item) => getComputedStyle(item).textShadow)
-  ));
-  expect(new Set(podiumShadows).size).toBe(3);
-  expect(podiumShadows.every((shadow) => shadow !== 'none')).toBe(true);
+  expect(firstItemClasses).toEqual(['topbar-supporter-name']);
 
   await page.locator('#presetName').fill('Ticker survives rerender');
   await page.locator('#presetName').press('Tab');

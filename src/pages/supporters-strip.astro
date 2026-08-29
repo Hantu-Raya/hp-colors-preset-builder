@@ -3,14 +3,8 @@ import { loadSupporters } from '../supportersData.js';
 import '../styles/supporters-strip.css';
 
 const supporters = await loadSupporters();
-const usdFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2
-});
-const accessibleLabel = `Ko-fi top supporters: ${supporters
-  .map(({ rank, displayName, totalUsd }) => `${rank} ${displayName} ${usdFormatter.format(totalUsd)}`)
+const accessibleLabel = `Ko-fi supporters: ${supporters
+  .map(({ displayName }) => displayName)
   .join(', ')}. Thank you for supporting.`;
 ---
 
@@ -22,7 +16,7 @@ const accessibleLabel = `Ko-fi top supporters: ${supporters
       http-equiv="Content-Security-Policy"
       content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'none'; img-src 'self' data:; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
-    <title>HP Colors top supporters</title>
+    <title>HP Colors supporters</title>
   </head>
   <body>
     <div class="supporter-strip" role="group" aria-label={accessibleLabel}>
@@ -30,11 +24,9 @@ const accessibleLabel = `Ko-fi top supporters: ${supporters
         {['primary', 'duplicate'].map((cycle) => (
           <div class="supporter-strip-cycle" data-cycle={cycle}>
             <div class="supporter-strip-sequence">
-              {supporters.map(({ rank, displayName, totalUsd }) => (
-                <span class:list={['supporter-strip-item', rank <= 3 && `supporter-strip-place-${rank}`]}>
-                  <span class="supporter-strip-rank">{rank}</span>
+              {supporters.map(({ displayName }) => (
+                <span class="supporter-strip-item">
                   <span class="supporter-strip-name">{displayName}</span>
-                  <span class="supporter-strip-amount">{usdFormatter.format(totalUsd)}</span>
                 </span>
               ))}
             </div>

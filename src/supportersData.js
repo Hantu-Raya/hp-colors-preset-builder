@@ -3,9 +3,11 @@ import { resolve } from 'node:path';
 
 const SUPPORTERS_CSV_PATH = resolve(process.cwd(), 'public/data/supporters.csv');
 
-const EXPECTED_HEADER = ['rank', 'display_name', 'total_usd'];
+const EXPECTED_HEADER = ['display_name'];
 const MAX_SUPPORTERS = 10;
 const EMAIL_PATTERN = /\b[^\s@]+@[^\s@]+\.[^\s@]+\b/;
+const ANONYMOUS_DISPLAY_NAMES = new Set(['ko-fi supporter']);
+const DISPLAY_NAME_COLLATOR = new Intl.Collator('en', { sensitivity: 'base' });
 
 function parseCsvLine(line, lineNumber) {
   const fields = [];
@@ -60,46 +62,29 @@ export function parseSupportersCsv(csvText) {
 
     const fields = parseCsvLine(line, lineNumber);
     if (fields.length !== EXPECTED_HEADER.length) {
-      throw new Error(`supporters.csv line ${lineNumber} must contain exactly three fields`);
+      throw new Error(`supporters.csv line ${lineNumber} must contain exactly one field`);
     }
 
-    const [rankText, displayNameText, totalText] = fields.map((field) => field.trim());
-    if (!/^[1-9]\d*$/.test(rankText)) {
-      throw new Error(`supporters.csv line ${lineNumber} has an invalid rank`);
-    }
-    if (!displayNameText) {
+    const displayName = fields[0].trim();
+    if (!displayName) {
       throw new Error(`supporters.csv line ${lineNumber} has an empty display_name`);
     }
-    if (EMAIL_PATTERN.test(displayNameText)) {
+    if (EMAIL_PATTERN.test(displayName)) {
       throw new Error(`supporters.csv line ${lineNumber} display_name must not contain an email address`);
     }
-    if (!/^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(totalText)) {
-      throw new Error(`supporters.csv line ${lineNumber} has an invalid total_usd`);
+    if (ANONYMOUS_DISPLAY_NAMES.has(displayName.toLocaleLowerCase('en-US'))) {
+      throw new Error(`supporters.csv line ${lineNumber} must not identify an anonymous supporter`);
     }
 
-    const totalUsd = Number(totalText);
-    if (!Number.isFinite(totalUsd) || totalUsd <= 0) {
-      throw new Error(`supporters.csv line ${lineNumber} total_usd must be greater than zero`);
-    }
-
-    return {
-      rank: Number(rankText),
-      displayName: displayNameText,
-      totalUsd
-    };
+    return { displayName };
   });
 
   if (rows.length === 0) throw new Error('supporters.csv must contain at least one supporter');
   if (rows.length > MAX_SUPPORTERS) throw new Error(`supporters.csv must contain at most ${MAX_SUPPORTERS} supporters`);
 
-  for (let index = 0; index < rows.length; index += 1) {
-    const row = rows[index];
-    const expectedRank = index + 1;
-    if (row.rank !== expectedRank) {
-      throw new Error(`supporters.csv ranks must be unique, ordered, and contiguous from 1; expected rank ${expectedRank}`);
-    }
-    if (index > 0 && row.totalUsd > rows[index - 1].totalUsd) {
-      throw new Error('supporters.csv total_usd values must be in descending order');
+  for (let index = 1; index < rows.length; index += 1) {
+    if (DISPLAY_NAME_COLLATOR.compare(rows[index - 1].displayName, rows[index].displayName) > 0) {
+      throw new Error('supporters.csv display_name values must be in alphabetical order');
     }
   }
 

@@ -212,11 +212,10 @@
   white-space: nowrap;
 }
 
-.topbar-supporter-item {
+.topbar-supporter-name {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 5px;
   color: var(--muted-foreground);
   font-size: 0.72rem;
   font-weight: 680;
@@ -224,25 +223,6 @@
   white-space: nowrap;
 }
 
-.topbar-supporter-amount {
-  font-variant-numeric: tabular-nums;
-  font-weight: 760;
-}
-
-.topbar-supporter-place-1 {
-  color: #f2cf73;
-  text-shadow: 0 0 7px rgb(242 207 115 / 45%);
-}
-
-.topbar-supporter-place-2 {
-  color: #d5dce5;
-  text-shadow: 0 0 7px rgb(213 220 229 / 38%);
-}
-
-.topbar-supporter-place-3 {
-  color: #d59a78;
-  text-shadow: 0 0 7px rgb(213 154 120 / 42%);
-}
 
 
 

@@ -3,25 +3,13 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 const KOFI_LEADERBOARD_URL = 'https://ko-fi.com/hantuaraya/leaderboard';
 const SUPPORTER_SPEED_PX_PER_SECOND = 36;
 const MIN_ANIMATION_SECONDS = 4;
-const USD_FORMATTER = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2
-});
-
-function formatDonation(total) {
-  return USD_FORMATTER.format(total);
-}
 
 function renderSequence(supporters, sequenceKey, sequenceRef = null, duplicate = false) {
   return (
     <div className="topbar-supporter-sequence" ref={sequenceRef} aria-hidden={duplicate ? 'true' : undefined}>
-      {supporters.map((entry) => (
-        <span className={`topbar-supporter-item${entry.rank <= 3 ? ` topbar-supporter-place-${entry.rank}` : ''}`} key={`${sequenceKey}-${entry.rank}`}>
-          <span className="topbar-supporter-rank">{entry.rank}</span>
-          <span className="topbar-supporter-name">{entry.displayName}</span>
-          <span className="topbar-supporter-amount">{formatDonation(entry.totalUsd)}</span>
+      {supporters.map(({ displayName }, index) => (
+        <span className="topbar-supporter-item" key={`${sequenceKey}-${index}-${displayName}`}>
+          <span className="topbar-supporter-name">{displayName}</span>
         </span>
       ))}
     </div>
@@ -50,13 +38,13 @@ export default function KofiLeaderboardTicker({ supporters }) {
     return () => window.removeEventListener('resize', measureSequence);
   }, []);
 
-  const accessibleLabel = `Ko-fi top supporters: ${supporters
-    .map(({ rank, displayName, totalUsd }) => `${rank} ${displayName} ${formatDonation(totalUsd)}`)
+  const accessibleLabel = `Ko-fi supporters: ${supporters
+    .map(({ displayName }) => displayName)
     .join(', ')}`;
 
   return (
     <div className="topbar-supporter-strip" role="group">
-      <span className="topbar-supporter-label" aria-hidden="true">Top supporters</span>
+      <span className="topbar-supporter-label" aria-hidden="true">Supporters</span>
       <a
         className="topbar-supporter-window"
         href={KOFI_LEADERBOARD_URL}
