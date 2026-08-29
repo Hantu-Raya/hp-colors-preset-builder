@@ -12,14 +12,14 @@ const REWRITE_TEMPLATE_URL = new URL('../public/templates/hp_colors_rewrite/pano
 
 const KOFI_SCRIPT_URL = 'https://cdn.ko-fi.tools/v2/js/leaderboard.js';
 const KOFI_LEADERBOARD_URL = 'https://ko-fi.com/hantuaraya/leaderboard';
-const STATIC_SUPPORTER_LABEL = 'Ko-fi supporters: civo, dacooder, DimpuMudit, greggey, oOBansh33, Timmcd';
+const STATIC_SUPPORTER_LABEL = 'Ko-fi supporters: civo $100, dacooder $20, DimpuMudit $17, greggey $5, oOBansh33 $10, Timmcd $5';
 const STATIC_SUPPORTER_TEXT = [
-  'civo',
-  'dacooder',
-  'DimpuMudit',
-  'greggey',
-  'oOBansh33',
-  'Timmcd'
+  'civo$100',
+  'dacooder$20',
+  'DimpuMudit$17',
+  'greggey$5',
+  'oOBansh33$10',
+  'Timmcd$5'
 ];
 
 async function routeRewriteTemplate(page) {
@@ -205,7 +205,7 @@ test('supporter strip holds donor one and resets through a protected transition'
   expect(externalRequests).toEqual([]);
 });
 
-test('v2 keeps the wide title row ordered and renders public supporter names', async ({ page }) => {
+test('v2 keeps the wide title row ordered and renders public supporter names and amounts', async ({ page }) => {
   await page.setViewportSize({ width: 1460, height: 900 });
   await page.goto('v2/');
   await chooseRewriteTarget(page);
@@ -247,7 +247,7 @@ test('v2 keeps the wide title row ordered and renders public supporter names', a
   const firstItemClasses = await supporterItems.first().locator(':scope > *').evaluateAll((nodes) => (
     nodes.map((node) => node.className)
   ));
-  expect(firstItemClasses).toEqual(['topbar-supporter-name']);
+  expect(firstItemClasses).toEqual(['topbar-supporter-name', 'topbar-supporter-amount']);
 
   await page.locator('#presetName').fill('Ticker survives rerender');
   await page.locator('#presetName').press('Tab');

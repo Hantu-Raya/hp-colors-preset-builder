@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 const SUPPORTERS_CSV_PATH = resolve(process.cwd(), 'public/data/supporters.csv');
 
-const EXPECTED_HEADER = ['display_name'];
+const EXPECTED_HEADER = ['display_name', 'total_usd'];
 const MAX_SUPPORTERS = 10;
 const EMAIL_PATTERN = /\b[^\s@]+@[^\s@]+\.[^\s@]+\b/;
 const ANONYMOUS_DISPLAY_NAMES = new Set(['ko-fi supporter']);
@@ -59,24 +59,32 @@ export function parseSupportersCsv(csvText) {
   const rows = lines.slice(1).map((line, index) => {
     const lineNumber = index + 2;
     if (line.trim() === '') throw new Error(`supporters.csv line ${lineNumber} is blank`);
-
     const fields = parseCsvLine(line, lineNumber);
+
     if (fields.length !== EXPECTED_HEADER.length) {
-      throw new Error(`supporters.csv line ${lineNumber} must contain exactly one field`);
+      throw new Error(`supporters.csv line ${lineNumber} must contain exactly two fields`);
     }
 
-    const displayName = fields[0].trim();
-    if (!displayName) {
+    const [displayNameText, totalText] = fields.map((field) => field.trim());
+    if (!displayNameText) {
       throw new Error(`supporters.csv line ${lineNumber} has an empty display_name`);
     }
-    if (EMAIL_PATTERN.test(displayName)) {
+    if (EMAIL_PATTERN.test(displayNameText)) {
       throw new Error(`supporters.csv line ${lineNumber} display_name must not contain an email address`);
     }
-    if (ANONYMOUS_DISPLAY_NAMES.has(displayName.toLocaleLowerCase('en-US'))) {
+    if (ANONYMOUS_DISPLAY_NAMES.has(displayNameText.toLocaleLowerCase('en-US'))) {
       throw new Error(`supporters.csv line ${lineNumber} must not identify an anonymous supporter`);
     }
+    if (!/^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(totalText)) {
+      throw new Error(`supporters.csv line ${lineNumber} has an invalid total_usd`);
+    }
 
-    return { displayName };
+    const totalUsd = Number(totalText);
+    if (!Number.isFinite(totalUsd) || totalUsd <= 0) {
+      throw new Error(`supporters.csv line ${lineNumber} total_usd must be greater than zero`);
+    }
+
+    return { displayName: displayNameText, totalUsd };
   });
 
   if (rows.length === 0) throw new Error('supporters.csv must contain at least one supporter');

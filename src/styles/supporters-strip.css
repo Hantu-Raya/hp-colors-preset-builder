@@ -61,14 +61,20 @@ body {
   white-space: nowrap;
 }
 
-.supporter-strip-name {
+.supporter-strip-item {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
+  gap: 6px;
   font-size: 15px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
+}
+
+.supporter-strip-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
 }
 
 

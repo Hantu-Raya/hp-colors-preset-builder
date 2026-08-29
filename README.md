@@ -73,11 +73,11 @@ Use a current Chromium (Chrome or Edge), Firefox, or Safari release on desktop o
 
 ## Supporter ticker maintenance
 
-V2 and the in-game Rewrite strip use `public/data/supporters.csv`. The file contains public display names only. Astro validates it during the build and embeds the same names in both pages. Neither page fetches Ko-fi or the CSV in the browser.
+V2 and the in-game Rewrite strip use `public/data/supporters.csv`. The file contains public display names and donation amounts only. Astro validates it during the build and embeds the same rows in both pages. Neither page fetches Ko-fi or the CSV in the browser.
 
-1. Keep the exact `display_name` header.
+1. Keep the exact `display_name,total_usd` header.
 2. Add no more than 10 approved, non-anonymous public names in alphabetical order.
-3. Do not add anonymous labels, email addresses, contribution amounts, dates, transaction IDs, or other private fields.
+3. Use positive USD totals with at most two decimal places. Do not add ranks, anonymous labels, email addresses, dates, transaction IDs, or other private fields.
 4. Run `npm test` and `npm run build` before publishing.
 
 The V2 ticker links to the public Ko-fi leaderboard. The in-game strip has no links or input handling.

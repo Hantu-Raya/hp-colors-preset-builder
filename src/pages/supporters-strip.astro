@@ -3,8 +3,14 @@ import { loadSupporters } from '../supportersData.js';
 import '../styles/supporters-strip.css';
 
 const supporters = await loadSupporters();
+const usdFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2
+});
 const accessibleLabel = `Ko-fi supporters: ${supporters
-  .map(({ displayName }) => displayName)
+  .map(({ displayName, totalUsd }) => `${displayName} ${usdFormatter.format(totalUsd)}`)
   .join(', ')}. Thank you for supporting.`;
 ---
 
@@ -24,9 +30,10 @@ const accessibleLabel = `Ko-fi supporters: ${supporters
         {['primary', 'duplicate'].map((cycle) => (
           <div class="supporter-strip-cycle" data-cycle={cycle}>
             <div class="supporter-strip-sequence">
-              {supporters.map(({ displayName }) => (
+              {supporters.map(({ displayName, totalUsd }) => (
                 <span class="supporter-strip-item">
                   <span class="supporter-strip-name">{displayName}</span>
+                  <span class="supporter-strip-amount">{usdFormatter.format(totalUsd)}</span>
                 </span>
               ))}
             </div>

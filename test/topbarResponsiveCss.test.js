@@ -75,14 +75,14 @@ test("v2.css gives healthbar preview its own rail and mobile-first ordering", as
   assert.match(mobileCss, /\.healthbar-preview\.is-mobile-collapsed[\s\S]*\.healthbar-preview-content[\s\S]*display:\s*none;/);
 });
 
-test("v2.css keeps the static name-only supporter ticker clipped, automatic, and mobile-safe", async () => {
+test("v2.css keeps the static supporter ticker clipped, automatic, amount-aware, and mobile-safe", async () => {
   const css = await readStylesheet("v2.css");
 
   assert.match(css, /\.topbar-supporter-strip\s*\{[^}]*display:\s*flex;[^}]*min-width:\s*180px;/);
   assert.match(css, /\.topbar-supporter-window\s*\{[^}]*min-width:\s*0;[^}]*overflow:\s*hidden;[^}]*border-inline:\s*1px/);
   assert.match(css, /\.topbar-supporter-track\s*\{[^}]*animation:\s*topbar-supporter-scroll var\(--topbar-supporter-duration,\s*4s\) linear infinite;/);
   assert.match(css, /@keyframes\s+topbar-supporter-scroll[\s\S]*translate3d\(0,\s*0,\s*0\)[\s\S]*translate3d\(-50%,\s*0,\s*0\)/);
-  assert.match(css, /\.topbar-supporter-name\s*\{[^}]*white-space:\s*nowrap;/);
+  assert.match(css, /\.topbar-supporter-amount\s*\{[^}]*font-variant-numeric:\s*tabular-nums;/);
 
   const reducedMotionStart = css.indexOf("@media (prefers-reduced-motion: reduce)");
   const reducedMotionEnd = css.indexOf("@media (max-width: 1180px)", reducedMotionStart);
