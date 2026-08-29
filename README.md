@@ -76,9 +76,11 @@ Use a current Chromium (Chrome or Edge), Firefox, or Safari release on desktop o
 V2 and the in-game Rewrite strip use `public/data/supporters.csv`. The file contains public display names and donation amounts only. Astro validates it during the build and embeds the same rows in both pages. Neither page fetches Ko-fi or the CSV in the browser.
 
 1. Keep the exact `display_name,total_usd` header.
-2. Add no more than 10 approved, non-anonymous public names. Sort by `total_usd` from highest to lowest, then alphabetically when totals match.
-3. Use positive USD totals with at most two decimal places. The UI computes leaderboard ranks from row order. Do not add a rank column, anonymous labels, email addresses, dates, transaction IDs, or other private fields.
-4. Run `npm test` and `npm run build` before publishing.
+2. Include every donation row. Use the approved public display name when Ko-fi provides one. Keep Ko-fi's `Ko-fi Supporter` label for anonymous donations.
+3. Keep every anonymous transaction as a separate `Ko-fi Supporter` row with its own amount. Never merge anonymous donations.
+4. Sort by `total_usd` from highest to lowest, then alphabetically when totals match.
+5. Use positive USD totals with at most two decimal places. The UI computes leaderboard ranks from row order. Do not add a rank column, email addresses, dates, transaction IDs, or other private fields.
+6. Run `npm test` and `npm run build` before publishing.
 
 The V2 ticker links to the public Ko-fi leaderboard. The in-game strip has no links or input handling.
 

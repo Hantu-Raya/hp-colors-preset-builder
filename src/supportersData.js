@@ -6,7 +6,6 @@ const SUPPORTERS_CSV_PATH = resolve(process.cwd(), 'public/data/supporters.csv')
 const EXPECTED_HEADER = ['display_name', 'total_usd'];
 const MAX_SUPPORTERS = 10;
 const EMAIL_PATTERN = /\b[^\s@]+@[^\s@]+\.[^\s@]+\b/;
-const ANONYMOUS_DISPLAY_NAMES = new Set(['ko-fi supporter']);
 const DISPLAY_NAME_COLLATOR = new Intl.Collator('en', { sensitivity: 'base' });
 
 function parseCsvLine(line, lineNumber) {
@@ -71,9 +70,6 @@ export function parseSupportersCsv(csvText) {
     }
     if (EMAIL_PATTERN.test(displayNameText)) {
       throw new Error(`supporters.csv line ${lineNumber} display_name must not contain an email address`);
-    }
-    if (ANONYMOUS_DISPLAY_NAMES.has(displayNameText.toLocaleLowerCase('en-US'))) {
-      throw new Error(`supporters.csv line ${lineNumber} must not identify an anonymous supporter`);
     }
     if (!/^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(totalText)) {
       throw new Error(`supporters.csv line ${lineNumber} has an invalid total_usd`);

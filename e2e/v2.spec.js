@@ -12,14 +12,16 @@ const REWRITE_TEMPLATE_URL = new URL('../public/templates/hp_colors_rewrite/pano
 
 const KOFI_SCRIPT_URL = 'https://cdn.ko-fi.tools/v2/js/leaderboard.js';
 const KOFI_LEADERBOARD_URL = 'https://ko-fi.com/hantuaraya/leaderboard';
-const STATIC_SUPPORTER_LABEL = 'Ko-fi top supporters: 1 civo $100, 2 dacooder $20, 3 DimpuMudit $17, 4 oOBansh33 $10, 5 greggey $5, 6 Timmcd $5';
+const STATIC_SUPPORTER_LABEL = 'Ko-fi top supporters: 1 civo $100, 2 dacooder $20, 3 DimpuMudit $17, 4 Ko-fi Supporter $10, 5 oOBansh33 $10, 6 greggey $5, 7 Ko-fi Supporter $5, 8 Timmcd $5';
 const STATIC_SUPPORTER_TEXT = [
   '1civo$100',
   '2dacooder$20',
   '3DimpuMudit$17',
-  '4oOBansh33$10',
-  '5greggey$5',
-  '6Timmcd$5'
+  '4Ko-fi Supporter$10',
+  '5oOBansh33$10',
+  '6greggey$5',
+  '7Ko-fi Supporter$5',
+  '8Timmcd$5'
 ];
 
 async function routeRewriteTemplate(page) {
@@ -111,7 +113,7 @@ test('supporter strip holds donor one and resets through a protected transition'
   const thanks = primary.locator('.supporter-strip-thanks');
   await expect(strip).toBeVisible();
   await expect(cycles).toHaveCount(2);
-  await expect(primarySequence.locator('.supporter-strip-item')).toHaveCount(6);
+  await expect(primarySequence.locator('.supporter-strip-item')).toHaveCount(8);
   expect(await primarySequence.locator('.supporter-strip-item').allTextContents()).toEqual(
     STATIC_SUPPORTER_TEXT,
   );
@@ -242,8 +244,9 @@ test('v2 keeps the wide title row ordered and renders the ranked supporter leade
   await expect(track.locator('.topbar-supporter-sequence')).toHaveCount(2);
   await expect(track.locator('.topbar-supporter-sequence').nth(1)).toHaveAttribute('aria-hidden', 'true');
   const supporterItems = track.locator('.topbar-supporter-sequence').first().locator('.topbar-supporter-item');
-  await expect(supporterItems).toHaveCount(6);
+  await expect(supporterItems).toHaveCount(8);
   expect(await supporterItems.allTextContents()).toEqual(STATIC_SUPPORTER_TEXT);
+  await expect(supporterItems.filter({ hasText: 'Ko-fi Supporter' })).toHaveCount(2);
   const firstItemClasses = await supporterItems.first().locator(':scope > *').evaluateAll((nodes) => (
     nodes.map((node) => node.className)
   ));

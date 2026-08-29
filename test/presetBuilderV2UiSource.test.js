@@ -67,8 +67,10 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
   assert.match(supportersData, /MAX_SUPPORTERS = 10/);
   assert.match(supportersCsv, /^display_name,total_usd$/m);
   assert.match(supportersCsv, /^oOBansh33,10$/m);
-  assert.doesNotMatch(supportersCsv, /Ko-fi Supporter|rank|@|LastSupportedDateUTC|TransactionId/i);
-  assert.match(supportersData, /must not identify an anonymous supporter/);
+  assert.match(supportersCsv, /^Ko-fi Supporter,10$/m);
+  assert.match(supportersCsv, /^Ko-fi Supporter,5$/m);
+  assert.equal((supportersCsv.match(/^Ko-fi Supporter,/gm) ?? []).length, 2);
+  assert.doesNotMatch(supportersCsv, /Anonymous|rank|@|LastSupportedDateUTC|TransactionId/i);
   assert.match(stripStyles, /animation:\s*supporter-strip-scroll 32s linear 1 forwards/);
   assert.match(stripStyles, /6\.25%[\s\S]*75%[\s\S]*84\.375%[\s\S]*100%/);
   assert.match(stripStyles, /supporter-strip-cycle-gap[\s\S]*96px/);
