@@ -13,15 +13,15 @@ test('parseSupportersCsv accepts named and separate Ko-fi Supporter donations', 
   assert.deepEqual(
     parseSupportersCsv(csv(
       'civo,100',
-      '"Ko-fi, Fan",20',
       'Ko-fi Supporter,20',
+      '"Ko-fi, Fan",20',
       'oOBansh33,10',
       'Ko-fi Supporter,5'
     )),
     [
       { displayName: 'civo', totalUsd: 100 },
-      { displayName: 'Ko-fi, Fan', totalUsd: 20 },
       { displayName: 'Ko-fi Supporter', totalUsd: 20 },
+      { displayName: 'Ko-fi, Fan', totalUsd: 20 },
       { displayName: 'oOBansh33', totalUsd: 10 },
       { displayName: 'Ko-fi Supporter', totalUsd: 5 }
     ]
