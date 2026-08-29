@@ -654,6 +654,7 @@ test('keeps v1 original and exposes v2 as a separate route', async ({ page }) =>
 
   await page.getByRole('link', { name: 'V2 game menu' }).click();
   await expect(page).toHaveURL(/\/hp-colors-preset-builder\/v2\/$/);
+  await chooseRewriteTarget(page);
   await expect(page.getByRole('option', { name: /OVERVIEW/ })).toBeVisible();
 
   await page.getByRole('link', { name: 'V1 original' }).click();
@@ -761,6 +762,7 @@ test('rewrite imports remain in v2 and never replace v1 profiles', async ({ page
   await page.waitForTimeout(900);
 
   await page.goto('v2/');
+  await chooseRewriteTarget(page);
   await expect(page.locator('#presetName')).toHaveValue('Web Builder Preset');
   await openV2Presets(page);
   await page.getByRole('button', { name: 'Import game preset codes' }).click();
