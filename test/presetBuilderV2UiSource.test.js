@@ -48,8 +48,8 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
   assert.doesNotMatch(v1Page, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
   assert.doesNotMatch(v1Island, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
   assert.doesNotMatch(ticker, /MutationObserver|Loading top supporters|View Ko-fi leaderboard|const SUPPORTERS/);
-  assert.doesNotMatch(ticker, /Email|LastestTransactionId|@gmail\.com|@hotmail\.com|supporter-rank/);
-  assert.doesNotMatch(stripPage, /client:|fetch\(|https?:\/\/|supporter-strip-rank/i);
+  assert.doesNotMatch(ticker, /Email|LastestTransactionId|@gmail\.com|@hotmail\.com/);
+  assert.doesNotMatch(stripPage, /client:|fetch\(|https?:\/\//i);
   assert.match(stripPage, /script-src 'self'/);
   assert.match(stripPage, /supporters-strip-loop\.js\?v=32000/);
   assert.doesNotMatch(stripLoop, /fetch\(|XMLHttpRequest|WebSocket|sendBeacon|localStorage|sessionStorage/i);
@@ -88,6 +88,7 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
     "topbar-supporter-sequence",
     "topbar-supporter-item",
     "topbar-supporter-amount",
+    "topbar-supporter-rank",
     "https://ko-fi.com/hantuaraya/leaderboard",
     "ResizeObserver",
     "SUPPORTER_SPEED_PX_PER_SECOND = 36",

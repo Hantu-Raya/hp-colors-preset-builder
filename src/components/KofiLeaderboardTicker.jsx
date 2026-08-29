@@ -18,7 +18,8 @@ function renderSequence(supporters, sequenceKey, sequenceRef = null, duplicate =
   return (
     <div className="topbar-supporter-sequence" ref={sequenceRef} aria-hidden={duplicate ? 'true' : undefined}>
       {supporters.map(({ displayName, totalUsd }, index) => (
-        <span className="topbar-supporter-item" key={`${sequenceKey}-${index}-${displayName}`}>
+        <span className={`topbar-supporter-item${index < 3 ? ` topbar-supporter-place-${index + 1}` : ''}`} key={`${sequenceKey}-${index}-${displayName}`}>
+          <span className="topbar-supporter-rank">{index + 1}</span>
           <span className="topbar-supporter-name">{displayName}</span>
           <span className="topbar-supporter-amount">{formatDonation(totalUsd)}</span>
         </span>
@@ -49,13 +50,13 @@ export default function KofiLeaderboardTicker({ supporters }) {
     return () => window.removeEventListener('resize', measureSequence);
   }, []);
 
-  const accessibleLabel = `Ko-fi supporters: ${supporters
-    .map(({ displayName, totalUsd }) => `${displayName} ${formatDonation(totalUsd)}`)
+  const accessibleLabel = `Ko-fi top supporters: ${supporters
+    .map(({ displayName, totalUsd }, index) => `${index + 1} ${displayName} ${formatDonation(totalUsd)}`)
     .join(', ')}`;
 
   return (
     <div className="topbar-supporter-strip" role="group">
-      <span className="topbar-supporter-label" aria-hidden="true">Supporters</span>
+      <span className="topbar-supporter-label" aria-hidden="true">Top supporters</span>
       <a
         className="topbar-supporter-window"
         href={KOFI_LEADERBOARD_URL}

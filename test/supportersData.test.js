@@ -29,7 +29,7 @@ test('loadSupporters reads names and amounts from the reviewed public CSV', asyn
 
   assert.equal(supporters.length, 6);
   assert.deepEqual(supporters[0], { displayName: 'civo', totalUsd: 100 });
-  assert.deepEqual(supporters[4], { displayName: 'oOBansh33', totalUsd: 10 });
+  assert.deepEqual(supporters[3], { displayName: 'oOBansh33', totalUsd: 10 });
   assert.deepEqual(supporters.at(-1), { displayName: 'Timmcd', totalUsd: 5 });
 });
 
@@ -42,7 +42,8 @@ test('parseSupportersCsv rejects invalid schema and private labels', () => {
     [csv('person@example.com,10'), /must not contain an email address/],
     [csv('KO-FI SUPPORTER,10'), /must not identify an anonymous supporter/],
     [csv('civo,10,private'), /exactly two fields/],
-    [csv('zeta,10', 'alpha,20'), /alphabetical order/],
+    [csv('alpha,10', 'zeta,20'), /descending order/],
+    [csv('zeta,10', 'alpha,10'), /equal totals must be in alphabetical order/],
     [csv('civo,0'), /greater than zero/],
     [csv('civo,1.234'), /invalid total_usd/],
     [`${HEADER}\n"civo,10\n`, /unterminated quoted field/],

@@ -72,9 +72,25 @@ body {
   white-space: nowrap;
 }
 
+.supporter-strip-rank,
 .supporter-strip-amount {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+}
+
+.supporter-strip-place-1 {
+  color: #f2cf73;
+  text-shadow: 0 0 7px rgb(242 207 115 / 45%);
+}
+
+.supporter-strip-place-2 {
+  color: #d5dce5;
+  text-shadow: 0 0 7px rgb(213 220 229 / 38%);
+}
+
+.supporter-strip-place-3 {
+  color: #d59a78;
+  text-shadow: 0 0 7px rgb(213 154 120 / 42%);
 }
 
 

@@ -12,14 +12,14 @@ const REWRITE_TEMPLATE_URL = new URL('../public/templates/hp_colors_rewrite/pano
 
 const KOFI_SCRIPT_URL = 'https://cdn.ko-fi.tools/v2/js/leaderboard.js';
 const KOFI_LEADERBOARD_URL = 'https://ko-fi.com/hantuaraya/leaderboard';
-const STATIC_SUPPORTER_LABEL = 'Ko-fi supporters: civo $100, dacooder $20, DimpuMudit $17, greggey $5, oOBansh33 $10, Timmcd $5';
+const STATIC_SUPPORTER_LABEL = 'Ko-fi top supporters: 1 civo $100, 2 dacooder $20, 3 DimpuMudit $17, 4 oOBansh33 $10, 5 greggey $5, 6 Timmcd $5';
 const STATIC_SUPPORTER_TEXT = [
-  'civo$100',
-  'dacooder$20',
-  'DimpuMudit$17',
-  'greggey$5',
-  'oOBansh33$10',
-  'Timmcd$5'
+  '1civo$100',
+  '2dacooder$20',
+  '3DimpuMudit$17',
+  '4oOBansh33$10',
+  '5greggey$5',
+  '6Timmcd$5'
 ];
 
 async function routeRewriteTemplate(page) {
@@ -205,7 +205,7 @@ test('supporter strip holds donor one and resets through a protected transition'
   expect(externalRequests).toEqual([]);
 });
 
-test('v2 keeps the wide title row ordered and renders public supporter names and amounts', async ({ page }) => {
+test('v2 keeps the wide title row ordered and renders the ranked supporter leaderboard', async ({ page }) => {
   await page.setViewportSize({ width: 1460, height: 900 });
   await page.goto('v2/');
   await chooseRewriteTarget(page);
@@ -247,7 +247,15 @@ test('v2 keeps the wide title row ordered and renders public supporter names and
   const firstItemClasses = await supporterItems.first().locator(':scope > *').evaluateAll((nodes) => (
     nodes.map((node) => node.className)
   ));
-  expect(firstItemClasses).toEqual(['topbar-supporter-name', 'topbar-supporter-amount']);
+  expect(firstItemClasses).toEqual(['topbar-supporter-rank', 'topbar-supporter-name', 'topbar-supporter-amount']);
+  for (let index = 0; index < 3; index += 1) {
+    await expect(supporterItems.nth(index)).toHaveClass(new RegExp(`topbar-supporter-place-${index + 1}`));
+  }
+  const podiumShadows = await supporterItems.evaluateAll((items) => (
+    items.slice(0, 3).map((item) => getComputedStyle(item).textShadow)
+  ));
+  expect(new Set(podiumShadows).size).toBe(3);
+  expect(podiumShadows.every((shadow) => shadow !== 'none')).toBe(true);
 
   await page.locator('#presetName').fill('Ticker survives rerender');
   await page.locator('#presetName').press('Tab');

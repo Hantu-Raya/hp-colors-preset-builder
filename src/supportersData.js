@@ -91,8 +91,13 @@ export function parseSupportersCsv(csvText) {
   if (rows.length > MAX_SUPPORTERS) throw new Error(`supporters.csv must contain at most ${MAX_SUPPORTERS} supporters`);
 
   for (let index = 1; index < rows.length; index += 1) {
-    if (DISPLAY_NAME_COLLATOR.compare(rows[index - 1].displayName, rows[index].displayName) > 0) {
-      throw new Error('supporters.csv display_name values must be in alphabetical order');
+    const previous = rows[index - 1];
+    const current = rows[index];
+    if (current.totalUsd > previous.totalUsd) {
+      throw new Error('supporters.csv total_usd values must be in descending order');
+    }
+    if (current.totalUsd === previous.totalUsd && DISPLAY_NAME_COLLATOR.compare(previous.displayName, current.displayName) > 0) {
+      throw new Error('supporters.csv display_name values with equal totals must be in alphabetical order');
     }
   }
 
