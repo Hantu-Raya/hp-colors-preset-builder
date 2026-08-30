@@ -31,10 +31,11 @@ test('parseSupportersCsv accepts named and separate Ko-fi Supporter donations', 
 test('loadSupporters reads named and Ko-fi Supporter donations from the reviewed public CSV', async () => {
   const supporters = await loadSupporters();
 
-  assert.equal(supporters.length, 8);
+  assert.equal(supporters.length, 9);
   assert.deepEqual(supporters[0], { displayName: 'civo', totalUsd: 100 });
-  assert.deepEqual(supporters[3], { displayName: 'Ko-fi Supporter', totalUsd: 10 });
-  assert.deepEqual(supporters[6], { displayName: 'Ko-fi Supporter', totalUsd: 5 });
+  assert.deepEqual(supporters[2], { displayName: 'www.skillnshred.com', totalUsd: 20 });
+  assert.deepEqual(supporters[4], { displayName: 'Ko-fi Supporter', totalUsd: 10 });
+  assert.deepEqual(supporters[7], { displayName: 'Ko-fi Supporter', totalUsd: 5 });
   assert.deepEqual(supporters.at(-1), { displayName: 'Timmcd', totalUsd: 5 });
 });
 

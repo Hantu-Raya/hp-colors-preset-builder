@@ -67,6 +67,7 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
   assert.match(supportersData, /MAX_SUPPORTERS = 10/);
   assert.match(supportersCsv, /^display_name,total_usd$/m);
   assert.match(supportersCsv, /^oOBansh33,10$/m);
+  assert.match(supportersCsv, /^www\.skillnshred\.com,20$/m);
   assert.match(supportersCsv, /^Ko-fi Supporter,10$/m);
   assert.match(supportersCsv, /^Ko-fi Supporter,5$/m);
   assert.equal((supportersCsv.match(/^Ko-fi Supporter,/gm) ?? []).length, 2);
