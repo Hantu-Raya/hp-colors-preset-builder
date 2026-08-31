@@ -254,6 +254,7 @@ test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => 
   assert.equal(decoded.rewrite.values[75], -200);
   assert.equal(decoded.rewrite.values[76], true);
   assert.equal(decoded.rewrite.values[77], '#123456');
+  assert.equal(decoded.rewrite.values[78], 'gradient');
   const pairs = payload(code, 'HPCRP1').records[0].values;
   for (const retiredIndex of [12, 13, 67])
     assert.equal(pairs.some(([index]) => index === retiredIndex), false);
@@ -267,13 +268,14 @@ test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => 
       [2, -300],
       [3, -200],
       [4, true],
-      [5, '#123456']
+      [5, '#123456'],
+      [6, 'gradient']
     ],
     conditions: {}
   });
 });
 
-test('HPv2 stamina round-trips through the preset extension but not HPCR2', () => {
+test('HPv2-only settings round-trip through the preset extension but not HPCR2', () => {
   const values = {
     ...REWRITE_FIELD_CATALOG.createDefaultState(),
     hpv2_stamina_width: 150,
@@ -281,7 +283,8 @@ test('HPv2 stamina round-trips through the preset extension but not HPCR2', () =
     hpv2_stamina_offset_x: 24,
     hpv2_stamina_offset_y: -18,
     hpv2_enemy_stamina_color_enabled: true,
-    hpv2_enemy_stamina_color: '#123456'
+    hpv2_enemy_stamina_color: '#123456',
+    hpv2_friend_pulse_color_mode: 1
   };
   const profile = {
     id: 'stamina',
@@ -311,7 +314,8 @@ test('HPv2 stamina round-trips through the preset extension but not HPCR2', () =
       [2, 24],
       [3, -18],
       [4, true],
-      [5, '#123456']
+      [5, '#123456'],
+      [6, 'gradient']
     ],
     conditions: {
       staminaWidth: { slot: 4, minTier: 3, value: 180 }
@@ -325,6 +329,7 @@ test('HPv2 stamina round-trips through the preset extension but not HPCR2', () =
   assert.equal(decoded.rewrite.webValues.hpv2_stamina_offset_y, -18);
   assert.equal(decoded.rewrite.webValues.hpv2_enemy_stamina_color_enabled, true);
   assert.equal(decoded.rewrite.webValues.hpv2_enemy_stamina_color, '#123456');
+  assert.equal(decoded.rewrite.webValues.hpv2_friend_pulse_color_mode, 1);
   assert.deepEqual(decoded.rewrite.webOverrides.hpv2_stamina_width, {
     slot: 4,
     minTier: 3,
@@ -340,6 +345,7 @@ test('HPv2 stamina round-trips through the preset extension but not HPCR2', () =
   assert.equal(legacy.rewrite.webValues.hpv2_stamina_width, 110);
   assert.equal(legacy.rewrite.webValues.hpv2_stamina_height, 44.8);
   assert.equal(legacy.rewrite.webValues.hpv2_enemy_stamina_color_enabled, false);
+  assert.equal(legacy.rewrite.webValues.hpv2_friend_pulse_color_mode, 0);
 
   assert.throws(
     () => decodeRewriteTransfer('HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Bad","mode":"all","heroes":[],"values":[],"conditions":null,"hpv2":{"v":2,"values":[],"conditions":{}}}],"selectedPresetId":"user_0001"}'),

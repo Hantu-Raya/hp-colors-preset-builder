@@ -409,6 +409,38 @@ test("pulse honors threshold inclusivity, duration, color mode, hide-bar, and pa
   assert.equal(paused.bar.opacity, 0.01);
 });
 
+test("ally pulse fixed and gradient modes match Rewrite V2", () => {
+  const common = {
+    hp_friend_enabled: true,
+    hp_friend_color_low: "#123456",
+    hp_friend_color_mid: "#123456",
+    hp_friend_color_high: "#123456",
+    hp_friend_pulse_enabled: true,
+    hp_friend_pulse_threshold: 100,
+    hp_friend_pulse_color_enabled: true,
+    hp_friend_pulse_color: "#ABCDEF"
+  };
+  const ally = scenario({
+    relation: "ally",
+    team: "ally",
+    healthPercent: 50
+  });
+  const fixed = createHealthbarPreviewModel(
+    state({ ...common, hpv2_friend_pulse_color_mode: 0 }),
+    ally
+  );
+  const gradient = createHealthbarPreviewModel(
+    state({ ...common, hpv2_friend_pulse_color_mode: 1 }),
+    ally
+  );
+
+  assert.equal(fixed.pulse.colorMode, "fixed");
+  assert.equal(fixed.bar.color, "#ABCDEF");
+  assert.equal(gradient.pulse.colorMode, "gradient");
+  assert.equal(gradient.bar.color, "#123456");
+  assert.equal(gradient.pulse.overlayColor, "#ABCDEF");
+});
+
 test("health pips use stock 100-health minors and 500-health majors", () => {
   const normal = createHealthbarPreviewModel(
     state({ hp_pulse_enabled: false, hp_precise_pips_enabled: false }),

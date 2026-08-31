@@ -700,6 +700,13 @@
                     <Panel class="HPColorsSettingCopy"><Label text="USE CUSTOM PULSE COLOR" class="HPColorsSettingTitle" /><Label text="Use one custom color while the ally pulse is active." class="HPColorsSettingHelp" /></Panel>
                     <Button id="HPColorsAllyPulseColorToggle" class="HPColorsToggle"><Panel class="HPColorsToggleKnob" /></Button>
                   </Panel>
+                  <Panel id="HPColorsAllyPulseColorModeRow" class="HPColorsSettingRow HPColorsFollowedRow">
+                    <Panel class="HPColorsSettingCopy"><Label text="PULSE COLOR MODE" class="HPColorsSettingTitle" /><Label text="Use a fixed custom color or pulse the custom color over the normal ally bar color." class="HPColorsSettingHelp" /></Panel>
+                    <Panel class="HPColorsSegment">
+                      <Button id="HPColorsAllyPulseColorModeFixed" class="HPColorsSegmentButton"><Label text="FIXED" /></Button>
+                      <Button id="HPColorsAllyPulseColorModeGradient" class="HPColorsSegmentButton"><Label text="GRADIENT" /></Button>
+                    </Panel>
+                  </Panel>
                   <Panel id="HPColorsAllyPulseColorRow" class="HPColorsSettingRow HPColorsColorRow HPColorsConditionalRow">
                     <Panel class="HPColorsSettingCopy"><Label text="PULSE COLOR" class="HPColorsSettingTitle" /><Label text="Set the color used during the ally pulse." class="HPColorsSettingHelp" /></Panel>
                     <Button id="HPColorsAllyPulseColorSwatch" class="HPColorsColorSwatch" />

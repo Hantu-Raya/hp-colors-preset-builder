@@ -255,10 +255,10 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
   const pulseColorEnabled = enemyRole ? !!state.hp_pulse_color_enabled : !!state.hp_friend_pulse_color_enabled;
   const pulseColorMode = enemyRole
     ? enumValue(state, "hp_pulse_color_mode", ["fixed", "gradient"], "gradient")
-    : "fixed";
+    : enumValue(state, "hpv2_friend_pulse_color_mode", ["fixed", "gradient"], "fixed");
   const configuredPulseColor = enemyRole ? state.hp_pulse_color : state.hp_friend_pulse_color;
   let barColor = normalColor;
-  if (pulseActive && pulseColorEnabled && (pulseColorMode === "fixed" || !enemyRole)) barColor = configuredPulseColor;
+  if (pulseActive && pulseColorEnabled && pulseColorMode === "fixed") barColor = configuredPulseColor;
 
   const readoutMaximum = rawAmount(normalizedScenario.maxHealth, healthParentPercent);
   const ratio = healthParentPercent > 0

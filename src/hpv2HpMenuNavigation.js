@@ -167,6 +167,7 @@ const MENU_DEFINITION = Object.freeze([
           "allyPulseBpm",
           "allyPulseIntensity",
           "allyPulseColorEnabled",
+          "allyPulseColorMode",
           "allyPulseColor"
         ]
       }
