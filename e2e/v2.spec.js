@@ -644,6 +644,22 @@ test('v2 Rewrite target adds presets from the topbar and Presets tab', async ({ 
   await expect(page.locator('#presetName')).toHaveValue('Profile 3');
 
   await page.keyboard.press('Escape');
+  await page.getByRole('option', { name: /HEALTH INFO/ }).click();
+  await page.getByRole('tab', { name: 'STAMINA', exact: true }).click();
+  await expect(page.locator('#hpv2_enemy_stamina_color-label')).toHaveCount(0);
+  await page.getByRole('checkbox', {
+    name: 'Use custom enemy stamina color'
+  }).click();
+  await expect(page.locator('#hpv2_enemy_stamina_color-label')).toBeVisible();
+
+  await page.getByRole('option', { name: /ALLY/ }).click();
+  await page.getByRole('tab', { name: 'PULSE', exact: true }).click();
+  await expect(page.locator('#hpv2_friend_pulse_color_mode-label')).toHaveCount(0);
+  await page.getByRole('checkbox', {
+    name: 'Use custom ally pulse color'
+  }).click();
+  await expect(page.locator('#hpv2_friend_pulse_color_mode-label')).toBeVisible();
+
   const renderedFieldIds = [];
   for (const group of createHpMenuGroups(REWRITE_FIELD_CATALOG)) {
     await page.getByRole('option', { name: new RegExp(group.name) }).click();
