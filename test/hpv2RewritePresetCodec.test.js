@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { HP_FIELD_CATALOG, HPV2_EXTENSION_FIELD_BINDINGS, REWRITE_CODEC_FIELD_BINDINGS, REWRITE_FIELD_BINDINGS, REWRITE_FIELD_CATALOG } from '../src/hpv2HpSchema.js';
 import {
@@ -10,6 +12,121 @@ import {
 } from '../src/hpv2RewritePresetCodec.js';
 
 const FIXTURE = 'HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Shiv","mode":"selected","heroes":["hero_shiv"],"values":[[7,"fixed"],[11,true],[12,true],[13,true],[30,167],[31,"oracle"],[34,"custom"],[37,"#FFFFFF"],[42,18],[45,18],[52,true],[53,true],[54,205],[56,440],[63,true],[64,18],[65,31],[67,true]],"conditions":{"lowThreshold":{"slot":4,"minTier":3,"value":28},"enemyPulseThreshold":{"slot":4,"minTier":3,"value":28},"enemyKillMarkerThreshold":{"slot":4,"minTier":3,"value":28}}}],"selectedPresetId":"user_0001"}';
+
+const WIRE_MANIFEST_SHA256 = 'd4ba7a4e8c4b48c99e7dd55d587813b12b47cc6257c251758f126eaded2af2fa';
+const WIRE_CORPUS_SHA256 = 'ac1705bdffeee6f56520f5f460624ad9e6354707dc3073819d7ae9d9c79961c4';
+const wireManifestSource = readFileSync(
+  new URL('../src/fixtures/hp-colors-rewrite-wire-v1.json', import.meta.url)
+);
+const wireManifest = JSON.parse(wireManifestSource);
+const wireCorpusSource = readFileSync(
+  new URL('../src/fixtures/hp-colors-rewrite-wire-v1-corpus.json', import.meta.url)
+);
+const wireCorpus = JSON.parse(wireCorpusSource);
+
+test('wire manifest matches the approved byte contract', () => {
+  assert.equal(
+    createHash('sha256').update(wireManifestSource).digest('hex'),
+    WIRE_MANIFEST_SHA256
+  );
+  assert.equal(
+    createHash('sha256').update(wireCorpusSource).digest('hex'),
+    WIRE_CORPUS_SHA256
+  );
+});
+
+test('wire manifest owns builder slot order and metadata', () => {
+  function row(binding, slot, retired = false) {
+    return {
+      slot,
+      key: binding.canonicalKey,
+      codecDefault: binding.defaultValue,
+      type: binding.canonicalType === 'enum-toggle'
+        ? 'enum'
+        : binding.canonicalType,
+      bounds: binding.bounds
+        ? [binding.bounds.min, binding.bounds.max]
+        : null,
+      enum: binding.canonicalOptions.length
+        ? [...binding.canonicalOptions]
+        : null,
+      retired,
+      conditionEligible: binding.conditionEligible
+    };
+  }
+  assert.deepEqual(
+    REWRITE_CODEC_FIELD_BINDINGS.map((binding, slot) =>
+      row(binding, slot, !REWRITE_FIELD_BINDINGS.includes(binding))
+    ),
+    wireManifest.legacySlots
+  );
+  assert.deepEqual(
+    HPV2_EXTENSION_FIELD_BINDINGS.map((binding, slot) => row(binding, slot)),
+    wireManifest.extensionSlots
+  );
+});
+
+test('cross-repository HPCR2 corpus decodes and exports canonical bytes', () => {
+  const decoded = decodeRewriteTransfer(wireCorpus.hpcr2.inputCode);
+  assert.equal(decoded.format, 'HPCR2');
+  assert.equal(decoded.profiles.length, 1);
+  const profile = decoded.profiles[0];
+  for (const slot of wireManifest.legacySlots) {
+    assert.equal(
+      profile.rewrite.values[slot.slot],
+      slot.retired ? slot.codecDefault : wireCorpus.hpcr2.activeValues[slot.key],
+      slot.key
+    );
+  }
+  assert.deepEqual(profile.rewrite.conditions, wireCorpus.hpcr2.conditions);
+  assert.equal(
+    createRewriteSettingsCode(profile),
+    wireCorpus.hpcr2.canonicalCode
+  );
+});
+
+test('cross-repository HPCRP1 corpus decodes and exports canonical bytes', () => {
+  const decoded = decodeRewriteTransfer(wireCorpus.hpcrp1.inputCode);
+  assert.equal(decoded.format, 'HPCRP1');
+  const profile = decoded.profiles.find(
+    (candidate) => candidate.rewrite.id === wireCorpus.hpcrp1.selectedPresetId
+  );
+  assert.ok(profile);
+  for (const slot of wireManifest.legacySlots) {
+    assert.equal(
+      profile.rewrite.values[slot.slot],
+      slot.retired ? slot.codecDefault : wireCorpus.hpcrp1.activeValues[slot.key],
+      slot.key
+    );
+  }
+  for (const slot of wireManifest.extensionSlots) {
+    assert.equal(
+      profile.rewrite.values[wireManifest.legacySlots.length + slot.slot],
+      wireCorpus.hpcrp1.activeValues[slot.key],
+      slot.key
+    );
+  }
+  assert.deepEqual(profile.rewrite.conditions, wireCorpus.hpcrp1.conditions);
+  assert.equal(
+    createRewritePresetBundle(decoded.profiles, profile.id),
+    wireCorpus.hpcrp1.canonicalCode
+  );
+});
+
+test('cross-repository malformed corpus preserves builder acceptance and errors', async (t) => {
+  for (const fixture of wireCorpus.malformed) {
+    await t.test(fixture.id, () => {
+      if (fixture.builderError === null) {
+        assert.doesNotThrow(() => decodeRewriteTransfer(fixture.code));
+        return;
+      }
+      assert.throws(
+        () => decodeRewriteTransfer(fixture.code),
+        (error) => error.message === fixture.builderError
+      );
+    });
+  }
+});
 
 function payload(code, prefix) {
   assert.equal(code.slice(0, prefix.length), prefix);

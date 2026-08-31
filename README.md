@@ -39,7 +39,7 @@ Keep only one HP Colors runtime and one matching preset package active at a time
 The builder's package contract is deliberately narrow and deterministic:
 
 - Minimal and Full profiles contain exactly **56 shared runtime fields**.
-- Rewrite profiles map those fields to the rewrite's **67 indexed settings** and retain rewrite-only values and ability-tier conditions.
+- Rewrite uses the fixed 72-slot `HPCR2` settings contract. `HPCRP1` presets retain the seven Rewrite-only extension values and ability-tier conditions.
 - `hp_precise_pips_enabled` is serialized for the Minimal runtime so its HP-number parser matches the copied pip convars. Full presets keep using the in-game global setting for this option.
 - The current Minimal/Full runtime storage version is **99**. Builder output uses **v1** payloads, and the importer accepts legacy runtime **v97** (and **v25**) input.
 - Minimal/Full copied codes use the `[ANITA-v1-hp_colors]:` prefix. Rewrite settings use `HPCR2`; rewrite presets and bundles use `HPCRP1`.
@@ -65,7 +65,7 @@ Use the profile controls to reorder profiles, and the hero selector to maintain 
 
 ## Rebuilds and game updates
 
-When Deadlock or a runtime changes, install the matching updated packages and rebuild before testing. Treat an old generated package as stale after a template or runtime update. Re-run the target build, replace only its generated VPK, and retain the runtime packages: `pak97_dir.vpk` for Minimal/Full, standalone Rewrite's `pak01_dir.vpk`, or Rewrite + QOLLOCK's `pak02_dir.vpk` and `pak03_dir.vpk`. Never hand-edit a generated VPK.
+When Deadlock or a runtime changes, install the matching updated packages and rebuild before testing. Treat an old generated package as stale after a template or runtime update. Re-run the target build, replace only its generated VPK, and retain the runtime packages: `pak97_dir.vpk` for Minimal/Full, `pak02_dir.vpk` for standalone Rewrite, or `pak02_dir.vpk` and `pak03_dir.vpk` for Rewrite + QOLLOCK. Never hand-edit a generated VPK.
 
 ## Supported browsers
 

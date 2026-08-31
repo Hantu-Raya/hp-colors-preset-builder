@@ -391,7 +391,81 @@ function freezeRewriteBinding(data) {
 }
 
 export const REWRITE_FIELD_BINDINGS = Object.freeze(REWRITE_BINDING_DATA.map(freezeRewriteBinding));
-const HPV2_EXTENSION_KEYS = new Set([
+const REWRITE_CODEC_KEYS = Object.freeze([
+  "enabled",
+  "widthScale",
+  "heightScale",
+  "positionX",
+  "positionY",
+  "enemyEnabled",
+  "enemyVisible",
+  "enemyMode",
+  "enemyLow",
+  "enemyMid",
+  "enemyHigh",
+  "enemyTeamHigh",
+  "excludeBuildings",
+  "excludeBosses",
+  "enemyHealing",
+  "enemyDelta",
+  "enemyBulletShield",
+  "allyEnabled",
+  "allyVisible",
+  "allyMode",
+  "allyLow",
+  "allyMid",
+  "allyHigh",
+  "allyHealing",
+  "allyDelta",
+  "allyBulletShield",
+  "ultMode",
+  "ultCustom",
+  "readoutVisible",
+  "readoutFormat",
+  "readoutSize",
+  "readoutFont",
+  "readoutOffsetX",
+  "readoutOffsetY",
+  "readoutColorMode",
+  "readoutMode",
+  "readoutLow",
+  "readoutMid",
+  "readoutHigh",
+  "pipsVisible",
+  "precisePipsEnabled",
+  "levelsVisible",
+  "lowThreshold",
+  "highThreshold",
+  "enemyPulseEnabled",
+  "enemyPulseThreshold",
+  "enemyPulseBpm",
+  "enemyPulseIntensity",
+  "enemyPulseColorEnabled",
+  "enemyPulseColorMode",
+  "enemyPulseColor",
+  "enemyPulseHideBar",
+  "enemyPulseReadout",
+  "enemyPulseReadoutModifiers",
+  "enemyPulseReadoutSize",
+  "enemyPulseReadoutOffsetX",
+  "enemyPulseReadoutOffsetY",
+  "allyPulseEnabled",
+  "allyPulseThreshold",
+  "allyPulseBpm",
+  "allyPulseIntensity",
+  "allyPulseColorEnabled",
+  "allyPulseColor",
+  "enemyKillMarkerEnabled",
+  "enemyKillMarkerThreshold",
+  "enemyKillMarkerWidth",
+  "enemyKillMarkerColor",
+  "excludeGhouls",
+  "ghoulOpacityEnabled",
+  "ghoulOpacity",
+  "readoutMaxTeamColor",
+  "allyTeamHigh"
+]);
+const HPV2_EXTENSION_KEYS = Object.freeze([
   "staminaWidth",
   "staminaHeight",
   "staminaOffsetX",
@@ -400,20 +474,37 @@ const HPV2_EXTENSION_KEYS = new Set([
   "enemyStaminaColor",
   "allyPulseColorMode"
 ]);
-export const HPV2_EXTENSION_FIELD_BINDINGS = Object.freeze(
-  REWRITE_FIELD_BINDINGS.filter((binding) => HPV2_EXTENSION_KEYS.has(binding.canonicalKey))
-);
+function retiredRewriteBinding(key) {
+  return Object.freeze({
+    ...freezeRewriteBinding([key, null, "toggle", "", "", false]),
+    conditionEligible: false
+  });
+}
 const RETIRED_REWRITE_CODEC_BINDINGS = [
-  freezeRewriteBinding(["excludeBuildings", null, "toggle", "", "", false]),
-  freezeRewriteBinding(["excludeBosses", null, "toggle", "", "", false]),
-  freezeRewriteBinding(["excludeGhouls", null, "toggle", "", "", false])
+  retiredRewriteBinding("excludeBuildings"),
+  retiredRewriteBinding("excludeBosses"),
+  retiredRewriteBinding("excludeGhouls")
 ];
-const rewriteCodecBindings = REWRITE_FIELD_BINDINGS.filter(
-  (binding) => !HPV2_EXTENSION_KEYS.has(binding.canonicalKey)
+const REWRITE_BINDING_BY_KEY = new Map(
+  [...REWRITE_FIELD_BINDINGS, ...RETIRED_REWRITE_CODEC_BINDINGS]
+    .map((binding) => [binding.canonicalKey, binding])
 );
-rewriteCodecBindings.splice(12, 0, ...RETIRED_REWRITE_CODEC_BINDINGS.slice(0, 2));
-rewriteCodecBindings.splice(67, 0, RETIRED_REWRITE_CODEC_BINDINGS[2]);
-export const REWRITE_CODEC_FIELD_BINDINGS = Object.freeze(rewriteCodecBindings);
+const REWRITE_WIRE_KEYS = [...REWRITE_CODEC_KEYS, ...HPV2_EXTENSION_KEYS];
+if (
+  new Set(REWRITE_WIRE_KEYS).size !== REWRITE_WIRE_KEYS.length ||
+  REWRITE_WIRE_KEYS.length !== REWRITE_BINDING_BY_KEY.size
+) {
+  throw new Error("Invalid Rewrite wire slot declarations");
+}
+function bindingsForWireKeys(keys) {
+  return Object.freeze(keys.map((key) => {
+    const binding = REWRITE_BINDING_BY_KEY.get(key);
+    if (!binding) throw new Error(`Missing Rewrite wire binding: ${key}`);
+    return binding;
+  }));
+}
+export const REWRITE_CODEC_FIELD_BINDINGS = bindingsForWireKeys(REWRITE_CODEC_KEYS);
+export const HPV2_EXTENSION_FIELD_BINDINGS = bindingsForWireKeys(HPV2_EXTENSION_KEYS);
 const REWRITE_SCHEMA = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS.map((binding) => {
   const schemaEntry = {
     type: binding.webType,
