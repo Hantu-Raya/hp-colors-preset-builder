@@ -343,7 +343,13 @@ const REWRITE_BINDING_DATA = [
   ["ghoulOpacityEnabled", "hp_ghoul_opacity_enabled", "toggle", "Use custom ghoul opacity", "ENEMY|BAR", false],
   ["ghoulOpacity", "hp_ghoul_opacity", "slider", "Ghoul HUD opacity", "ENEMY|BAR", 100, { min: 0, max: 100, step: 1 }],
   ["readoutMaxTeamColor", "hp_readout_max_team_color", "toggle", "Team color max HP", "HEALTH INFO|HP TEXT", false],
-  ["allyTeamHigh", "hp_friend_team_colors", "toggle", "Use team color at high HP", "ALLY|BAR", false]
+  ["allyTeamHigh", "hp_friend_team_colors", "toggle", "Use team color at high HP", "ALLY|BAR", false],
+  ["staminaWidth", "hpv2_stamina_width", "slider", "Stamina box width", "HEALTH INFO|STAMINA", 110, { min: 40, max: 220, step: 1 }],
+  ["staminaHeight", "hpv2_stamina_height", "slider", "Stamina box height", "HEALTH INFO|STAMINA", 44.8, { min: 16, max: 90, step: 0.1 }],
+  ["staminaOffsetX", "hpv2_stamina_offset_x", "slider", "Stamina horizontal offset", "HEALTH INFO|STAMINA", 0, { min: -300, max: 300, step: 1 }],
+  ["staminaOffsetY", "hpv2_stamina_offset_y", "slider", "Stamina vertical offset", "HEALTH INFO|STAMINA", 0, { min: -200, max: 200, step: 1 }],
+  ["enemyStaminaColorEnabled", "hpv2_enemy_stamina_color_enabled", "toggle", "Use custom enemy stamina color", "HEALTH INFO|STAMINA", false],
+  ["enemyStaminaColor", "hpv2_enemy_stamina_color", "colorpicker", "Enemy stamina color", "HEALTH INFO|STAMINA", "#FD4949"]
 ];
 
 function freezeRewriteBinding(data) {
@@ -384,12 +390,25 @@ function freezeRewriteBinding(data) {
 }
 
 export const REWRITE_FIELD_BINDINGS = Object.freeze(REWRITE_BINDING_DATA.map(freezeRewriteBinding));
+const HPV2_EXTENSION_KEYS = new Set([
+  "staminaWidth",
+  "staminaHeight",
+  "staminaOffsetX",
+  "staminaOffsetY",
+  "enemyStaminaColorEnabled",
+  "enemyStaminaColor"
+]);
+export const HPV2_EXTENSION_FIELD_BINDINGS = Object.freeze(
+  REWRITE_FIELD_BINDINGS.filter((binding) => HPV2_EXTENSION_KEYS.has(binding.canonicalKey))
+);
 const RETIRED_REWRITE_CODEC_BINDINGS = [
   freezeRewriteBinding(["excludeBuildings", null, "toggle", "", "", false]),
   freezeRewriteBinding(["excludeBosses", null, "toggle", "", "", false]),
   freezeRewriteBinding(["excludeGhouls", null, "toggle", "", "", false])
 ];
-const rewriteCodecBindings = [...REWRITE_FIELD_BINDINGS];
+const rewriteCodecBindings = REWRITE_FIELD_BINDINGS.filter(
+  (binding) => !HPV2_EXTENSION_KEYS.has(binding.canonicalKey)
+);
 rewriteCodecBindings.splice(12, 0, ...RETIRED_REWRITE_CODEC_BINDINGS.slice(0, 2));
 rewriteCodecBindings.splice(67, 0, RETIRED_REWRITE_CODEC_BINDINGS[2]);
 export const REWRITE_CODEC_FIELD_BINDINGS = Object.freeze(rewriteCodecBindings);
@@ -404,6 +423,12 @@ const REWRITE_SCHEMA = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS.m
     conditionEligible: binding.conditionEligible
   };
   if (binding.bounds) schemaEntry.bounds = binding.bounds;
+  if (binding.canonicalKey === "enemyStaminaColor") {
+    schemaEntry.visibleWhen = {
+      id: "hpv2_enemy_stamina_color_enabled",
+      equals: true
+    };
+  }
   if (binding.canonicalOptions.length && binding.canonicalType === "enum") {
     schemaEntry.options = binding.canonicalOptions.map((option) => (
       option === "percent"

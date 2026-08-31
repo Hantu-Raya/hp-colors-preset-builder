@@ -564,6 +564,34 @@
                   </Panel>
                 </Panel>
 
+                <Panel id="HPColorsSettingsStamina" class="HPColorsSettingsPage">
+                  <Panel class="HPColorsSettingRow">
+                    <Panel class="HPColorsSettingCopy"><Label text="STAMINA BOX WIDTH" class="HPColorsSettingTitle" /><Label text="Set the exact width of each enemy stamina box." class="HPColorsSettingHelp" /></Panel>
+                    <Panel class="HPColorsSliderGroup"><Panel id="HPColorsStaminaWidthSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" /><TextEntry id="HPColorsStaminaWidthEntry" class="HPColorsNumberEntry" text="110" /><Label text="PX" class="HPColorsUnitLabel" /></Panel>
+                  </Panel>
+                  <Panel class="HPColorsSettingRow">
+                    <Panel class="HPColorsSettingCopy"><Label text="STAMINA BOX HEIGHT" class="HPColorsSettingTitle" /><Label text="Set the exact height of each enemy stamina box." class="HPColorsSettingHelp" /></Panel>
+                    <Panel class="HPColorsSliderGroup"><Panel id="HPColorsStaminaHeightSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" /><TextEntry id="HPColorsStaminaHeightEntry" class="HPColorsNumberEntry" text="44.8" /><Label text="PX" class="HPColorsUnitLabel" /></Panel>
+                  </Panel>
+                  <Panel class="HPColorsSettingRow">
+                    <Panel class="HPColorsSettingCopy"><Label text="STAMINA X OFFSET" class="HPColorsSettingTitle" /><Label text="Move the enemy stamina row left or right." class="HPColorsSettingHelp" /></Panel>
+                    <Panel class="HPColorsSliderGroup"><Panel id="HPColorsStaminaOffsetXSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" /><TextEntry id="HPColorsStaminaOffsetXEntry" class="HPColorsNumberEntry" text="0" /><Label text="PX" class="HPColorsUnitLabel" /></Panel>
+                  </Panel>
+                  <Panel class="HPColorsSettingRow">
+                    <Panel class="HPColorsSettingCopy"><Label text="STAMINA Y OFFSET" class="HPColorsSettingTitle" /><Label text="Move the enemy stamina row up or down." class="HPColorsSettingHelp" /></Panel>
+                    <Panel class="HPColorsSliderGroup"><Panel id="HPColorsStaminaOffsetYSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" /><TextEntry id="HPColorsStaminaOffsetYEntry" class="HPColorsNumberEntry" text="0" /><Label text="PX" class="HPColorsUnitLabel" /></Panel>
+                  </Panel>
+                  <Panel class="HPColorsSettingRow">
+                    <Panel class="HPColorsSettingCopy"><Label text="CUSTOM ENEMY STAMINA COLOR" class="HPColorsSettingTitle" /><Label text="Replace the stock enemy tint on filled stamina boxes and their borders." class="HPColorsSettingHelp" /></Panel>
+                    <Button id="HPColorsEnemyStaminaColorToggle" class="HPColorsToggle"><Panel class="HPColorsToggleKnob" /></Button>
+                  </Panel>
+                  <Panel id="HPColorsEnemyStaminaColorRow" class="HPColorsSettingRow HPColorsColorRow">
+                    <Panel class="HPColorsSettingCopy"><Label text="ENEMY STAMINA COLOR" class="HPColorsSettingTitle" /><Label text="Empty stamina interiors remain black." class="HPColorsSettingHelp" /></Panel>
+                    <Button id="HPColorsEnemyStaminaColorSwatch" class="HPColorsColorSwatch" />
+                    <TextEntry id="HPColorsEnemyStaminaColorHex" class="HPColorsHexEntry" text="#FD4949" maxchars="7" />
+                  </Panel>
+                </Panel>
+
                 <Panel id="HPColorsSettingsEnemyPulse" class="HPColorsSettingsPage">
                   <Panel class="HPColorsSettingRow">
                     <Panel class="HPColorsSettingCopy"><Label text="ENEMY LOW-HP PULSE" class="HPColorsSettingTitle" /><Label text="Pulse enemy healthbars when their health reaches the threshold." class="HPColorsSettingHelp" /></Panel>

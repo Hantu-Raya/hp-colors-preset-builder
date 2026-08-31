@@ -1,24 +1,30 @@
 import { normalizeHeroIds, HP_HERO_SCOPE_ALL, HP_HERO_SCOPE_SELECTED } from './hpHeroData.js';
-import { HP_FIELD_CATALOG, REWRITE_CODEC_FIELD_BINDINGS, REWRITE_FIELD_BINDINGS, REWRITE_FIELD_CATALOG } from './hpv2HpSchema.js';
+import { HP_FIELD_CATALOG, HPV2_EXTENSION_FIELD_BINDINGS, REWRITE_CODEC_FIELD_BINDINGS, REWRITE_FIELD_BINDINGS, REWRITE_FIELD_CATALOG } from './hpv2HpSchema.js';
 
 const SETTINGS_PREFIX = 'HPCR2';
 const PRESET_PREFIX = 'HPCRP1';
 const USER_ID = /^user_\d{4,}$/;
 
-const REWRITE_KEYS = Object.freeze(REWRITE_CODEC_FIELD_BINDINGS.map((binding) => binding.canonicalKey));
-const DEFAULTS = Object.freeze(REWRITE_CODEC_FIELD_BINDINGS.map((binding) => binding.defaultValue));
-const BOOLEAN_INDEXES = new Set(REWRITE_CODEC_FIELD_BINDINGS
+const LEGACY_BINDINGS = REWRITE_CODEC_FIELD_BINDINGS;
+const ALL_BINDINGS = Object.freeze([...LEGACY_BINDINGS, ...HPV2_EXTENSION_FIELD_BINDINGS]);
+const LEGACY_KEY_COUNT = LEGACY_BINDINGS.length;
+const EXTENSION_KEYS = Object.freeze(HPV2_EXTENSION_FIELD_BINDINGS.map((binding) => binding.canonicalKey));
+const EXTENSION_KEY_SET = new Set(EXTENSION_KEYS);
+const LEGACY_KEY_SET = new Set(LEGACY_BINDINGS.map((binding) => binding.canonicalKey));
+const REWRITE_KEYS = Object.freeze(ALL_BINDINGS.map((binding) => binding.canonicalKey));
+const DEFAULTS = Object.freeze(ALL_BINDINGS.map((binding) => binding.defaultValue));
+const BOOLEAN_INDEXES = new Set(ALL_BINDINGS
   .map((binding, index) => binding.canonicalType === 'boolean' ? index : null)
   .filter((index) => index !== null));
-const COLOR_INDEXES = new Set(REWRITE_CODEC_FIELD_BINDINGS
+const COLOR_INDEXES = new Set(ALL_BINDINGS
   .map((binding, index) => binding.canonicalType === 'color' ? index : null)
   .filter((index) => index !== null));
-const ENUMS = Object.freeze(Object.fromEntries(REWRITE_CODEC_FIELD_BINDINGS
+const ENUMS = Object.freeze(Object.fromEntries(ALL_BINDINGS
   .map((binding, index) => binding.canonicalType === 'enum' || binding.canonicalType === 'enum-toggle'
     ? [index, binding.canonicalOptions]
     : null)
   .filter(Boolean)));
-const BOUNDS = Object.freeze(Object.fromEntries(REWRITE_CODEC_FIELD_BINDINGS
+const BOUNDS = Object.freeze(Object.fromEntries(ALL_BINDINGS
   .map((binding, index) => binding.bounds ? [index, [binding.bounds.min, binding.bounds.max]] : null)
   .filter(Boolean)));
 const KEY_INDEX = Object.freeze(Object.fromEntries(REWRITE_KEYS.map((key, index) => [key, index])));
@@ -90,7 +96,7 @@ function parsePairs(raw, errorLabel) {
     }
     const index = pair[0];
     if (seen.has(index)) throw new Error(`DUPLICATE ${errorLabel} SETTING`);
-    if (index >= REWRITE_KEYS.length) throw new Error(`UNKNOWN ${errorLabel} SETTING`);
+    if (index >= LEGACY_KEY_COUNT) throw new Error(`UNKNOWN ${errorLabel} SETTING`);
     seen.add(index);
     if (RETIRED_INDEXES.has(index)) continue;
     values[index] = normalizeRewriteValue(index, pair[1], true);
@@ -115,11 +121,12 @@ function validateRule(key, rule) {
   return { slot: rule.slot, minTier: rule.minTier, value };
 }
 
-function parseConditions(raw, allowEmpty) {
+function parseConditions(raw, allowEmpty, allowedKeys = null) {
   if (raw === null || raw === undefined) return null;
   if (!isPlainObject(raw)) throw new Error('INVALID PRESET CONDITIONS');
   const result = {};
   for (const [key, rule] of Object.entries(raw)) {
+    if (allowedKeys && !allowedKeys.has(key)) throw new Error('INVALID PRESET CONDITIONS');
     const normalized = validateRule(key, rule);
     if (!normalized) throw new Error('INVALID PRESET CONDITIONS');
     result[key] = normalized;
@@ -131,10 +138,68 @@ function parseConditions(raw, allowEmpty) {
 function pairsFor(values) {
   const normalized = normalizeRewriteValues(values);
   const pairs = [];
-  for (let index = 0; index < normalized.length; index += 1) {
+  for (let index = 0; index < LEGACY_KEY_COUNT; index += 1) {
     if (!Object.is(normalized[index], DEFAULTS[index])) pairs.push([index, normalized[index]]);
   }
   return pairs;
+}
+
+function conditionsFor(source, allowedKeys) {
+  const result = {};
+  for (const [key, rule] of Object.entries(source || {})) {
+    if (allowedKeys.has(key)) result[key] = clone(rule);
+  }
+  return Object.keys(result).length ? result : null;
+}
+
+function extensionPairsFor(values) {
+  const normalized = normalizeRewriteValues(values);
+  const pairs = [];
+  for (let index = 0; index < EXTENSION_KEYS.length; index += 1) {
+    const absoluteIndex = LEGACY_KEY_COUNT + index;
+    if (!Object.is(normalized[absoluteIndex], DEFAULTS[absoluteIndex])) {
+      pairs.push([index, normalized[absoluteIndex]]);
+    }
+  }
+  return pairs;
+}
+
+function extensionFor(values, conditions) {
+  const extensionValues = extensionPairsFor(values);
+  const extensionConditions = conditionsFor(conditions, EXTENSION_KEY_SET);
+  if (!extensionValues.length && !extensionConditions) return null;
+  return {
+    v: 1,
+    values: extensionValues,
+    conditions: extensionConditions || {}
+  };
+}
+
+function parseExtension(raw) {
+  if (raw === undefined) return { values: DEFAULTS.slice(), conditions: null };
+  if (!isPlainObject(raw) || Object.keys(raw).sort().join(',') !== 'conditions,v,values' || raw.v !== 1) {
+    throw new Error('INVALID HPV2 PRESET EXTENSION');
+  }
+  if (!Array.isArray(raw.values)) throw new Error('INVALID HPV2 PRESET EXTENSION');
+  const values = DEFAULTS.slice();
+  const seen = new Set();
+  for (const pair of raw.values) {
+    if (!Array.isArray(pair) || pair.length !== 2 || !Number.isInteger(pair[0]) || pair[0] < 0 || pair[0] >= EXTENSION_KEYS.length || seen.has(pair[0])) {
+      throw new Error('INVALID HPV2 PRESET VALUE PAIR');
+    }
+    seen.add(pair[0]);
+    const absoluteIndex = LEGACY_KEY_COUNT + pair[0];
+    values[absoluteIndex] = normalizeRewriteValue(absoluteIndex, pair[1], true);
+  }
+  return {
+    values: normalizeRewriteValues(values),
+    conditions: parseConditions(raw.conditions, true, EXTENSION_KEY_SET)
+  };
+}
+
+function mergeConditions(left, right) {
+  const result = { ...(left || {}), ...(right || {}) };
+  return Object.keys(result).length ? result : null;
 }
 
 
@@ -309,9 +374,14 @@ function parseRecord(raw, index, defaultState, usedIds) {
   }
   usedIds.add(id);
   const values = parsePairs(raw.values, 'PRESET');
+  const extension = parseExtension(raw.hpv2);
+  for (let index = 0; index < EXTENSION_KEYS.length; index += 1) {
+    values[LEGACY_KEY_COUNT + index] = extension.values[LEGACY_KEY_COUNT + index];
+  }
   const heroes = normalizeHeroIds(raw.heroes || []);
   if (!Array.isArray(raw.heroes) || JSON.stringify(heroes) !== JSON.stringify(raw.heroes)) throw new Error('INVALID PRESET HEROES');
-  const conditions = parseConditions(raw.conditions, false);
+  const legacyConditions = parseConditions(raw.conditions, false, LEGACY_KEY_SET);
+  const conditions = mergeConditions(legacyConditions, extension.conditions);
   if (kind === 'baked') {
     if (id !== 'baked_default' || raw.mode !== 'off' || heroes.length || !matchesShippedDefaults(values) || conditions) {
       throw new Error('INVALID BAKED PRESET');
@@ -351,7 +421,7 @@ function parseSettingsTransfer(text, defaultState) {
   if (isPlainObject(payload)) {
     if (Object.keys(payload).sort().join(',') !== 'c,v') throw new Error('INVALID HPCR2 PAYLOAD');
     pairs = payload.v;
-    conditions = parseConditions(payload.c, true);
+    conditions = parseConditions(payload.c, true, LEGACY_KEY_SET);
   }
   const values = parsePairs(pairs, 'HPCR2');
   return {
@@ -380,18 +450,22 @@ function userRecord(profile, index) {
   const values = profileValues(profile);
   const valuePairs = pairsFor(values);
   const conditions = webConditionsToRewrite(profile);
+  const legacyConditions = conditionsFor(conditions, LEGACY_KEY_SET);
+  const extension = extensionFor(values, conditions);
   if (profile?.rewrite?.kind === 'baked' && matchesShippedDefaults(values) && !conditions && mode === HP_HERO_SCOPE_ALL) {
     return { id: 'baked_default', kind: 'baked', name, mode: 'off', heroes: [], values: pairsFor(SHIPPED_DEFAULTS), conditions: null };
   }
-  return {
+  const record = {
     id: USER_ID.test(sourceId) ? sourceId : `user_${String(index + 1).padStart(4, '0')}`,
     kind: 'user',
     name,
     mode,
     heroes: mode === HP_HERO_SCOPE_SELECTED ? heroes : [],
     values: valuePairs,
-    conditions
+    conditions: legacyConditions
   };
+  if (extension) record.hpv2 = extension;
+  return record;
 }
 
 function hiddenBakedPresetIds(records) {
@@ -402,7 +476,7 @@ function hiddenBakedPresetIds(records) {
 
 export function createRewriteSettingsCode(profile) {
   const values = profileValues(profile);
-  const conditions = webConditionsToRewrite(profile);
+  const conditions = conditionsFor(webConditionsToRewrite(profile), LEGACY_KEY_SET);
   const payload = { v: pairsFor(values), c: conditions || {} };
   return `${SETTINGS_PREFIX}${JSON.stringify(payload)}`;
 }

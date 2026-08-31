@@ -253,6 +253,7 @@ function HealthbarPreview({ profileState = null, conversionRequired = false, pro
   const ult = model?.ult || {};
   const killMarker = model?.killMarker || {};
   const pulse = model?.pulse || {};
+  const stamina = model?.stamina || {};
   const pulseVisible = Boolean(pulse.active);
   const pulseActive = pulseVisible && !paused;
   const pulsePaused = pulseVisible && paused;
@@ -273,6 +274,10 @@ function HealthbarPreview({ profileState = null, conversionRequired = false, pro
   const fitScale = fitTargetWidth / barWidthPx;
   const inspectionScale = zoom === '2x' ? 2 : 1;
   const visualScale = fitScale * inspectionScale;
+  const staminaWidth = Math.max(1, clampNumber(stamina.widthPx, 40, 220, 110) * visualScale);
+  const staminaHeight = Math.max(1, clampNumber(stamina.heightPx, 16, 90, 44.8) * visualScale);
+  const staminaOffsetX = clampNumber(stamina.offsetX, -300, 300, 0) * visualScale;
+  const staminaOffsetY = clampNumber(stamina.offsetY, -200, 200, 0) * visualScale;
   const barWidth = Math.max(1, Math.round(barWidthPx * visualScale));
   const barHeight = Math.max(1, Math.round(barHeightPx * visualScale));
   const unitInfoSize = Math.max(1, Math.round(300 * visualScale));
@@ -381,6 +386,27 @@ function HealthbarPreview({ profileState = null, conversionRequired = false, pro
                   '--healthbar-offset-y': `${barOffsetY}px`
                 }}
               >
+                {stamina.visible ? (
+                  <div
+                    className="healthbar-preview-stamina"
+                    aria-label="Enemy stamina preview: two filled pips and one empty pip"
+                    style={{
+                      '--healthbar-stamina-width': `${staminaWidth}px`,
+                      '--healthbar-stamina-height': `${staminaHeight}px`,
+                      '--healthbar-stamina-offset-x': `${staminaOffsetX}px`,
+                      '--healthbar-stamina-offset-y': `${staminaOffsetY}px`,
+                      '--healthbar-stamina-color': stamina.color || '#FD4949'
+                    }}
+                  >
+                    {(stamina.pips || []).map((pip, index) => (
+                      <span
+                        key={index}
+                        className={`healthbar-preview-stamina-pip${pip.empty ? ' is-empty' : ''}`}
+                        aria-hidden="true"
+                      />
+                    ))}
+                  </div>
+                ) : null}
                 {readout.visible ? (
                   <span
                     className="healthbar-preview-readout"

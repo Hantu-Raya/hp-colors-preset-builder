@@ -396,6 +396,29 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
     color: markerEnabled ? state.hp_kill_zone_color : ""
   };
 
+  const staminaCustomized = !stock && globalEnabled && enemyRole;
+  const staminaWidth = staminaCustomized ? state.hpv2_stamina_width : 110;
+  const staminaHeight = staminaCustomized ? state.hpv2_stamina_height : 44.8;
+  const staminaOffsetX = staminaCustomized ? state.hpv2_stamina_offset_x : 0;
+  const staminaOffsetY = staminaCustomized ? state.hpv2_stamina_offset_y : 0;
+  const staminaColor = staminaCustomized && state.hpv2_enemy_stamina_color_enabled
+    ? state.hpv2_enemy_stamina_color
+    : "#FFFFFF";
+  const stamina = {
+    visible: enemyRole,
+    customized: staminaCustomized,
+    widthPx: staminaWidth,
+    heightPx: staminaHeight,
+    offsetX: staminaOffsetX,
+    offsetY: staminaOffsetY,
+    color: staminaColor,
+    pips: [
+      { empty: false },
+      { empty: false },
+      { empty: true }
+    ]
+  };
+
   return {
     scenario: normalizedScenario,
     bar: {
@@ -438,6 +461,7 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
       color: ultColor
     },
     killMarker: marker,
+    stamina,
     pulse,
     stock
   };

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { HP_FIELD_CATALOG, REWRITE_CODEC_FIELD_BINDINGS, REWRITE_FIELD_BINDINGS, REWRITE_FIELD_CATALOG } from '../src/hpv2HpSchema.js';
+import { HP_FIELD_CATALOG, HPV2_EXTENSION_FIELD_BINDINGS, REWRITE_CODEC_FIELD_BINDINGS, REWRITE_FIELD_BINDINGS, REWRITE_FIELD_CATALOG } from '../src/hpv2HpSchema.js';
 import {
   createRewritePresetBundle,
   createRewritePresetCode,
@@ -234,7 +234,7 @@ test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => 
   };
   const code = createRewritePresetCode(profile);
   const decoded = decodeRewriteTransfer(code).profiles[0];
-  const expected = REWRITE_CODEC_FIELD_BINDINGS.map((binding) => {
+  const expected = [...REWRITE_CODEC_FIELD_BINDINGS, ...HPV2_EXTENSION_FIELD_BINDINGS].map((binding) => {
     if (binding.webId === null) return false;
     const value = values[binding.webId];
     if (binding.canonicalType === 'enum') return binding.canonicalOptions[value];
@@ -248,9 +248,101 @@ test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => 
   assert.equal(decoded.rewrite.values[67], false);
   assert.equal(decoded.rewrite.values[68], true);
   assert.equal(decoded.rewrite.values[69], 0);
+  assert.equal(decoded.rewrite.values[72], 40);
+  assert.equal(decoded.rewrite.values[73], 16);
+  assert.equal(decoded.rewrite.values[74], -300);
+  assert.equal(decoded.rewrite.values[75], -200);
+  assert.equal(decoded.rewrite.values[76], true);
+  assert.equal(decoded.rewrite.values[77], '#123456');
   const pairs = payload(code, 'HPCRP1').records[0].values;
   for (const retiredIndex of [12, 13, 67])
     assert.equal(pairs.some(([index]) => index === retiredIndex), false);
   assert.equal(pairs.some(([index]) => index === 68), true);
   assert.equal(pairs.some(([index]) => index === 69), true);
+  assert.deepEqual(payload(code, 'HPCRP1').records[0].hpv2, {
+    v: 1,
+    values: [
+      [0, 40],
+      [1, 16],
+      [2, -300],
+      [3, -200],
+      [4, true],
+      [5, '#123456']
+    ],
+    conditions: {}
+  });
+});
+
+test('HPv2 stamina round-trips through the preset extension but not HPCR2', () => {
+  const values = {
+    ...REWRITE_FIELD_CATALOG.createDefaultState(),
+    hpv2_stamina_width: 150,
+    hpv2_stamina_height: 52.5,
+    hpv2_stamina_offset_x: 24,
+    hpv2_stamina_offset_y: -18,
+    hpv2_enemy_stamina_color_enabled: true,
+    hpv2_enemy_stamina_color: '#123456'
+  };
+  const profile = {
+    id: 'stamina',
+    name: 'Stamina',
+    values: HP_FIELD_CATALOG.createDefaultState(),
+    heroMode: 'all',
+    heroes: [],
+    overrides: {},
+    rewrite: createRewriteProfileMetadata({
+      id: 'stamina',
+      name: 'Stamina',
+      values,
+      heroMode: 'all',
+      heroes: [],
+      overrides: {
+        hpv2_stamina_width: { slot: 4, minTier: 3, value: 180 }
+      }
+    }, { valuesAreRewrite: true })
+  };
+
+  const presetCode = createRewritePresetCode(profile);
+  assert.deepEqual(payload(presetCode, 'HPCRP1').records[0].hpv2, {
+    v: 1,
+    values: [
+      [0, 150],
+      [1, 52.5],
+      [2, 24],
+      [3, -18],
+      [4, true],
+      [5, '#123456']
+    ],
+    conditions: {
+      staminaWidth: { slot: 4, minTier: 3, value: 180 }
+    }
+  });
+
+  const decoded = decodeRewriteTransfer(presetCode).profiles[0];
+  assert.equal(decoded.rewrite.webValues.hpv2_stamina_width, 150);
+  assert.equal(decoded.rewrite.webValues.hpv2_stamina_height, 52.5);
+  assert.equal(decoded.rewrite.webValues.hpv2_stamina_offset_x, 24);
+  assert.equal(decoded.rewrite.webValues.hpv2_stamina_offset_y, -18);
+  assert.equal(decoded.rewrite.webValues.hpv2_enemy_stamina_color_enabled, true);
+  assert.equal(decoded.rewrite.webValues.hpv2_enemy_stamina_color, '#123456');
+  assert.deepEqual(decoded.rewrite.webOverrides.hpv2_stamina_width, {
+    slot: 4,
+    minTier: 3,
+    value: 180
+  });
+
+  const settingsPayload = payload(createRewriteSettingsCode(profile), 'HPCR2');
+  assert.deepEqual(Object.keys(settingsPayload).sort(), ['c', 'v']);
+  assert.equal(settingsPayload.v.some(([index]) => index >= 72), false);
+  assert.equal(Object.hasOwn(settingsPayload.c, 'staminaWidth'), false);
+
+  const legacy = decodeRewriteTransfer(FIXTURE).profiles[0];
+  assert.equal(legacy.rewrite.webValues.hpv2_stamina_width, 110);
+  assert.equal(legacy.rewrite.webValues.hpv2_stamina_height, 44.8);
+  assert.equal(legacy.rewrite.webValues.hpv2_enemy_stamina_color_enabled, false);
+
+  assert.throws(
+    () => decodeRewriteTransfer('HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Bad","mode":"all","heroes":[],"values":[],"conditions":null,"hpv2":{"v":2,"values":[],"conditions":{}}}],"selectedPresetId":"user_0001"}'),
+    /INVALID HPV2 PRESET EXTENSION/
+  );
 });

@@ -218,6 +218,10 @@ test("v2 preview maps each texture role and explicit geometry once", async () =>
   assert.match(preview, /healthbar-preview-ult-ready[\s\S]*PREVIEW_ASSETS\.ultReady/);
   assert.match(preview, /killMarkerLeftPercent[\s\S]*killMarker\.leftPx[\s\S]*barWidthPx/);
   assert.match(preview, /killMarkerWidthPercent[\s\S]*killMarker\.widthPx[\s\S]*barWidthPx/);
+  assert.match(preview, /healthbar-preview-stamina[\s\S]*stamina\.pips/);
+  assert.match(preview, /--healthbar-stamina-width[\s\S]*staminaWidth/);
+  assert.match(preview, /--healthbar-stamina-height[\s\S]*staminaHeight/);
+  assert.match(css, /\.healthbar-preview-stamina-pip\.is-empty\s*\{[^}]*background:\s*#000;/);
   assert.match(preview, /--healthbar-width[\s\S]*barWidth/);
   assert.doesNotMatch(preview, /scaleX|barScale|widthScalePercent/);
   assert.match(css, /\.healthbar-preview-missing-layer[\s\S]*right:\s*0;[\s\S]*left:\s*auto;/);

@@ -3396,12 +3396,41 @@
 }
 
 .healthbar-preview-hud {
+  position: relative;
   display: grid;
   grid-template-columns: var(--healthbar-level-size) 6px var(--healthbar-width);
   grid-template-rows: auto var(--healthbar-height);
   align-items: center;
   transform: translate(var(--healthbar-offset-x), var(--healthbar-offset-y));
   transform-origin: center;
+}
+
+.healthbar-preview-stamina {
+  position: absolute;
+  z-index: 12;
+  right: calc(var(--healthbar-width) / 2);
+  bottom: calc(var(--healthbar-height) + 8px);
+  display: flex;
+  gap: 3px;
+  transform: translate(
+    calc(50% + var(--healthbar-stamina-offset-x)),
+    var(--healthbar-stamina-offset-y)
+  );
+  pointer-events: none;
+}
+
+.healthbar-preview-stamina-pip {
+  display: block;
+  width: var(--healthbar-stamina-width);
+  height: var(--healthbar-stamina-height);
+  border: max(1px, calc(var(--healthbar-stamina-height) * 0.09)) solid var(--healthbar-stamina-color);
+  border-radius: 0;
+  background: var(--healthbar-stamina-color);
+  box-sizing: border-box;
+}
+
+.healthbar-preview-stamina-pip.is-empty {
+  background: #000;
 }
 
 .healthbar-preview-bar {

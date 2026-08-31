@@ -217,6 +217,22 @@ const MENU_DEFINITION = Object.freeze([
         pageId: "health-pips-levels",
         fieldIds: ["hp_level_number_visible", "hp_pip_visible", "hp_precise_pips_enabled"],
         rewriteKeys: ["pipsVisible", "precisePipsEnabled", "levelsVisible", "ultMode", "ultCustom"]
+      },
+      {
+        name: "STAMINA",
+        title: "ENEMY STAMINA",
+        description: "Resize, move, and recolor enemy stamina pips.",
+        pageId: "health-stamina",
+        rewriteOnly: true,
+        fieldIds: [],
+        rewriteKeys: [
+          "staminaWidth",
+          "staminaHeight",
+          "staminaOffsetX",
+          "staminaOffsetY",
+          "enemyStaminaColorEnabled",
+          "enemyStaminaColor"
+        ]
       }
     ]
   }
@@ -229,7 +245,7 @@ export function createHpMenuGroups(catalogOrSchema) {
   const usedFieldIds = new Set();
   const groups = MENU_DEFINITION.map((category) => {
     const path = [category.name];
-    const children = category.pages.map((page) => {
+    const children = category.pages.filter((page) => rewrite || !page.rewriteOnly).map((page) => {
       const ids = rewrite
         ? page.rewriteKeys
         : page.fieldIds;

@@ -39,9 +39,9 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
   ];
   const retiredCanonicalKeys = ["excludeBuildings", "excludeBosses", "excludeGhouls"];
 
-  assert.equal(fields.length, 69);
-  assert.equal(new Set(fields.map((field) => field.id)).size, 69);
-  assert.equal(new Set(canonicalKeys).size, 69);
+  assert.equal(fields.length, 75);
+  assert.equal(new Set(fields.map((field) => field.id)).size, 75);
+  assert.equal(new Set(canonicalKeys).size, 75);
   assert.deepEqual(canonicalKeys.sort(), REWRITE_FIELD_CATALOG.bindings.map((binding) => binding.canonicalKey).sort());
   assert.equal(fields.some((field) => forbiddenIds.includes(field.id)), false);
   assert.equal(fields.some((field) => field.canonicalKey === "precisePipsEnabled" && field.conditionEligible === false), true);
@@ -63,6 +63,17 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
   assert.equal(healthText.fields.some((field) => field.canonicalKey === "lowThreshold"), false);
   assert.equal(healthText.fields.some((field) => field.canonicalKey === "highThreshold"), false);
   assert.equal(healthText.fields.some((field) => field.canonicalKey === "readoutMaxTeamColor"), true);
+  const stamina = groups
+    .find((group) => group.name === "HEALTH INFO")
+    .children.find((page) => page.pageId === "health-stamina");
+  assert.deepEqual(stamina.fields.map((field) => field.canonicalKey), [
+    "staminaWidth",
+    "staminaHeight",
+    "staminaOffsetX",
+    "staminaOffsetY",
+    "enemyStaminaColorEnabled",
+    "enemyStaminaColor"
+  ]);
 });
 
 test("reset boundaries keep pulse and kill-marker settings on separate pages", () => {

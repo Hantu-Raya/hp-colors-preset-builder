@@ -68,7 +68,7 @@ test("preview returns the documented stable groups and normalizes without mutati
   const original = structuredClone(input);
   const model = createHealthbarPreviewModel(profile, input);
 
-  assert.deepEqual(Object.keys(model), ["scenario", "bar", "readout", "level", "ult", "killMarker", "pulse", "stock"]);
+  assert.deepEqual(Object.keys(model), ["scenario", "bar", "readout", "level", "ult", "killMarker", "stamina", "pulse", "stock"]);
   assert.deepEqual(input, original);
   assert.deepEqual(model.scenario, {
     healthPercent: 0,
@@ -574,4 +574,63 @@ test("retired exclusion values do not disable Rewrite paint", () => {
   assert.equal(model.bar.widthPx, 900);
   assert.equal(model.readout.visible, true);
   assert.equal(model.pulse.active, true);
+});
+
+test("enemy stamina preview follows HPv2 geometry, color, and stock fallback", () => {
+  const customized = createHealthbarPreviewModel(
+    state({
+      hpv2_stamina_width: 150,
+      hpv2_stamina_height: 52.5,
+      hpv2_stamina_offset_x: 24,
+      hpv2_stamina_offset_y: -18,
+      hpv2_enemy_stamina_color_enabled: true,
+      hpv2_enemy_stamina_color: "#123456",
+    }),
+    scenario({ relation: "enemy" }),
+  );
+  assert.deepEqual(customized.stamina, {
+    visible: true,
+    customized: true,
+    widthPx: 150,
+    heightPx: 52.5,
+    offsetX: 24,
+    offsetY: -18,
+    color: "#123456",
+    pips: [{ empty: false }, { empty: false }, { empty: true }],
+  });
+
+  const fallbackColor = createHealthbarPreviewModel(
+    state({
+      hpv2_enemy_stamina_color_enabled: false,
+      hpv2_enemy_stamina_color: "#123456",
+    }),
+    scenario({ relation: "enemy" }),
+  );
+  assert.equal(fallbackColor.stamina.color, "#FFFFFF");
+
+  const stock = createHealthbarPreviewModel(
+    state({
+      hpv2_stamina_width: 150,
+      hpv2_enemy_stamina_color_enabled: true,
+      hpv2_enemy_stamina_color: "#123456",
+    }),
+    scenario({ relation: "enemy" }),
+    { stock: true },
+  );
+  assert.deepEqual(stock.stamina, {
+    visible: true,
+    customized: false,
+    widthPx: 110,
+    heightPx: 44.8,
+    offsetX: 0,
+    offsetY: 0,
+    color: "#FFFFFF",
+    pips: [{ empty: false }, { empty: false }, { empty: true }],
+  });
+
+  const ally = createHealthbarPreviewModel(
+    state(),
+    scenario({ relation: "ally" }),
+  );
+  assert.equal(ally.stamina.visible, false);
 });
