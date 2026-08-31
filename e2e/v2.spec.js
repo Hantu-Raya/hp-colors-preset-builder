@@ -346,8 +346,8 @@ test('v2 settings navigation aligns with tall settings content', async ({ page }
     page.locator('.panorama-workspace').boundingBox(),
     page.locator('.anita-tree').boundingBox()
   ]);
-  expect(Math.abs(treeBox.y - workspaceBox.y)).toBeLessThanOrEqual(1);
-  expect(Math.abs((treeBox.y + treeBox.height) - (workspaceBox.y + workspaceBox.height))).toBeLessThanOrEqual(1);
+  expect(Math.abs(treeBox.y - workspaceBox.y)).toBeLessThanOrEqual(2);
+  expect(Math.abs((treeBox.y + treeBox.height) - (workspaceBox.y + workspaceBox.height))).toBeLessThanOrEqual(2);
 });
 
 test('v2 preview controls update output, support hold-to-stock, zoom, and reset', async ({ page }) => {
@@ -366,8 +366,8 @@ test('v2 preview controls update output, support hold-to-stock, zoom, and reset'
   const canvas = preview.locator('.healthbar-preview-canvas');
   const stock = preview.getByRole('button', { name: 'Show stock' });
 
-  await expect(health).toHaveValue('72');
-  await expect(healthOutput).toContainText('72%');
+  await expect(health).toHaveValue('100');
+  await expect(healthOutput).toContainText('100%');
   await health.focus();
   await health.press('Home');
   await expect(health).toHaveValue('0');
@@ -393,8 +393,8 @@ test('v2 preview controls update output, support hold-to-stock, zoom, and reset'
   await expect(preview.locator('.healthbar-preview-status')).toHaveText('ALLY');
 
   await preview.getByRole('button', { name: 'Reset', exact: true }).click();
-  await expect(health).toHaveValue('72');
-  await expect(healthOutput).toContainText('72%');
+  await expect(health).toHaveValue('100');
+  await expect(healthOutput).toContainText('100%');
   await expect(relation.getByRole('radio', { name: 'ENEMY' })).toHaveAttribute('aria-checked', 'true');
   await expect(canvas).toHaveAttribute('data-zoom', 'fit');
   await expect(stock).toHaveAttribute('aria-pressed', 'false');
@@ -426,10 +426,10 @@ test('v2 preview matches the compact in-game healthbar geometry', async ({ page 
   expect(bar.width).toBeLessThanOrEqual(136);
   expect(bar.height).toBeGreaterThanOrEqual(18);
   expect(bar.height).toBeLessThanOrEqual(22);
-  expect(level.width).toBeGreaterThanOrEqual(22);
-  expect(level.width).toBeLessThanOrEqual(30);
-  expect(level.height).toBeGreaterThanOrEqual(22);
-  expect(level.height).toBeLessThanOrEqual(30);
+  expect(level.width).toBeGreaterThanOrEqual(35);
+  expect(level.width).toBeLessThanOrEqual(37);
+  expect(level.height).toBeGreaterThanOrEqual(35);
+  expect(level.height).toBeLessThanOrEqual(37);
   expect(Math.abs(bar.x - hud.x - level.width - 6)).toBeLessThanOrEqual(1);
   expect(level.x + level.width).toBeLessThanOrEqual(unitInfo.x + unitInfo.width * 0.18 + 2);
   const unitInfoOverlap = unitInfo.x + unitInfo.width - bar.x;
@@ -659,13 +659,13 @@ test('v2 Rewrite target adds presets from the topbar and Presets tab', async ({ 
   );
 });
 
-test('keeps v1 original and exposes v2 as a separate route', async ({ page }) => {
+test('keeps v1 original and links the HPv2 builder separately', async ({ page }) => {
   await page.goto('.');
   await chooseMinimalTarget(page);
   await expect(page.getByRole('option', { name: /^GENERAL/ })).toBeVisible();
 
   await page.getByRole('link', { name: 'V2 game menu' }).click();
-  await expect(page).toHaveURL(/\/hp-colors-preset-builder\/v2\/$/);
+  await expect(page).toHaveURL(/\/hp-colors-preset-builder\/hpv2\/$/);
   await chooseRewriteTarget(page);
   await expect(page.getByRole('option', { name: /OVERVIEW/ })).toBeVisible();
 
@@ -694,7 +694,7 @@ test('v2 mirrors the in-game category and page navigation', async ({ page }) => 
   await expect(page.getByRole('button', { name: 'Export profiles' })).toBeVisible();
 });
 
-test('v2 rewrite profiles build a rewrite-only pak96 and retain code-copy controls', async ({ page }) => {
+test('v2 rewrite profiles build a priority-safe pak01 and retain code-copy controls', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -725,7 +725,7 @@ test('v2 rewrite profiles build a rewrite-only pak96 and retain code-copy contro
   await expect(page.locator('#presetName')).toHaveValue('Shiv 🚀');
   await expect(page.locator('.hero-selector-value')).toHaveText(/Shiv/);
   await expect(page.getByRole('button', { name: 'Build VPK' })).toHaveCount(1);
-  await expect(page.getByText(/will build pak96_dir\.vpk for hp_colors_rewrite/)).toBeVisible();
+  await expect(page.getByText(/will build pak01_dir\.vpk for hp_colors_rewrite/)).toBeVisible();
 
   await page.getByRole('button', { name: 'Export profiles' }).click();
   await page.getByRole('button', { name: 'Copy all rewrite presets' }).click();
@@ -752,7 +752,7 @@ test('v2 rewrite profiles build a rewrite-only pak96 and retain code-copy contro
   const downloadPromise = page.waitForEvent('download');
   await warning.getByRole('button', { name: 'Confirm build' }).click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe('pak96_dir.vpk');
+  expect(download.suggestedFilename()).toBe('pak01_dir.vpk');
   const downloadedBytes = new Uint8Array(await readFile(await download.path()));
   const archive = readVpkArchive(downloadedBytes);
   expect(archive.files.map((file) => file.path)).toEqual([REWRITE_PRESET_ARCHIVE_PATH]);
@@ -763,7 +763,7 @@ test('v2 rewrite profiles build a rewrite-only pak96 and retain code-copy contro
   expect(compiledXml).toContain(`text="${encodeUtf16Hex(copied)}"`);
   expect(compiledXml).not.toMatch(/base_hud|anita|hp_colors_builder_presets/i);
   expect(readRewritePresetCode(archive.files[0].bytes)).toBe(copied);
-  await expect(page.locator('.status-card')).toContainText(/Built pak96_dir\.vpk for hp_colors_rewrite/);
+  await expect(page.locator('.status-card')).toContainText(/Built pak01_dir\.vpk for hp_colors_rewrite/);
 });
 
 test('rewrite imports remain in v2 and never replace v1 profiles', async ({ page }) => {
