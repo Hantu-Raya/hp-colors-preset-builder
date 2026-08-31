@@ -18,10 +18,10 @@ import {
   validateRewritePresetTemplate,
   validateRewritePresetVpk,
   validateRewriteShowranksPresetVpk
-} from "../src/rewritePackageBuilder.js";
+} from "../src/hpv2RewritePackageBuilder.js";
 import { createVpkArchive, readVpkArchive, writeVpkArchive } from "../src/vpkArchive.js";
 
-const TEMPLATE_PATH = new URL("../public/templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml", import.meta.url);
+const TEMPLATE_PATH = new URL("../public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml", import.meta.url);
 const PRESET_CODE = `HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Unicode ${String.fromCodePoint(0x1f680)} / \\"safe\\"","mode":"all","heroes":[],"values":[],"conditions":null}],"selectedPresetId":"user_0001"}`;
 const ESCAPE_FALLBACK_XML = "if (!$.HPColorsMenuCancel()) $.DispatchEvent(&apos;CitadelResumePlaying&apos;, $.GetContextPanel())";
 
@@ -36,9 +36,9 @@ test("XML template has the stable rewrite layout contract and one empty hidden s
   assert.match(inspected.labelClass, new RegExp(`\\b${REWRITE_PRESET_STORE_LABEL_CLASS}\\b`));
   assert.equal(inspected.labelText, "");
   assert.deepEqual(inspected.scriptIncludes, [
-    "s2r://panorama/scripts/hp_colors_contract.vjs_c",
-    "s2r://panorama/scripts/hp_colors_state.vjs_c",
-    "s2r://panorama/scripts/hp_colors_menu.vjs_c"
+    "s2r://panorama/scripts/hp_colors_v2_contract.vjs_c",
+    "s2r://panorama/scripts/hp_colors_v2_state.vjs_c",
+    "s2r://panorama/scripts/hp_colors_v2_menu.vjs_c"
   ]);
   assert.doesNotMatch(templateText, /anita/i);
   assert.doesNotMatch(templateText, /hp_colors_builder_presets|base_hud/i);
@@ -47,7 +47,7 @@ test("XML template has the stable rewrite layout contract and one empty hidden s
 test("rewrite template loads the shared settings contract and preserves native Escape fallback", () => {
   assert.match(
     templateText,
-    /<include src="s2r:\/\/panorama\/scripts\/hp_colors_contract\.vjs_c" \/>\s*<include src="s2r:\/\/panorama\/scripts\/hp_colors_state\.vjs_c" \/>/
+    /<include src="s2r:\/\/panorama\/scripts\/hp_colors_v2_contract\.vjs_c" \/>\s*<include src="s2r:\/\/panorama\/scripts\/hp_colors_v2_state\.vjs_c" \/>/
   );
   assert.ok(
     templateText.includes(
@@ -67,7 +67,7 @@ test("rewrite template keeps the native menu entry and shared threshold ownershi
   assert.ok(entryIndex >= 0 && entryIndex < settingsIndex);
   assert.match(
     templateText,
-    /<Button id="HPColorsMenuButton" class="nav_menu_item minor">\s*<Label text="HP COLORS" class="menuButtonLabel" \/>\s*<\/Button>/
+    /<Button id="HPColorsMenuButton" class="nav_menu_item minor">\s*<Label text="HP COLORS V2" class="menuButtonLabel" \/>\s*<\/Button>/
   );
   assert.doesNotMatch(templateText, /HPColorsMenuAccent|HPColorsMenuSwatch|HPColorsMenuBinding/);
   assert.match(templateText, /id="HPColorsSharedLowThresholdSliderHost"/);
@@ -100,7 +100,7 @@ test("rewrite package preserves Unicode code units in the XML label", () => {
 
 test("rewrite package rejects stale, malformed, populated, and incompatible XML templates", () => {
   assert.throws(() => validateRewritePresetTemplate(templateText.replace("hp_colors_rewrite_preset_version=\"1\"", "hp_colors_rewrite_preset_version=\"2\"")), /stale or incompatible/);
-  assert.throws(() => validateRewritePresetTemplate(templateText.replace("hp_colors_menu.vjs_c", "hp_colors_builder_presets.vjs_c")), /stale or incompatible/);
+  assert.throws(() => validateRewritePresetTemplate(templateText.replace("hp_colors_v2_menu.vjs_c", "hp_colors_builder_presets.vjs_c")), /stale or incompatible/);
   assert.throws(() => validateRewritePresetTemplate(templateText.replace("HPColorsRewritePresetStore", "OtherStore")), /exactly one HPColorsRewritePresetStore/);
   for (const id of ["HPColorsReadoutMaxTeamColorToggle", "HPColorsAllyTeamHighToggle"]) {
     assert.throws(
@@ -152,15 +152,27 @@ test("showranks package merges the ShowRank escape-menu hooks and round-trips HP
   );
   assert.match(built.sourceText, /id="HPColorsReadoutMaxTeamColorToggle"/);
   assert.match(built.sourceText, /id="HPColorsAllyTeamHighToggle"/);
+  for (const id of ["PlayersTab", "PlayersTabContents", "PlayersList"]) {
+    assert.match(built.sourceText, new RegExp(`id="${id}"`), id);
+  }
   const inspected = inspectRewriteShowranksPresetTemplate(built.sourceText, { requireEmpty: false });
   assert.deepEqual(inspected.scriptIncludes, [
-    "s2r://panorama/scripts/hp_colors_contract.vjs_c",
-    "s2r://panorama/scripts/hp_colors_state.vjs_c",
-    "s2r://panorama/scripts/hp_colors_menu.vjs_c",
+    "s2r://panorama/scripts/hp_colors_v2_contract.vjs_c",
+    "s2r://panorama/scripts/hp_colors_v2_state.vjs_c",
+    "s2r://panorama/scripts/hp_colors_v2_menu.vjs_c",
     "s2r://panorama/scripts/showrank_barebones.vjs_c"
   ]);
   assert.equal(readRewriteShowranksPresetCode(built.bytes), PRESET_CODE);
   assert.equal(validateRewriteShowranksPresetVpk(built.vpkBytes).files.length, 1);
+  for (const id of ["PlayersTab", "PlayersTabContents", "PlayersList"]) {
+    assert.throws(
+      () => inspectRewriteShowranksPresetTemplate(
+        built.sourceText.replace(`id="${id}"`, `id="Missing${id}"`),
+        { requireEmpty: false }
+      ),
+      /panel contract is stale or incompatible/
+    );
+  }
 });
 
 test("canonical rewrite contract rejects the showranks layout and vice versa", () => {
@@ -181,7 +193,7 @@ test("showranks merge rejects templates whose canonical anchors drifted", () => 
   );
   assert.throws(
     () => buildRewriteShowranksPresetPackage({
-      templateText: templateText.replace("hp_colors_menu.vjs_c", "hp_colors_other.vjs_c"),
+      templateText: templateText.replace("hp_colors_v2_menu.vjs_c", "hp_colors_other.vjs_c"),
       presetCode: PRESET_CODE
     }),
     /stale or incompatible/

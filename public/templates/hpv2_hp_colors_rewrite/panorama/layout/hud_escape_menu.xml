@@ -3,12 +3,12 @@
   <styles>
     <include src="s2r://panorama/styles/citadel_base_styles.vcss_c" />
     <include src="s2r://panorama/styles/hud_escape_menu.vcss_c" />
-    <include src="s2r://panorama/styles/hp_colors_menu.vcss_c" />
+    <include src="s2r://panorama/styles/hp_colors_v2_menu.vcss_c" />
   </styles>
   <scripts>
-    <include src="s2r://panorama/scripts/hp_colors_contract.vjs_c" />
-    <include src="s2r://panorama/scripts/hp_colors_state.vjs_c" />
-    <include src="s2r://panorama/scripts/hp_colors_menu.vjs_c" />
+    <include src="s2r://panorama/scripts/hp_colors_v2_contract.vjs_c" />
+    <include src="s2r://panorama/scripts/hp_colors_v2_state.vjs_c" />
+    <include src="s2r://panorama/scripts/hp_colors_v2_menu.vjs_c" />
   </scripts>
   <CitadelHudEscapeMenu onload="$.HPColorsMenuBoot()" oncancel="if (!$.HPColorsMenuCancel()) $.DispatchEvent(&apos;CitadelResumePlaying&apos;, $.GetContextPanel())">
     <Panel id="EscapeBackground" onactivate="if (!$.HPColorsMenuCancel()) $.DispatchEvent(&apos;CitadelResumePlaying&apos;, $.GetContextPanel())" />
@@ -53,7 +53,7 @@
             </Button>
           </Panel>
           <Button id="HPColorsMenuButton" class="nav_menu_item minor">
-            <Label text="HP COLORS" class="menuButtonLabel" />
+            <Label text="HP COLORS V2" class="menuButtonLabel" />
           </Button>
           <Panel class="SettingsRow">
             <Button id="settings" class="nav_menu_item minor" onactivate="CitadelSettings()">
@@ -94,7 +94,7 @@
       <Panel id="HPColorsEditorShell" class="HPColorsEditorShell">
         <Panel class="HPColorsEditorHeader">
           <Panel class="HPColorsTitleBlock">
-            <Label text="HP COLORS" class="HPColorsTitle" />
+            <Label text="HP COLORS V2" class="HPColorsTitle" />
             <Label id="HPColorsHeaderCategory" text="OVERVIEW" class="HPColorsHeaderCategory" />
           </Panel>
           <Panel class="HPColorsHeaderRule" />
@@ -141,13 +141,13 @@
                 <Button id="HPColorsPresetInfoToggle" class="HPColorsPresetInfoToggle"><Label text="INFO" /></Button>
               </Panel>
               <Panel class="HPColorsPageRule" />
-              <Label id="HPColorsPageDescription" text="Turn HP Colors on or off. Your settings stay saved when it is off." class="HPColorsPageDescription" />
+              <Label id="HPColorsPageDescription" text="Turn HP Colors V2 on or off. Your settings stay saved when it is off." class="HPColorsPageDescription" />
               <Panel id="HPColorsSettingsList" class="HPColorsSettingsList">
                 <Panel id="HPColorsSettingsOverviewStatus" class="HPColorsSettingsPage Active">
                   <Panel class="HPColorsSettingRow">
                     <Panel class="HPColorsSettingCopy">
-                      <Label text="ENABLE HP COLORS" class="HPColorsSettingTitle" />
-                      <Label text="Turn HP Colors on or off. Your other settings stay saved when it is off." class="HPColorsSettingHelp" />
+                      <Label text="ENABLE HP COLORS V2" class="HPColorsSettingTitle" />
+                      <Label text="Turn HP Colors V2 on or off. Your other settings stay saved when it is off." class="HPColorsSettingHelp" />
                     </Panel>
                     <Button id="HPColorsMasterToggle" class="HPColorsToggle"><Panel class="HPColorsToggleKnob" /></Button>
                   </Panel>
@@ -212,7 +212,7 @@
                     <Panel id="HPColorsPresetGuide" class="HPColorsPresetGuide">
                       <Panel class="HPColorsHeroCardHelpBlock">
                         <Label text="Presets created or changed here last until Deadlock closes." class="HPColorsHeroCardHelp" />
-                        <Button id="HPColorsPresetBuilderLink" class="HPColorsPresetBuilderLink" onactivate="$.DispatchEvent( &apos;ExternalBrowserGoToURL&apos;, &apos;https://hantu-raya.github.io/hp-colors-preset-builder/v2/&apos; );"><Label text="Presets packaged with the V2 web builder return after restart." /></Button>
+                        <Button id="HPColorsPresetBuilderLink" class="HPColorsPresetBuilderLink" onactivate="$.DispatchEvent( &apos;ExternalBrowserGoToURL&apos;, &apos;https://hantu-raya.github.io/hp-colors-preset-builder/hpv2/&apos; );"><Label text="Presets packaged with the V2 web builder return after restart." /></Button>
                         <Label text="One preset VPK can contain both All Heroes and Selected Heroes presets." class="HPColorsHeroCardHelp" />
                       </Panel>
 
@@ -320,29 +320,8 @@
                   </Panel>
                   <Panel class="HPColorsSettingRow">
                     <Panel class="HPColorsSettingCopy">
-                      <Label text="EXCLUDE STRUCTURES" class="HPColorsSettingTitle" />
-                      <Label text="Keep McGinnis turrets, sentries, and other building-class units in their normal colors." class="HPColorsSettingHelp" />
-                    </Panel>
-                    <Button id="HPColorsExcludeBuildingsToggle" class="HPColorsToggle"><Panel class="HPColorsToggleKnob" /></Button>
-                  </Panel>
-                  <Panel class="HPColorsSettingRow">
-                    <Panel class="HPColorsSettingCopy">
-                      <Label text="EXCLUDE OBJECTIVES" class="HPColorsSettingTitle" />
-                      <Label text="Keep Guardians, Walkers, Shrines, and other boss-class objectives in their normal colors." class="HPColorsSettingHelp" />
-                    </Panel>
-                    <Button id="HPColorsExcludeBossesToggle" class="HPColorsToggle"><Panel class="HPColorsToggleKnob" /></Button>
-                  </Panel>
-                  <Panel class="HPColorsSettingRow">
-                    <Panel class="HPColorsSettingCopy">
-                      <Label text="EXCLUDE GHOUL COLORS" class="HPColorsSettingTitle" />
-                      <Label text="Keep Graves' ghouls and other creature-class units in their normal colors." class="HPColorsSettingHelp" />
-                    </Panel>
-                    <Button id="HPColorsExcludeGhoulsToggle" class="HPColorsToggle"><Panel class="HPColorsToggleKnob" /></Button>
-                  </Panel>
-                  <Panel class="HPColorsSettingRow">
-                    <Panel class="HPColorsSettingCopy">
                       <Label text="USE CUSTOM GHOUL OPACITY" class="HPColorsSettingTitle" />
-                      <Label text="Apply one opacity value to the ghoul healthbar and ultimate-ready background, even when colors are excluded." class="HPColorsSettingHelp" />
+                      <Label text="Apply one opacity value to the ghoul healthbar and ultimate-ready background." class="HPColorsSettingHelp" />
                     </Panel>
                     <Button id="HPColorsGhoulOpacityToggle" class="HPColorsToggle"><Panel class="HPColorsToggleKnob" /></Button>
                   </Panel>
@@ -371,7 +350,7 @@
                     <Panel class="HPColorsSettingRow HPColorsColorRow">
                       <Panel class="HPColorsSettingCopy"><Label text="LOW COLOR" class="HPColorsSettingTitle" /><Label text="Use this color at or below the low-health threshold." class="HPColorsSettingHelp" /></Panel>
                       <Button id="HPColorsEnemyLowSwatch" class="HPColorsColorSwatch" />
-                      <TextEntry id="HPColorsEnemyLowHex" class="HPColorsHexEntry" text="#E16161" maxchars="7" />
+                      <TextEntry id="HPColorsEnemyLowHex" class="HPColorsHexEntry" text="#FD4949" maxchars="7" />
                     </Panel>
                     <Panel class="HPColorsSettingRow HPColorsColorRow">
                       <Panel class="HPColorsSettingCopy"><Label text="MID COLOR" class="HPColorsSettingTitle" /><Label text="Use this color between the low and high thresholds." class="HPColorsSettingHelp" /></Panel>
@@ -447,9 +426,9 @@
                     </Panel>
                   </Panel>
                   <Panel id="HPColorsAllyGradientRows" class="HPColorsGradientRows Active">
-                    <Panel class="HPColorsSettingRow HPColorsColorRow"><Panel class="HPColorsSettingCopy"><Label text="LOW COLOR" class="HPColorsSettingTitle" /><Label text="Use this color at or below the shared low-health threshold." class="HPColorsSettingHelp" /></Panel><Button id="HPColorsAllyLowSwatch" class="HPColorsColorSwatch" /><TextEntry id="HPColorsAllyLowHex" class="HPColorsHexEntry" text="#E16161" maxchars="7" /></Panel>
-                    <Panel class="HPColorsSettingRow HPColorsColorRow"><Panel class="HPColorsSettingCopy"><Label text="MID COLOR" class="HPColorsSettingTitle" /><Label text="Use this color between the shared low and high thresholds." class="HPColorsSettingHelp" /></Panel><Button id="HPColorsAllyMidSwatch" class="HPColorsColorSwatch" /><TextEntry id="HPColorsAllyMidHex" class="HPColorsHexEntry" text="#FFED79" maxchars="7" /></Panel>
-                    <Panel class="HPColorsSettingRow HPColorsColorRow"><Panel class="HPColorsSettingCopy"><Label text="HIGH COLOR" class="HPColorsSettingTitle" /><Label text="Use this color above the shared high-health threshold or at full health." class="HPColorsSettingHelp" /></Panel><Button id="HPColorsAllyHighSwatch" class="HPColorsColorSwatch" /><TextEntry id="HPColorsAllyHighHex" class="HPColorsHexEntry" text="#70F8C1" maxchars="7" /></Panel>
+                    <Panel class="HPColorsSettingRow HPColorsColorRow"><Panel class="HPColorsSettingCopy"><Label text="LOW COLOR" class="HPColorsSettingTitle" /><Label text="Use this color at or below the shared low-health threshold." class="HPColorsSettingHelp" /></Panel><Button id="HPColorsAllyLowSwatch" class="HPColorsColorSwatch" /><TextEntry id="HPColorsAllyLowHex" class="HPColorsHexEntry" text="#FFEFD7" maxchars="7" /></Panel>
+                    <Panel class="HPColorsSettingRow HPColorsColorRow"><Panel class="HPColorsSettingCopy"><Label text="MID COLOR" class="HPColorsSettingTitle" /><Label text="Use this color between the shared low and high thresholds." class="HPColorsSettingHelp" /></Panel><Button id="HPColorsAllyMidSwatch" class="HPColorsColorSwatch" /><TextEntry id="HPColorsAllyMidHex" class="HPColorsHexEntry" text="#FFEFD7" maxchars="7" /></Panel>
+                    <Panel class="HPColorsSettingRow HPColorsColorRow"><Panel class="HPColorsSettingCopy"><Label text="HIGH COLOR" class="HPColorsSettingTitle" /><Label text="Use this color above the shared high-health threshold or at full health." class="HPColorsSettingHelp" /></Panel><Button id="HPColorsAllyHighSwatch" class="HPColorsColorSwatch" /><TextEntry id="HPColorsAllyHighHex" class="HPColorsHexEntry" text="#FFEFD7" maxchars="7" /></Panel>
                   </Panel>
                 </Panel>
 

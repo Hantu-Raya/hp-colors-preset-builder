@@ -1,20 +1,48 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { HP_FIELD_CATALOG, REWRITE_FIELD_BINDINGS, REWRITE_FIELD_CATALOG } from '../src/hpSchema.js';
+import { HP_FIELD_CATALOG, REWRITE_CODEC_FIELD_BINDINGS, REWRITE_FIELD_BINDINGS, REWRITE_FIELD_CATALOG } from '../src/hpv2HpSchema.js';
 import {
   createRewritePresetBundle,
   createRewritePresetCode,
   createRewriteProfileMetadata,
   createRewriteSettingsCode,
   decodeRewriteTransfer
-} from '../src/rewritePresetCodec.js';
+} from '../src/hpv2RewritePresetCodec.js';
 
-const FIXTURE = 'HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Shiv","mode":"selected","heroes":["hero_shiv"],"values":[[7,"fixed"],[11,true],[12,true],[13,true],[30,167],[31,"oracle"],[34,"custom"],[37,"#FFFFFF"],[42,18],[45,18],[52,true],[53,true],[54,205],[56,440],[63,true],[64,18],[65,31]],"conditions":{"lowThreshold":{"slot":4,"minTier":3,"value":28},"enemyPulseThreshold":{"slot":4,"minTier":3,"value":28},"enemyKillMarkerThreshold":{"slot":4,"minTier":3,"value":28}}}],"selectedPresetId":"user_0001"}';
+const FIXTURE = 'HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Shiv","mode":"selected","heroes":["hero_shiv"],"values":[[7,"fixed"],[11,true],[12,true],[13,true],[30,167],[31,"oracle"],[34,"custom"],[37,"#FFFFFF"],[42,18],[45,18],[52,true],[53,true],[54,205],[56,440],[63,true],[64,18],[65,31],[67,true]],"conditions":{"lowThreshold":{"slot":4,"minTier":3,"value":28},"enemyPulseThreshold":{"slot":4,"minTier":3,"value":28},"enemyKillMarkerThreshold":{"slot":4,"minTier":3,"value":28}}}],"selectedPresetId":"user_0001"}';
 
 function payload(code, prefix) {
   assert.equal(code.slice(0, prefix.length), prefix);
   return JSON.parse(code.slice(prefix.length));
 }
+
+test('web shipped defaults retain the HPCRP1 codec baseline', () => {
+  const webValues = REWRITE_FIELD_CATALOG.createDefaultState();
+  const enemyLowBinding = REWRITE_CODEC_FIELD_BINDINGS.find((binding) => binding.canonicalKey === 'enemyLow');
+  assert.equal(enemyLowBinding.defaultValue, '#E16161');
+  assert.equal(webValues.hp_color_low, '#FD4949');
+  assert.equal(webValues.hp_friend_color_low, '#FFEFD7');
+  assert.equal(webValues.hp_friend_color_mid, '#FFEFD7');
+  assert.equal(webValues.hp_friend_color_high, '#FFEFD7');
+
+  const profile = {
+    id: 'profile-1',
+    name: 'Rewrite default',
+    values: HP_FIELD_CATALOG.createDefaultState(),
+    heroMode: 'all',
+    heroes: [],
+    overrides: {},
+    rewrite: createRewriteProfileMetadata({
+      id: 'profile-1',
+      values: webValues,
+      heroMode: 'all',
+      heroes: [],
+      overrides: {}
+    }, { valuesAreRewrite: true })
+  };
+  const record = payload(createRewritePresetCode(profile), 'HPCRP1').records[0];
+  assert.ok(record.values.some(([index, value]) => index === 8 && value === '#FD4949'));
+});
 
 test('imports the supplied HPCRP1 preset without losing rewrite-only settings', () => {
   const decoded = decodeRewriteTransfer(FIXTURE, { defaultState: HP_FIELD_CATALOG.createDefaultState() });
@@ -32,7 +60,7 @@ test('imports the supplied HPCRP1 preset without losing rewrite-only settings', 
   assert.equal(profile.rewrite.values[53], true);
   assert.equal(profile.rewrite.values[56], 440);
   assert.deepEqual(profile.rewrite.webOverrides.hp_low_threshold, { slot: 4, minTier: 3, value: 28 });
-  assert.equal(profile.rewrite.webValues.hp_exclude_ghouls, false);
+  assert.equal(Object.hasOwn(profile.rewrite.webValues, 'hp_exclude_ghouls'), false);
   assert.equal(profile.rewrite.webValues.hp_ghoul_opacity_enabled, false);
   assert.equal(profile.rewrite.webValues.hp_ghoul_opacity, 100);
 });
@@ -48,6 +76,8 @@ test('exports an imported preset as a rewrite-valid semantic round trip', () => 
   assert.ok(record.values.some(([index, value]) => index === 31 && value === 'oracle'));
   assert.ok(record.values.some(([index, value]) => index === 53 && value === true));
   assert.ok(record.values.some(([index, value]) => index === 56 && value === 440));
+  for (const retiredIndex of [12, 13, 67])
+    assert.equal(record.values.some(([index]) => index === retiredIndex), false);
   assert.deepEqual(record.conditions, {
     lowThreshold: { slot: 4, minTier: 3, value: 28 },
     enemyPulseThreshold: { slot: 4, minTier: 3, value: 28 },
@@ -76,7 +106,7 @@ test('web edits override mapped values while rewrite-only values survive', () =>
 });
 
 test('imports and exports HPCR2 settings separately from preset bundles', () => {
-  const code = 'HPCR2{"v":[[7,"fixed"],[31,"pulp"],[56,700],[70,true],[71,true]],"c":{"enemyPulseThreshold":{"slot":2,"minTier":1,"value":20}}}';
+  const code = 'HPCR2{"v":[[7,"fixed"],[12,"retired"],[31,"pulp"],[56,700],[67,{"ignored":true}],[70,true],[71,true]],"c":{"enemyPulseThreshold":{"slot":2,"minTier":1,"value":20}}}';
   const profile = decodeRewriteTransfer(code).profiles[0];
   assert.equal(profile.rewrite.values[31], 'pulp');
   assert.equal(profile.rewrite.webValues.hp_readout_max_team_color, true);
@@ -152,7 +182,7 @@ test('copies multiple profiles with unique rewrite user IDs', () => {
 });
 
 test('preserves an unchanged baked preset record in a copied bundle', () => {
-  const code = 'HPCRP1{"records":[{"id":"baked_default","kind":"baked","name":"Rewrite Default","mode":"off","heroes":[],"values":[],"conditions":null}],"selectedPresetId":"baked_default"}';
+  const code = 'HPCRP1{"records":[{"id":"baked_default","kind":"baked","name":"Rewrite Default","mode":"off","heroes":[],"values":[[8,"#FD4949"],[20,"#FFEFD7"],[21,"#FFEFD7"],[22,"#FFEFD7"]],"conditions":null}],"selectedPresetId":"baked_default"}';
   const profile = decodeRewriteTransfer(code).profiles[0];
   const record = payload(createRewritePresetCode(profile), 'HPCRP1').records[0];
   assert.deepEqual(record, {
@@ -161,7 +191,7 @@ test('preserves an unchanged baked preset record in a copied bundle', () => {
     name: 'Rewrite Default',
     mode: 'off',
     heroes: [],
-    values: [],
+    values: [[8, '#FD4949'], [20, '#FFEFD7'], [21, '#FFEFD7'], [22, '#FFEFD7']],
     conditions: null
   });
 });
@@ -187,8 +217,6 @@ test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => 
       values[binding.webId] = field.bounds.min;
     }
   }
-  values.hp_exclude_buildings = true;
-  values.hp_exclude_bosses = false;
   values.hp_low_threshold = 20;
   values.hp_high_threshold = 80;
 
@@ -206,7 +234,8 @@ test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => 
   };
   const code = createRewritePresetCode(profile);
   const decoded = decodeRewriteTransfer(code).profiles[0];
-  const expected = REWRITE_FIELD_BINDINGS.map((binding) => {
+  const expected = REWRITE_CODEC_FIELD_BINDINGS.map((binding) => {
+    if (binding.webId === null) return false;
     const value = values[binding.webId];
     if (binding.canonicalType === 'enum') return binding.canonicalOptions[value];
     if (binding.canonicalType === 'enum-toggle') return value ? 'follow' : 'custom';
@@ -214,14 +243,14 @@ test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => 
   });
 
   assert.deepEqual(decoded.rewrite.values, expected);
-  assert.equal(decoded.rewrite.values[12], true);
+  assert.equal(decoded.rewrite.values[12], false);
   assert.equal(decoded.rewrite.values[13], false);
-  assert.equal(decoded.rewrite.values[67], true);
+  assert.equal(decoded.rewrite.values[67], false);
   assert.equal(decoded.rewrite.values[68], true);
   assert.equal(decoded.rewrite.values[69], 0);
-  assert.equal(payload(code, 'HPCRP1').records[0].values.some(([index]) => index === 12), true);
-  assert.equal(payload(code, 'HPCRP1').records[0].values.some(([index]) => index === 13), false);
-  assert.equal(payload(code, 'HPCRP1').records[0].values.some(([index]) => index === 67), true);
-  assert.equal(payload(code, 'HPCRP1').records[0].values.some(([index]) => index === 68), true);
-  assert.equal(payload(code, 'HPCRP1').records[0].values.some(([index]) => index === 69), true);
+  const pairs = payload(code, 'HPCRP1').records[0].values;
+  for (const retiredIndex of [12, 13, 67])
+    assert.equal(pairs.some(([index]) => index === retiredIndex), false);
+  assert.equal(pairs.some(([index]) => index === 68), true);
+  assert.equal(pairs.some(([index]) => index === 69), true);
 });

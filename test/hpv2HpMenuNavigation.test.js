@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createHpMenuGroups } from "../src/hpMenuNavigation.js";
-import { HP_FIELD_CATALOG, REWRITE_FIELD_CATALOG } from "../src/hpSchema.js";
+import { createHpMenuGroups } from "../src/hpv2HpMenuNavigation.js";
+import { HP_FIELD_CATALOG, REWRITE_FIELD_CATALOG } from "../src/hpv2HpSchema.js";
 
 test("web navigation mirrors the in-game HP Colors menu", () => {
   const groups = createHpMenuGroups(HP_FIELD_CATALOG.schema);
@@ -37,10 +37,11 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
     "hp_counter_position",
     "hp_pulse_text_position"
   ];
+  const retiredCanonicalKeys = ["excludeBuildings", "excludeBosses", "excludeGhouls"];
 
-  assert.equal(fields.length, 72);
-  assert.equal(new Set(fields.map((field) => field.id)).size, 72);
-  assert.equal(new Set(canonicalKeys).size, 72);
+  assert.equal(fields.length, 69);
+  assert.equal(new Set(fields.map((field) => field.id)).size, 69);
+  assert.equal(new Set(canonicalKeys).size, 69);
   assert.deepEqual(canonicalKeys.sort(), REWRITE_FIELD_CATALOG.bindings.map((binding) => binding.canonicalKey).sort());
   assert.equal(fields.some((field) => forbiddenIds.includes(field.id)), false);
   assert.equal(fields.some((field) => field.canonicalKey === "precisePipsEnabled" && field.conditionEligible === false), true);
@@ -55,7 +56,7 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
     .children.find((page) => page.pageId === "health-text");
   assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "lowThreshold"), true);
   assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "highThreshold"), true);
-  assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "excludeGhouls"), true);
+  assert.deepEqual(canonicalKeys.filter((key) => retiredCanonicalKeys.includes(key)), []);
   assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "ghoulOpacityEnabled"), true);
   assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "ghoulOpacity"), true);
   assert.equal(allyBar.fields.some((field) => field.canonicalKey === "allyTeamHigh"), true);

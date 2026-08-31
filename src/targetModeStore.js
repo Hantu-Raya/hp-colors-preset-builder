@@ -13,7 +13,7 @@ export const TARGET_MODE_CHOICES = Object.freeze([
     downloadHref: "https://gamebanana.com/mods/download/603113#FileInfo_1701235",
     v2Title: "Minimal mod",
     v2Summary: "Not available in V2.",
-    v2Description: "HP Colors V2 supports Rewrite targets only.",
+    v2Description: "Use the V1 original builder for HP Colors Minimal presets.",
     downloadHrefV2: "https://gamebanana.com/mods/download/603113#FileInfo_1701235",
     unavailableInV2: true
   }),

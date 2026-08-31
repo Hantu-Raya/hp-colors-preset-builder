@@ -16,10 +16,10 @@ import {
   validateRewriteQollockPresetTemplate,
   validateRewriteQollockPresetVpk,
   REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME
-} from "../src/rewritePackageBuilder.js";
+} from "../src/hpv2RewritePackageBuilder.js";
 import { readVpkArchive, writeVpkArchive, createVpkArchive } from "../src/vpkArchive.js";
 
-const TEMPLATE_PATH = new URL("../public/templates/hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml", import.meta.url);
+const TEMPLATE_PATH = new URL("../public/templates/hpv2_hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml", import.meta.url);
 const PRESET_CODE = `HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"QOLLOCK composite","mode":"all","heroes":[],"values":[],"conditions":null}],"selectedPresetId":"user_0001"}`;
 const templateText = await readFile(TEMPLATE_PATH, "utf8");
 
@@ -81,7 +81,13 @@ test("Rewrite QOLLOCK VPK rejects runtime assets and stale composite layouts", (
     () => validateRewriteQollockPresetTemplate(templateText.replace("qollock_hp_colors_bridge.vjs_c", "hp_colors_menu.vjs_c")),
     /stale or incompatible/
   );
-  for (const id of ["HPColorsReadoutMaxTeamColorToggle", "HPColorsAllyTeamHighToggle"]) {
+  for (const id of [
+    "HPColorsReadoutMaxTeamColorToggle",
+    "HPColorsAllyTeamHighToggle",
+    "HPColorsExcludeBuildingsToggle",
+    "HPColorsExcludeBossesToggle",
+    "HPColorsExcludeGhoulsToggle"
+  ]) {
     assert.throws(
       () => validateRewriteQollockPresetTemplate(templateText.replace(`id="${id}"`, `id="Missing${id}"`)),
       /panel contract is stale or incompatible/

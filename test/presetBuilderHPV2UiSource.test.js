@@ -3,11 +3,12 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const v1IslandPath = new URL("../src/components/PresetBuilderIsland.jsx", import.meta.url);
-const v2IslandPath = new URL("../src/components/PresetBuilderV2Island.jsx", import.meta.url);
-const healthbarPreviewPath = new URL("../src/components/HealthbarPreview.jsx", import.meta.url);
-const v2StylesPath = new URL("../src/styles/v2.css", import.meta.url);
+const v2IslandPath = new URL("../src/components/PresetBuilderHPV2Island.jsx", import.meta.url);
+const healthbarPreviewPath = new URL("../src/components/HealthbarHPV2Preview.jsx", import.meta.url);
+const v2StylesPath = new URL("../src/styles/hpv2.css", import.meta.url);
 const v2TreePath = new URL("../src/components/schema-tree-v2.jsx", import.meta.url);
-const v2PagePath = new URL("../src/pages/v2.astro", import.meta.url);
+const v2PagePath = new URL("../src/pages/hpv2.astro", import.meta.url);
+const converterPagePath = new URL("../src/pages/hpv2.astro", import.meta.url);
 const v2TickerPath = new URL("../src/components/KofiLeaderboardTicker.jsx", import.meta.url);
 const supportersDataPath = new URL("../src/supportersData.js", import.meta.url);
 const supportersCsvPath = new URL("../public/data/supporters.csv", import.meta.url);
@@ -102,24 +103,26 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
     assert.match(ticker, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
 });
-const rewriteTemplatePath = new URL("../public/templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml", import.meta.url);
-const rewriteQollockTemplatePath = new URL("../public/templates/hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml", import.meta.url);
-const oldRewriteScriptPath = new URL("../public/templates/hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.js", import.meta.url);
-const oldRewriteCompiledPath = new URL("../public/templates/hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.vjs_c", import.meta.url);
+const rewriteTemplatePath = new URL("../public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml", import.meta.url);
+const rewriteQollockTemplatePath = new URL("../public/templates/hpv2_hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml", import.meta.url);
+const oldRewriteScriptPath = new URL("../public/templates/hpv2_hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.js", import.meta.url);
+const oldRewriteCompiledPath = new URL("../public/templates/hpv2_hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.vjs_c", import.meta.url);
 
-test("original V2 and HPv2 link to separate GitHub Pages routes", async () => {
-  const [v2Island, v2Page] = await Promise.all([
+test("HPv2 and original V2 link to separate GitHub Pages routes", async () => {
+  const [hpv2Island, hpv2Page, v2Page] = await Promise.all([
     readFile(v2IslandPath, "utf8"),
-    readFile(v2PagePath, "utf8")
+    readFile(v2PagePath, "utf8"),
+    readFile(new URL("../src/pages/v2.astro", import.meta.url), "utf8")
   ]);
 
-  assert.match(v2Island, /import\.meta\.env\.BASE_URL\}v2\//);
-  assert.match(v2Island, /import\.meta\.env\.BASE_URL\}hpv2\//);
-  assert.match(v2Island, /aria-label="Original V2 builder"/);
-  assert.match(v2Island, /aria-label="HPv2 preview builder"/);
+  assert.match(hpv2Island, /import\.meta\.env\.BASE_URL\}v2\//);
+  assert.match(hpv2Island, /import\.meta\.env\.BASE_URL\}hpv2\//);
+  assert.match(hpv2Island, /aria-label="Original V2 builder"/);
+  assert.match(hpv2Island, /aria-label="HPv2 preview builder"/);
+  assert.match(hpv2Page, /PresetBuilderHPV2Island/);
+  assert.match(hpv2Page, /styles\/hpv2\.css/);
   assert.match(v2Page, /PresetBuilderV2Island/);
   assert.match(v2Page, /styles\/v2\.css/);
-  assert.match(v2Page, /<title>HP Colors Preset Builder V2<\/title>/);
 });
 
 test("v2 disables Minimal and uses Rewrite download links without changing v1", async () => {
@@ -171,7 +174,7 @@ test("v2 preview renders only on Rewrite settings pages and keeps state outside 
     readFile(healthbarPreviewPath, "utf8")
   ]);
 
-  assert.match(island, /import HealthbarPreview from '\.\/HealthbarPreview\.jsx'/);
+  assert.match(island, /import HealthbarPreview from '\.\/HealthbarHPV2Preview\.jsx'/);
   assert.match(island, /showHealthbarPreview = !showPresetTools/);
   assert.match(island, /anita-page-body has-preview/);
   assert.match(island, /healthbar-preview-rail/);
@@ -181,7 +184,7 @@ test("v2 preview renders only on Rewrite settings pages and keeps state outside 
   assert.match(island, /const targeted = commitPresetBuilderTargetMode\(\{[\s\S]*?targetMode: HP_COLORS_MOD_VARIANTS\.FULL/);
   assert.match(island, /return reducePresetBuilderSession\(targeted, \{ type: 'ENSURE_REWRITE_PROFILES' \}/);
   assert.match(island, /onConvert=\{handlePreviewConvert\}/);
-  assert.match(preview, /healingPercent: 0,[\s\S]*damagePercent: 0,[\s\S]*bulletShieldPercent: 0,[\s\S]*techShieldPercent: 0/);
+  assert.match(preview, /import \{ DEFAULT_SCENARIO,[\s\S]*\} from '\.\.\/hpv2HealthbarPreviewModel\.js'/);
   assert.match(island, /activeCatalog\.variant !== 'rewrite'/);
   assert.match(preview, /onConvert = null/);
   assert.match(preview, /<button type="button" className="primary-action" onClick=\{onConvert\}>Convert to Rewrite<\/button>/);
@@ -233,8 +236,12 @@ test("v2 preview maps each texture role and explicit geometry once", async () =>
   assert.match(css, /\.healthbar-preview-relation,[\s\S]*grid-template-columns:\s*auto repeat\(2/);
   assert.doesNotMatch(css, /\.healthbar-preview-team-switch\s*\{/);
   assert.match(css, /\.healthbar-preview-unit-info[\s\S]*transform:\s*translateX\(30%\)/);
-  assert.match(css, /\.healthbar-preview-level[\s\S]*z-index:\s*6;[\s\S]*transform:\s*translateX\(-70%\)/);
+  assert.match(preview, /healthbar-preview-level-text/);
+  assert.match(css, /\.healthbar-preview-level\s*\{[\s\S]*z-index:\s*200;[\s\S]*transform:\s*translateX\(-70%\)/);
+  assert.match(css, /\.healthbar-preview-level-text\s*\{[^}]*z-index:\s*201;/);
   assert.match(css, /\.healthbar-preview-unit-info[\s\S]*z-index:\s*9;/);
+  assert.match(css, /\.healthbar-preview-readout\s*\{[\s\S]*z-index:\s*1000;/);
+  assert.match(css, /\.healthbar-preview-pips::after\s*\{[\s\S]*top:\s*calc\(100% \+ 2px\)/);
   assert.match(css, /\.healthbar-preview-hud[\s\S]*grid-template-columns:\s*var\(--healthbar-level-size\)\s+6px\s+var\(--healthbar-width\)/);
   assert.match(css, /\.healthbar-preview-canvas\.is-zoomed[\s\S]*overflow:\s*auto;/);
   assert.match(css, /\.healthbar-preview-hud[\s\S]*transform:\s*translate\(/);
@@ -303,7 +310,7 @@ test("rewrite transfer and preset actions stay isolated to v2", async () => {
 test("rewrite template is XML-only, strict, and stores the hidden HPCRP1 label", async () => {
   const [template, packageBuilder] = await Promise.all([
     readFile(rewriteTemplatePath, "utf8"),
-    readFile(new URL("../src/rewritePackageBuilder.js", import.meta.url), "utf8")
+    readFile(new URL("../src/hpv2RewritePackageBuilder.js", import.meta.url), "utf8")
   ]);
   assert.match(template, /<root>/);
   assert.match(template, /hp_colors_rewrite_preset_contract="HPCRP1"/);
@@ -311,8 +318,8 @@ test("rewrite template is XML-only, strict, and stores the hidden HPCRP1 label",
   assert.match(template, /HPColorsRewritePresetStore/);
   assert.match(template, /HPColorsRewritePreset_001/);
   assert.match(template, /hp_colors_rewrite_preset_entry/);
-  assert.match(template, /hp_colors_state\.vjs_c/);
-  assert.match(template, /hp_colors_menu\.vjs_c/);
+  assert.match(template, /hp_colors_v2_state\.vjs_c/);
+  assert.match(template, /hp_colors_v2_menu\.vjs_c/);
   assert.doesNotMatch(template, /anita|hp_colors_builder_presets|base_hud/i);
   assert.match(packageBuilder, /REWRITE_PRESET_ARCHIVE_PATH/);
   assert.match(packageBuilder, /REWRITE_PRESET_CONTRACT_VERSION/);
@@ -327,7 +334,7 @@ test("Rewrite QOLLOCK is a separate selectable target with a composite template"
   const [island, targetMode, workflow, template] = await Promise.all([
     readFile(v2IslandPath, "utf8"),
     readFile(new URL("../src/targetModeStore.js", import.meta.url), "utf8"),
-    readFile(new URL("../src/presetBuilderWorkflow.js", import.meta.url), "utf8"),
+    readFile(new URL("../src/hpv2PresetBuilderWorkflow.js", import.meta.url), "utf8"),
     readFile(rewriteQollockTemplatePath, "utf8")
   ]);
   assert.match(island, /isRewriteQollockTarget/);
@@ -348,7 +355,7 @@ test("showranks compatibility is a v2-only rewrite toggle with merged menu outpu
   const [v1Island, v2Island, workflow] = await Promise.all([
     readFile(v1IslandPath, "utf8"),
     readFile(v2IslandPath, "utf8"),
-    readFile(new URL("../src/presetBuilderWorkflow.js", import.meta.url), "utf8")
+    readFile(new URL("../src/hpv2PresetBuilderWorkflow.js", import.meta.url), "utf8")
   ]);
   assert.doesNotMatch(v1Island, /showranks|ShowRank/i);
   assert.match(v2Island, /Showranks compatible/);

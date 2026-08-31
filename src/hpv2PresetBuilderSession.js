@@ -1,4 +1,4 @@
-import { HP_FIELD_CATALOG } from "./hpSchema.js";
+import { HP_FIELD_CATALOG } from "./hpv2HpSchema.js";
 import {
   getHpHeroById,
   HP_HEROES,
@@ -22,9 +22,9 @@ import {
   reorderProfiles,
   STORAGE_KEY as PROFILE_STORAGE_KEY
 } from "./profileStore.js";
-import { createRewriteProfileMetadata, getRewriteEditorState } from "./rewritePresetCodec.js";
+import { createRewriteProfileMetadata, getRewriteEditorState } from "./hpv2RewritePresetCodec.js";
 import { getTargetModeDetails, isFullTargetMode, isRewriteQollockTarget, loadTargetModeState } from "./targetModeStore.js";
-import { PRESET_VPK_FILE_NAME, REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME, REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME } from "./presetVpkFileName.js";
+import { PRESET_VPK_FILE_NAME, REWRITE_PRESET_VPK_FILE_NAME, REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME, REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME } from "./hpv2PresetVpkFileName.js";
 import { loadShowranksCompatibleState } from "./showranksCompatibleStore.js";
 
 const BUILD_VARIANTS = new Set(Object.values(HP_COLORS_MOD_VARIANTS));
@@ -213,6 +213,7 @@ function resolvePresetVpkFileName(session) {
   if (isRewriteQollockTarget(session.targetMode)) return REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME;
   const containsRewriteProfiles = (Array.isArray(session.profiles) ? session.profiles : []).some((profile) => Boolean(profile?.rewrite));
   if (containsRewriteProfiles && session.showranksCompatible) return REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME;
+  if (containsRewriteProfiles) return REWRITE_PRESET_VPK_FILE_NAME;
   return PRESET_VPK_FILE_NAME;
 }
 

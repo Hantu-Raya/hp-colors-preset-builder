@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { createHealthbarPipGeometry, createHealthbarPreviewModel } from '../healthbarPreviewModel.js';
+import { DEFAULT_SCENARIO, createHealthbarPipGeometry, createHealthbarPreviewModel } from '../hpv2HealthbarPreviewModel.js';
 
 const PREVIEW_SESSION_KEY = 'hp_colors_healthbar_preview_v1';
 const PREVIEW_ASSET_BASE = `${String(import.meta.env.BASE_URL || '/').replace(/\/?$/, '/')}healthbar-preview/`;
@@ -12,19 +12,6 @@ const PREVIEW_ASSETS = Object.freeze({
   ultReady: `${PREVIEW_ASSET_BASE}hero_info_panel_ultready_bg_psd.png`
 });
 
-const DEFAULT_SCENARIO = Object.freeze({
-  healthPercent: 72,
-  relation: 'enemy',
-  team: 'enemy',
-  unitKind: 'hero',
-  maxHealth: 1000,
-  level: 4,
-  healingPercent: 0,
-  damagePercent: 0,
-  bulletShieldPercent: 0,
-  techShieldPercent: 0,
-  animationPaused: false
-});
 const DEFAULT_PREVIEW_STATE = Object.freeze({
   scenario: DEFAULT_SCENARIO,
   zoom: 'fit',
@@ -289,7 +276,7 @@ function HealthbarPreview({ profileState = null, conversionRequired = false, pro
   const barWidth = Math.max(1, Math.round(barWidthPx * visualScale));
   const barHeight = Math.max(1, Math.round(barHeightPx * visualScale));
   const unitInfoSize = Math.max(1, Math.round(300 * visualScale));
-  const levelSize = 26 * inspectionScale;
+  const levelSize = Math.max(1, Math.round(210 * visualScale));
   const barOffsetX = clampNumber(bar.offsetX, -300, 300, 0) * visualScale;
   const barOffsetY = clampNumber(bar.offsetY, -200, 200, 0) * visualScale;
   const unitStatusWidth = zoom === '2x' ? Math.max(canvasInnerWidth, barWidth + levelSize + 6) : null;
@@ -297,7 +284,9 @@ function HealthbarPreview({ profileState = null, conversionRequired = false, pro
   const killMarkerWidthPercent = (clampNumber(killMarker.widthPx, 0, barWidthPx, 0) / barWidthPx) * 100;
   const readoutOffsetX = (clampNumber(readout.offsetX, -405, 405, 27) - 27) * visualScale;
   const readoutOffsetY = (clampNumber(readout.offsetY, -35, 840, 500) - 500) * visualScale;
-  const readoutFontSize = readout.fontSize ? (clampNumber(readout.fontSize, 72, 320, 145) / 145) * 16 * (fitTargetWidth / 130) * inspectionScale : undefined;
+  const readoutFontSize = readout.fontSize
+    ? clampNumber(readout.fontSize, 72, 320, 145) * visualScale
+    : undefined;
   const canvasClassName = [
     'healthbar-preview-canvas',
     zoom === '2x' ? 'is-zoomed' : 'is-fit',
@@ -407,7 +396,7 @@ function HealthbarPreview({ profileState = null, conversionRequired = false, pro
                     {readout.maxText ? <span style={{ color: readout.maxColor || undefined }}>{readout.maxText}</span> : null}
                   </span>
                 ) : null}
-                {level.visible !== false ? <span className={`healthbar-preview-level ${level.className || ''}`} style={{ color: level.color || undefined }}>{level.value ?? modelScenario.level}</span> : null}
+                {level.visible !== false ? <span className={`healthbar-preview-level ${level.className || ''}`}><span className="healthbar-preview-level-text" style={{ color: level.color || undefined }}>{level.value ?? modelScenario.level}</span></span> : null}
                 <span className="healthbar-preview-unit-info" aria-label="Stock unit information and ultimate-ready indicator">
                   <img className="healthbar-preview-unit-info-bg" src={PREVIEW_ASSETS.unitInfo} alt="" aria-hidden="true" />
                   {ult.visible !== false ? <span className="healthbar-preview-ult-ready" style={{ backgroundColor: ult.color || undefined, WebkitMaskImage: `url("${PREVIEW_ASSETS.ultReady}")`, maskImage: `url("${PREVIEW_ASSETS.ultReady}")` }} aria-label="Ultimate ready" /> : null}

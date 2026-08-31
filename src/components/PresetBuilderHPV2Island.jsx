@@ -22,8 +22,8 @@ import {
   Trash2,
   Upload
 } from 'lucide-preact';
-import { HP_FIELD_CATALOG, REWRITE_FIELD_CATALOG } from '../hpSchema.js';
-import { createHpMenuGroups } from '../hpMenuNavigation.js';
+import { HP_FIELD_CATALOG, REWRITE_FIELD_CATALOG } from '../hpv2HpSchema.js';
+import { createHpMenuGroups } from '../hpv2HpMenuNavigation.js';
 import {
   getHpHeroById,
   HP_HEROES,
@@ -54,13 +54,13 @@ import {
   createRewritePresetCode,
   createRewriteSettingsCode,
   decodeRewriteTransfer
-} from '../rewritePresetCodec.js';
+} from '../hpv2RewritePresetCodec.js';
 import {
   createPresetBuilderSession,
   loadPresetBuilderSession,
   reducePresetBuilderSession,
   selectPresetBuilderSession
-} from '../presetBuilderSession.js';
+} from '../hpv2PresetBuilderSession.js';
 import {
   commitPresetBuilderTargetMode,
   commitShowranksCompatibleState,
@@ -72,10 +72,10 @@ import {
   runPresetImportWorkflow,
   runRewritePresetBuildWorkflow,
   runRewriteQollockPresetBuildWorkflow
-} from '../presetBuilderWorkflow.js';
+} from '../hpv2PresetBuilderWorkflow.js';
 import { SchemaField } from './schema-field.jsx';
 import { SchemaTabs, SchemaTree } from './schema-tree-v2.jsx';
-import HealthbarPreview from './HealthbarPreview.jsx';
+import HealthbarPreview from './HealthbarHPV2Preview.jsx';
 import KofiLeaderboardTicker from './KofiLeaderboardTicker.jsx';
 
 const PRECISE_PIPS_COMMAND = [
@@ -1219,8 +1219,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                 ? 'Keep hp_colors_rewrite_qollock pak02 and pinned QOLLOCK pak03 installed beside this generated pak01.'
                 : buildResult.targetLabel === 'hp_colors_rewrite'
                   ? buildResult.showranksCompatible
-                    ? 'Keep hp_colors_rewrite as pak02 and showrank_barebones as pak03 below this generated pak01 (lower pak numbers win).'
-                    : 'Keep hp_colors_rewrite installed as the rewrite runtime.'
+                    ? 'Keep hp_colors_rewrite_v2 as pak02 and showrank_barebones as pak03 below this generated pak01 (lower pak numbers win).'
+                    : 'Keep hp_colors_rewrite_v2 as pak02 beside this generated pak01 (lower pak numbers win).'
                   : `Keep the selected ${targetModeDetails.title.toLowerCase()} installed as the base runtime.`}</p>
             </div>
           ) : null}
@@ -1357,8 +1357,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                     {rewriteQollockTarget
                       ? 'Install the hp_colors_rewrite_qollock support pak02 and pinned QOLLOCK pak03 first. This generated pak01 contains only the composite Escape-menu layout with the HPCRP1 preset.'
                       : session.showranksCompatible
-                        ? 'Install order (lower pak numbers win): this generated pak01 preset, then hp_colors_rewrite as pak02, then showrank_barebones as pak03. The preset layout merges the ShowRank escape-menu hooks.'
-                        : 'Install the hp_colors_rewrite base package first. This VPK replaces its escape-menu layout and stores HPCRP1 in a hidden XML label.'}
+                        ? 'Install order (lower pak numbers win): this generated pak01 preset, then hp_colors_rewrite_v2 as pak02, then showrank_barebones as pak03. The preset layout merges the ShowRank escape-menu hooks.'
+                        : 'Install hp_colors_rewrite_v2 as pak02 first. This generated pak01 replaces its Escape-menu layout and stores HPCRP1 in a hidden XML label.'}
                   </p>
                   {rewriteQollockTarget ? (
                     <div className="target-mode-summary-actions">
@@ -1430,7 +1430,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                 <span>{rewriteBuildTarget
                   ? rewriteInstallValidated
                     ? 'Undo Rewrite install confirmation'
-                    : rewriteQollockTarget ? 'I installed Rewrite + QOLLOCK pak02 and pak03' : 'I installed hp_colors_rewrite'
+                    : rewriteQollockTarget ? 'I installed Rewrite + QOLLOCK pak02 and pak03' : 'I installed hp_colors_rewrite_v2 pak02'
                   : installValidated ? 'Undo install confirmation' : 'I installed the selected base mod'}</span>
               </button>
             </div>

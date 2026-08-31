@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { HP_FIELD_CATALOG, REWRITE_FIELD_CATALOG } from "../src/hpSchema.js";
+import { HP_FIELD_CATALOG, REWRITE_FIELD_CATALOG } from "../src/hpv2HpSchema.js";
 import { HP_COLORS_MOD_VARIANTS } from "../src/hpModVariants.js";
 import {
   createPresetBuilderSession,
   reducePresetBuilderSession,
   selectPresetBuilderSession
-} from "../src/presetBuilderSession.js";
+} from "../src/hpv2PresetBuilderSession.js";
 
 const defaultState = HP_FIELD_CATALOG.createDefaultState();
 const groups = HP_FIELD_CATALOG.splitCategoryGroups();
@@ -285,10 +285,10 @@ test("both dialogs can close through reducer actions", () => {
   assert.equal(pickerClosed.modePickerOpen, false);
 });
 
-test("showranks compatibility toggles the plain rewrite preset filename", () => {
+test("showranks compatibility preserves the Rewrite preset priority slot", () => {
   const rewriteProfile = { name: "Lane", values: {}, heroMode: "off", heroes: [], rewrite: { values: {}, conditions: null } };
   let session = { ...createPresetBuilderSession(defaultState), profiles: [rewriteProfile] };
-  assert.equal(selection(session).presetVpkFileName, "pak96_dir.vpk");
+  assert.equal(selection(session).presetVpkFileName, "pak01_dir.vpk");
 
   session = reducePresetBuilderSession(session, { type: "SET_SHOWRANKS_COMPATIBLE", showranksCompatible: true });
   assert.equal(session.showranksCompatible, true);
@@ -296,7 +296,7 @@ test("showranks compatibility toggles the plain rewrite preset filename", () => 
 
   session = reducePresetBuilderSession(session, { type: "SET_SHOWRANKS_COMPATIBLE", showranksCompatible: false });
   assert.equal(session.showranksCompatible, false);
-  assert.equal(selection(session).presetVpkFileName, "pak96_dir.vpk");
+  assert.equal(selection(session).presetVpkFileName, "pak01_dir.vpk");
 });
 
 test("showranks compatibility never applies to qollock or non-rewrite targets", () => {
