@@ -946,14 +946,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
             </div>
             <div className="topbar-utility-bar">
               <div className="topbar-utility-links">
-            <nav className="similar-tools" aria-label="Builder versions and similar tools">
-              <span className="similar-tools-label">Versions</span>
-              <a className="similar-tool-link" href={import.meta.env.BASE_URL} aria-label="V1 original builder" title="V1 original builder">
-                V1
-              </a>
-              <a className="similar-tool-link" href={`${import.meta.env.BASE_URL}hpv2/`} aria-label="V2 game menu builder" title="V2 game menu builder">
-                V2
-              </a>
+            <nav className="similar-tools" aria-label="Similar tools">
+              <span className="similar-tools-label">Tools</span>
               <a className="similar-tool-link" href="https://hantu-raya.github.io/color-blind-web-builder/" target="_blank" rel="noreferrer" aria-label="Color Blind Builder" title="Color Blind Builder">
                 Color Blind
               </a>

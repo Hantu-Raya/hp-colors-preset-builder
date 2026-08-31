@@ -66,6 +66,6 @@ export function convertImportTextToHpv2({ importText, storage, baseUrl = '/' } =
   return {
     importedCount: profiles.length,
     activeProfileId: state.activeProfileId,
-    href: `${normalizedBase}hpv2/`
+    href: `${normalizedBase}v2/`
   };
 }

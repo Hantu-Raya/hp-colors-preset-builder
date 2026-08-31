@@ -1,25 +1,33 @@
 ---
-import V2ImportConverter from '../components/V2ImportConverter.jsx';
+import PresetBuilderV2Island from '../components/PresetBuilderV2Island.jsx';
+import { getGitCommitInfo } from '../gitCommitInfo.js';
+import { loadSupporters } from '../supportersData.js';
 import '../styles/v2.css';
 
-const baseUrl = import.meta.env.BASE_URL;
+const gitCommitInfo = getGitCommitInfo();
+const supporters = await loadSupporters();
 ---
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Convert HP Colors presets to HPv2</title>
+    <title>HP Colors Preset Builder V2</title>
     <meta
       name="description"
-      content="Convert legacy HP Colors preset imports and continue in the current HPv2 builder."
+      content="Build HP Colors presets with the V2 in-game menu navigation."
+    />
+    <meta property="og:title" content="HP Colors Preset Builder V2" />
+    <meta
+      property="og:description"
+      content="Build HP Colors presets with the V2 in-game menu navigation."
     />
     <link rel="icon" href="data:," />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
-    <main id="main-content" class="v2-import-page">
-      <V2ImportConverter baseUrl={baseUrl} client:load />
+    <main id="main-content" class="shell">
+      <PresetBuilderV2Island gitCommitInfo={gitCommitInfo} supporters={supporters} client:load />
     </main>
   </body>
 </html>

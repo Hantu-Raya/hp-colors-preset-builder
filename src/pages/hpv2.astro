@@ -1,33 +1,30 @@
 ---
-import PresetBuilderV2Island from '../components/PresetBuilderV2Island.jsx';
-import { getGitCommitInfo } from '../gitCommitInfo.js';
-import { loadSupporters } from '../supportersData.js';
 import '../styles/v2.css';
 
-const gitCommitInfo = getGitCommitInfo();
-const supporters = await loadSupporters();
+const v2Href = `${import.meta.env.BASE_URL}v2/`;
 ---
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>HP Colors Preset Builder V2</title>
-    <meta
-      name="description"
-      content="Build HP Colors presets with the V2 in-game menu navigation."
-    />
-    <meta property="og:title" content="HP Colors Preset Builder V2" />
-    <meta
-      property="og:description"
-      content="Build HP Colors presets with the V2 in-game menu navigation."
-    />
+    <meta http-equiv="refresh" content={`0;url=${v2Href}`} />
+    <title>Opening HP Colors Preset Builder V2</title>
     <link rel="icon" href="data:," />
   </head>
   <body>
-    <a class="skip-link" href="#main-content">Skip to content</a>
-    <main id="main-content" class="shell">
-      <PresetBuilderV2Island gitCommitInfo={gitCommitInfo} supporters={supporters} client:load />
+    <main id="main-content" class="v2-import-page">
+      <section class="v2-import-converter" aria-labelledby="hpv2-redirect-title">
+        <div class="v2-import-converter-copy">
+          <p class="eyebrow">Route updated</p>
+          <h1 id="hpv2-redirect-title">Opening HP Colors Preset Builder V2</h1>
+          <p>The V2 builder now uses the standard <code>/v2/</code> route.</p>
+          <a href={v2Href}>Continue to V2</a>
+        </div>
+      </section>
     </main>
+    <script is:inline define:vars={{ v2Href }}>
+      window.location.replace(v2Href);
+    </script>
   </body>
 </html>

@@ -50,7 +50,7 @@ async function chooseMinimalTarget(page) {
 async function chooseRewriteTarget(page) {
   const dialog = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });
   await expect(dialog).toBeVisible();
-  await dialog.locator('.target-mode-choice-select').filter({ hasText: 'Rewrite' }).filter({ hasNotText: 'QOLLOCK' }).click();
+  await dialog.getByRole('button', { name: /^Rewrite Preset VPK/ }).click();
   await expect(dialog).toBeHidden();
 }
 
@@ -80,7 +80,7 @@ async function readPreviewStorage(page) {
   });
 }
 
-test('v1 and v2 never request the remote Ko-fi leaderboard script', async ({ page }) => {
+test('homepage and canonical V2 route never request the remote Ko-fi leaderboard script', async ({ page }) => {
   let requestCount = 0;
   await page.route(KOFI_SCRIPT_URL, async (route) => {
     requestCount += 1;
@@ -88,8 +88,9 @@ test('v1 and v2 never request the remote Ko-fi leaderboard script', async ({ pag
   });
 
   await page.goto('.');
-  await expect(page.getByRole('option', { name: /^GENERAL/ })).toBeVisible();
-  await page.goto('hpv2/');
+  await chooseRewriteTarget(page);
+  await expect(page.locator('.topbar-supporter-strip')).toBeVisible();
+  await page.goto('v2/');
   await expect(page.locator('.topbar-supporter-strip')).toBeVisible();
   expect(requestCount).toBe(0);
 });
@@ -210,7 +211,7 @@ test('supporter strip holds donor one and resets through a protected transition'
 
 test('v2 keeps the wide title row ordered and renders the ranked supporter leaderboard', async ({ page }) => {
   await page.setViewportSize({ width: 1460, height: 900 });
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await chooseRewriteTarget(page);
   await expect(page.locator('#kofi-leaderboard-embed')).toHaveCount(0);
   await expect(page.locator(`script[src="${KOFI_SCRIPT_URL}"]`)).toHaveCount(0);
@@ -269,7 +270,7 @@ test('v2 keeps the wide title row ordered and renders the ranked supporter leade
 });
 
 test('v2 auto-scrolls the static supporter list without playback controls', async ({ page }) => {
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await chooseRewriteTarget(page);
 
   const strip = page.locator('.topbar-supporter-strip');
@@ -283,7 +284,7 @@ test('v2 auto-scrolls the static supporter list without playback controls', asyn
 
 test('v2 keeps the supporter ticker moving when the OS requests reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await chooseRewriteTarget(page);
 
   const strip = page.locator('.topbar-supporter-strip');
@@ -303,7 +304,7 @@ test('v2 has no page horizontal overflow at supported header widths', async ({ p
     { width: 320, height: 760 }
   ]) {
     await page.setViewportSize(viewport);
-    await page.goto('hpv2/');
+    await page.goto('v2/');
     await expect(page.locator('.panorama-topbar')).toBeVisible();
     const dimensions = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
@@ -316,7 +317,7 @@ test('v2 has no page horizontal overflow at supported header widths', async ({ p
 });
 
 test('v2 shows the healthbar preview for both Rewrite targets and hides it on Presets', async ({ page }) => {
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await clearPreviewStorage(page);
   await chooseRewriteTarget(page);
 
@@ -336,7 +337,7 @@ test('v2 shows the healthbar preview for both Rewrite targets and hides it on Pr
 });
 test('v2 settings navigation aligns with tall settings content', async ({ page }) => {
   await page.setViewportSize({ width: 1460, height: 838 });
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await chooseRewriteTarget(page);
   await page.locator('.panorama-workspace').evaluate((workspace) => {
     window.scrollTo(0, workspace.offsetTop);
@@ -351,7 +352,7 @@ test('v2 settings navigation aligns with tall settings content', async ({ page }
 });
 
 test('v2 preview controls update output, support hold-to-stock, zoom, and reset', async ({ page }) => {
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await clearPreviewStorage(page);
   await chooseRewriteQollockTarget(page);
   await expect(page.locator('#healthbar-preview-health')).toBeVisible();
@@ -402,7 +403,7 @@ test('v2 preview controls update output, support hold-to-stock, zoom, and reset'
 });
 
 test('v2 preview matches the compact in-game healthbar geometry', async ({ page }) => {
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await clearPreviewStorage(page);
   await chooseRewriteQollockTarget(page);
 
@@ -443,7 +444,7 @@ test('v2 preview matches the compact in-game healthbar geometry', async ({ page 
 });
 
 test('v2 preview keeps high-health pip groups readable', async ({ page }) => {
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await clearPreviewStorage(page);
   await chooseRewriteQollockTarget(page);
 
@@ -465,7 +466,7 @@ test('v2 preview keeps high-health pip groups readable', async ({ page }) => {
 
 test('v2 preview starts the enemy pulse at its configured threshold with reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await clearPreviewStorage(page);
   await chooseRewriteQollockTarget(page);
 
@@ -484,7 +485,7 @@ test('v2 preview starts the enemy pulse at its configured threshold with reduced
 });
 
 test('v2 preview offers only Team 1 and Team 2 for enabled enemy and ally team colors', async ({ page }) => {
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await clearPreviewStorage(page);
   await chooseRewriteQollockTarget(page);
 
@@ -529,7 +530,7 @@ test('v2 preview offers only Team 1 and Team 2 for enabled enemy and ally team c
 
 test('v2 schema rows and preview actions hold together at narrow window sizes', async ({ page }) => {
   await page.setViewportSize({ width: 1133, height: 917 });
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await clearPreviewStorage(page);
   await chooseRewriteQollockTarget(page);
 
@@ -553,7 +554,7 @@ test('v2 schema rows and preview actions hold together at narrow window sizes', 
 
 test('v2 preview keeps scenario and mobile collapse in session storage across reload', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await clearPreviewStorage(page);
   await chooseRewriteQollockTarget(page);
 
@@ -608,7 +609,7 @@ test('v2 preview keeps scenario and mobile collapse in session storage across re
 });
 
 test('v2 plain Rewrite target requires explicit preview conversion', async ({ page }) => {
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await clearPreviewStorage(page);
   await chooseRewriteTarget(page);
 
@@ -629,7 +630,7 @@ test('v2 plain Rewrite target requires explicit preview conversion', async ({ pa
 
 
 test('v2 Rewrite target adds presets from the topbar and Presets tab', async ({ page }) => {
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await chooseRewriteQollockTarget(page);
 
   await page.getByRole('button', { name: 'Add preset' }).click();
@@ -659,23 +660,22 @@ test('v2 Rewrite target adds presets from the topbar and Presets tab', async ({ 
   );
 });
 
-test('keeps v1 original and links the HPv2 builder separately', async ({ page }) => {
+test('serves V2 at the homepage and canonical route and redirects legacy HPv2 links', async ({ page }) => {
   await page.goto('.');
-  await chooseMinimalTarget(page);
-  await expect(page.getByRole('option', { name: /^GENERAL/ })).toBeVisible();
-
-  await page.getByRole('link', { name: 'V2 game menu' }).click();
-  await expect(page).toHaveURL(/\/hp-colors-preset-builder\/hpv2\/$/);
   await chooseRewriteTarget(page);
   await expect(page.getByRole('option', { name: /OVERVIEW/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /V1 original builder/i })).toHaveCount(0);
 
-  await page.getByRole('link', { name: 'V1 original' }).click();
-  await expect(page).toHaveURL(/\/hp-colors-preset-builder\/$/);
-  await expect(page.getByRole('option', { name: /^GENERAL/ })).toBeVisible();
+  await page.goto('v2/');
+  await expect(page.getByRole('option', { name: /OVERVIEW/ })).toBeVisible();
+
+  await page.goto('hpv2/');
+  await expect(page).toHaveURL(/\/hp-colors-preset-builder\/v2\/$/);
+  await expect(page.getByRole('option', { name: /OVERVIEW/ })).toBeVisible();
 });
 
 test('v2 mirrors the in-game category and page navigation', async ({ page }) => {
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await chooseRewriteTarget(page);
 
   const sections = page.getByRole('listbox', { name: 'HP Colors sections' }).getByRole('option');
@@ -706,7 +706,7 @@ test('v2 rewrite profiles build a priority-safe pak01 and retain code-copy contr
     });
   });
   await routeRewriteTemplate(page);
-  await page.goto('hpv2/');
+  await page.goto('v2/');
   await chooseRewriteTarget(page);
   await openV2Presets(page);
   await page.locator('.hero-selector-trigger').click();
@@ -766,14 +766,8 @@ test('v2 rewrite profiles build a priority-safe pak01 and retain code-copy contr
   await expect(page.locator('.status-card')).toContainText(/Built pak01_dir\.vpk for hp_colors_rewrite/);
 });
 
-test('rewrite imports remain in v2 and never replace v1 profiles', async ({ page }) => {
+test('rewrite imports persist across the homepage and canonical V2 route', async ({ page }) => {
   await page.goto('.');
-  await chooseMinimalTarget(page);
-  await page.locator('#presetName').fill('V1 only');
-  await page.locator('#presetName').press('Tab');
-  await page.waitForTimeout(900);
-
-  await page.goto('hpv2/');
   await chooseRewriteTarget(page);
   await expect(page.locator('#presetName')).toHaveValue('Web Builder Preset');
   await openV2Presets(page);
@@ -782,6 +776,8 @@ test('rewrite imports remain in v2 and never replace v1 profiles', async ({ page
   await page.getByRole('button', { name: 'Import codes' }).click();
   await expect(page.locator('#presetName')).toHaveValue('Shiv 🚀');
 
+  await page.goto('v2/');
+  await expect(page.locator('#presetName')).toHaveValue('Shiv 🚀');
   await page.goto('.');
-  await expect(page.locator('#presetName')).toHaveValue('V1 only');
+  await expect(page.locator('#presetName')).toHaveValue('Shiv 🚀');
 });

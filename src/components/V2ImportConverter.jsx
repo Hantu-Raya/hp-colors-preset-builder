@@ -5,8 +5,8 @@ export default function V2ImportConverter({ baseUrl = '/' }) {
   const [importText, setImportText] = useState('');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState(null);
-  const hpv2Href = useMemo(
-    () => `${String(baseUrl || '/').replace(/\/?$/, '/')}hpv2/`,
+  const v2Href = useMemo(
+    () => `${String(baseUrl || '/').replace(/\/?$/, '/')}v2/`,
     [baseUrl]
   );
 
@@ -58,7 +58,7 @@ export default function V2ImportConverter({ baseUrl = '/' }) {
           <button type="submit" disabled={busy || !importText.trim()}>
             {busy ? 'Converting…' : 'Convert and open HPv2'}
           </button>
-          <a href={hpv2Href}>Open HPv2 without importing</a>
+          <a href={v2Href}>Open V2 without importing</a>
         </div>
         {feedback ? (
           <p className={`v2-import-converter-feedback is-${feedback.type}`} role="status">

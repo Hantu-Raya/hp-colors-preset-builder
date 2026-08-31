@@ -7,8 +7,9 @@ const v2IslandPath = new URL("../src/components/PresetBuilderV2Island.jsx", impo
 const healthbarPreviewPath = new URL("../src/components/HealthbarPreview.jsx", import.meta.url);
 const v2StylesPath = new URL("../src/styles/v2.css", import.meta.url);
 const v2TreePath = new URL("../src/components/schema-tree-v2.jsx", import.meta.url);
-const v2PagePath = new URL("../src/pages/hpv2.astro", import.meta.url);
-const converterPagePath = new URL("../src/pages/v2.astro", import.meta.url);
+const rootPagePath = new URL("../src/pages/index.astro", import.meta.url);
+const v2PagePath = new URL("../src/pages/v2.astro", import.meta.url);
+const hpv2RedirectPagePath = new URL("../src/pages/hpv2.astro", import.meta.url);
 const v2TickerPath = new URL("../src/components/KofiLeaderboardTicker.jsx", import.meta.url);
 const supportersDataPath = new URL("../src/supportersData.js", import.meta.url);
 const supportersCsvPath = new URL("../public/data/supporters.csv", import.meta.url);
@@ -19,7 +20,7 @@ const supportersStripBackgroundPath = new URL("../src/assets/supporters-strip-he
 
 test("v2 and the static strip share one reviewed supporter CSV", async () => {
   const [
-    v1Page,
+    rootPage,
     v1Island,
     v2Page,
     v2Island,
@@ -31,7 +32,7 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
     stripLoop,
     stripBackground
   ] = await Promise.all([
-    readFile(new URL("../src/pages/index.astro", import.meta.url), "utf8"),
+    readFile(rootPagePath, "utf8"),
     readFile(v1IslandPath, "utf8"),
     readFile(v2PagePath, "utf8"),
     readFile(v2IslandPath, "utf8"),
@@ -46,7 +47,7 @@ test("v2 and the static strip share one reviewed supporter CSV", async () => {
 
   assert.doesNotMatch(v2Page, /kofi-leaderboard-embed|cdn\.ko-fi\.tools/i);
   assert.doesNotMatch(v2Island, /kofi-leaderboard-embed|cdn\.ko-fi\.tools/i);
-  assert.doesNotMatch(v1Page, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
+  assert.doesNotMatch(rootPage, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
   assert.doesNotMatch(v1Island, /kofi-leaderboard|cdn\.ko-fi\.tools/i);
   assert.doesNotMatch(ticker, /MutationObserver|Loading top supporters|View Ko-fi leaderboard|const SUPPORTERS/);
   assert.doesNotMatch(ticker, /Email|LastestTransactionId|@gmail\.com|@hotmail\.com/);
@@ -108,28 +109,30 @@ const rewriteQollockTemplatePath = new URL("../public/templates/hp_colors_rewrit
 const oldRewriteScriptPath = new URL("../public/templates/hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.js", import.meta.url);
 const oldRewriteCompiledPath = new URL("../public/templates/hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.vjs_c", import.meta.url);
 
-test("v1, v2 converter, and hpv2 use separate GitHub Pages routes", async () => {
-  const [v1Island, v2Island, v2Page, converterPage] = await Promise.all([
-    readFile(v1IslandPath, "utf8"),
+test("the homepage and /v2 serve V2 while /hpv2 redirects", async () => {
+  const [rootPage, v2Island, v2Page, hpv2RedirectPage, rewriteTemplate, rewriteQollockTemplate] = await Promise.all([
+    readFile(rootPagePath, "utf8"),
     readFile(v2IslandPath, "utf8"),
     readFile(v2PagePath, "utf8"),
-    readFile(converterPagePath, "utf8")
+    readFile(hpv2RedirectPagePath, "utf8"),
+    readFile(rewriteTemplatePath, "utf8"),
+    readFile(rewriteQollockTemplatePath, "utf8")
   ]);
 
-  assert.match(v1Island, />\s*V1 original\s*</);
-  assert.match(v1Island, />\s*V2 game menu\s*</);
-  for (const island of [v1Island, v2Island]) {
-    assert.match(island, /import\.meta\.env\.BASE_URL\}hpv2\//);
+  for (const page of [rootPage, v2Page]) {
+    assert.match(page, /PresetBuilderV2Island/);
+    assert.match(page, /styles\/v2\.css/);
+    assert.match(page, /<title>HP Colors Preset Builder V2<\/title>/);
   }
-  assert.match(v2Island, /aria-label="V1 original builder"/);
-  assert.match(v2Island, /aria-label="V2 game menu builder"/);
-  assert.match(v2Page, /PresetBuilderV2Island/);
-  assert.match(v2Page, /styles\/v2\.css/);
-  assert.match(v2Page, /<title>HP Colors Preset Builder V2<\/title>/);
-  assert.match(converterPage, /V2ImportConverter/);
-  assert.match(converterPage, /styles\/v2\.css/);
-  assert.match(converterPage, /<title>Convert HP Colors presets to HPv2<\/title>/);
-  assert.doesNotMatch(converterPage, /PresetBuilderV2Island|http-equiv=["']refresh/);
+  assert.doesNotMatch(v2Island, /V1 original builder|V2 game menu builder|BASE_URL\}hpv2\//);
+  assert.match(v2Island, /aria-label="Similar tools"/);
+  assert.match(hpv2RedirectPage, /http-equiv="refresh"/);
+  assert.match(hpv2RedirectPage, /v2\//);
+  assert.doesNotMatch(hpv2RedirectPage, /PresetBuilderV2Island|V2ImportConverter/);
+  for (const template of [rewriteTemplate, rewriteQollockTemplate]) {
+    assert.match(template, /hp-colors-preset-builder\/v2\//);
+    assert.doesNotMatch(template, /hp-colors-preset-builder\/hpv2\//);
+  }
 });
 
 test("v2 disables Minimal and uses Rewrite download links without changing v1", async () => {

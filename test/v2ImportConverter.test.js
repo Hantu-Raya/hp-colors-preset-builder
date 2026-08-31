@@ -24,7 +24,7 @@ function createStorage(seed = {}) {
   };
 }
 
-test("v2 converter imports a legacy profile into hpv2 storage", () => {
+test("v2 converter imports a legacy profile into V2 storage", () => {
   const storage = createStorage();
   const importText = JSON.stringify({
     version: 1,
@@ -46,6 +46,7 @@ test("v2 converter imports a legacy profile into hpv2 storage", () => {
 
   assert.equal(result.importedCount, 1);
   assert.equal(result.activeProfileId, saved.activeProfileId);
+  assert.equal(result.href, "/v2/");
   assert.equal(saved.profiles[0].name, "Enemy gradient");
   assert.equal(saved.profiles[0].heroMode, "selected");
   assert.deepEqual(saved.profiles[0].heroes, ["hero_shiv"]);
@@ -55,7 +56,7 @@ test("v2 converter imports a legacy profile into hpv2 storage", () => {
   assert.equal(storage.getItem(V2_TARGET_MODE_STORAGE_KEY), HP_COLORS_MOD_VARIANTS.FULL);
 });
 
-test("v2 converter leaves hpv2 storage untouched when import parsing fails", () => {
+test("v2 converter leaves V2 storage untouched when import parsing fails", () => {
   const original = JSON.stringify({ profiles: [{ id: "keep" }] });
   const storage = createStorage({ [V2_STORAGE_KEY]: original });
 
