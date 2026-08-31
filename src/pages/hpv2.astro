@@ -1,0 +1,33 @@
+---
+import PresetBuilderV2Island from '../components/PresetBuilderV2Island.jsx';
+import { getGitCommitInfo } from '../gitCommitInfo.js';
+import { loadSupporters } from '../supportersData.js';
+import '../styles/v2.css';
+
+const gitCommitInfo = getGitCommitInfo();
+const supporters = await loadSupporters();
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HP Colors Preset Builder V2</title>
+    <meta
+      name="description"
+      content="Build HP Colors presets with the V2 in-game menu navigation."
+    />
+    <meta property="og:title" content="HP Colors Preset Builder V2" />
+    <meta
+      property="og:description"
+      content="Build HP Colors presets with the V2 in-game menu navigation."
+    />
+    <link rel="icon" href="data:," />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <main id="main-content" class="shell">
+      <PresetBuilderV2Island gitCommitInfo={gitCommitInfo} supporters={supporters} client:load />
+    </main>
+  </body>
+</html>

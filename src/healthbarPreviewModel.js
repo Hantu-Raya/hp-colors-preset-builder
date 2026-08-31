@@ -19,16 +19,16 @@ const STOCK = Object.freeze({
 });
 
 const DEFAULT_SCENARIO = Object.freeze({
-  healthPercent: 72,
+  healthPercent: 100,
   relation: "enemy",
   team: "enemy",
   unitKind: "hero",
-  maxHealth: 1000,
-  level: 4,
-  healingPercent: 14,
-  damagePercent: 9,
-  bulletShieldPercent: 18,
-  techShieldPercent: 6,
+  maxHealth: 800,
+  level: 1,
+  healingPercent: 0,
+  damagePercent: 0,
+  bulletShieldPercent: 0,
+  techShieldPercent: 0,
   animationPaused: false
 });
 
@@ -168,6 +168,11 @@ function stockDimensions(unitKind) {
   return { width: 900, height: 130 };
 }
 
+function rewriteDimensions(unitKind) {
+  if (unitKind === "sentry" || unitKind === "trooper") return { width: 500, height: 70 };
+  return { width: 750, height: 120 };
+}
+
 function rawAmount(maxHealth, percent) {
   return Math.round((maxHealth * percent) / 100);
 }
@@ -219,11 +224,7 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
   const globalEnabled = !!state.hp_enabled;
   const enemyRole = relation === "enemy";
   const roleEnabled = enemyRole ? !!state.hp_enemy_enabled : !!state.hp_friend_enabled;
-  const excluded = globalEnabled && roleOwned && (
-    (!!state.hp_exclude_ghouls && isGhoul) ||
-    (enemyRole && ((!!state.hp_exclude_buildings && isBuilding) || (!!state.hp_exclude_bosses && isBoss)))
-  );
-  const colorsEnabled = globalEnabled && roleOwned && roleEnabled && !excluded && !stock;
+  const colorsEnabled = globalEnabled && roleOwned && roleEnabled && !stock;
   const lowThreshold = state.hp_low_threshold;
   const highThreshold = state.hp_high_threshold;
   const enemyMode = enumValue(state, "hp_mode", ["fixed", "gradient"], "gradient");
@@ -268,7 +269,7 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
     : Math.max(0, Math.min(readoutMaximum, ratio >= 0.97 ? readoutMaximum : Math.round(readoutMaximum * ratio)));
 
   const readoutFormat = enumValue(state, "hp_counter_format", ["hp", "percent", "current"], "hp");
-  const readoutEnabled = !stock && globalEnabled && enemyRole && !excluded && !!state.hp_counter_visible;
+  const readoutEnabled = !stock && globalEnabled && enemyRole && !!state.hp_counter_visible;
   const readoutHasMaximum = readoutEnabled && readoutFormat === "hp" && readoutMaximum > 0;
   const readoutText = readoutEnabled
     ? readoutFormat === "percent"
@@ -303,8 +304,8 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
   const readoutOffsetX = readoutModifiers ? state.hp_pulse_readout_offset_x : state.hp_readout_offset_x;
   const readoutOffsetY = readoutModifiers ? state.hp_pulse_readout_offset_y : state.hp_readout_offset_y;
 
-  const dimensions = stockDimensions(unitKind);
   const customGeometry = !stock && globalEnabled && roleOwned;
+  const dimensions = customGeometry ? rewriteDimensions(unitKind) : stockDimensions(unitKind);
   const widthScalePercent = customGeometry ? state.hp_width_scale : 100;
   const heightScalePercent = customGeometry ? state.hp_height_scale : 100;
   const widthPx = Math.round((dimensions.width * widthScalePercent) / 100);
@@ -356,7 +357,7 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
   const ultMode = state.hp_ult_color_enabled ? "follow" : "custom";
   let ultColor = stockColor;
   if (!stock && globalEnabled && roleOwned) {
-    if (!excluded && ultMode === "custom") ultColor = state.hp_ult_color_custom;
+    if (ultMode === "custom") ultColor = state.hp_ult_color_custom;
     else if (colorsEnabled) ultColor = barColor;
   }
   if (!stock && pulseActive && ultMode !== "custom") ultColor = barColor;

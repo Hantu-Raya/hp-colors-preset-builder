@@ -614,7 +614,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
               <a className="similar-tool-link" href={import.meta.env.BASE_URL}>
                 V1 original
               </a>
-              <a className="similar-tool-link" href={`${import.meta.env.BASE_URL}v2/`}>
+              <a className="similar-tool-link" href={`${import.meta.env.BASE_URL}hpv2/`}>
                 V2 game menu
               </a>
               <a className="similar-tool-link" href="https://hantu-raya.github.io/color-blind-web-builder/" target="_blank" rel="noreferrer">

@@ -52,7 +52,7 @@ test("rewrite template loader caches successful XML text and retries failed fetc
   assert.equal(await failingLoader(), template);
 });
 
-test("rewrite build workflow creates and downloads XML-only pak96 with success hash/status", async () => {
+test("rewrite build workflow creates and downloads XML-only pak01 with success hash/status", async () => {
   const template = makeTemplate();
   const profile = createInitialProfile(HP_FIELD_CATALOG.createDefaultState());
   profile.name = "Workflow \"preset\"";
@@ -66,13 +66,13 @@ test("rewrite build workflow creates and downloads XML-only pak96 with success h
     digest: async () => "rewrite-sha256",
     dispatch: (intent) => dispatched.push(intent)
   });
-  assert.equal(result.filename, "pak96_dir.vpk");
+  assert.equal(result.filename, "pak01_dir.vpk");
   assert.equal(result.targetLabel, "hp_colors_rewrite");
   assert.equal(result.sha256, "rewrite-sha256");
   assert.equal(downloads.length, 1);
-  assert.equal(downloads[0].filename, "pak96_dir.vpk");
+  assert.equal(downloads[0].filename, "pak01_dir.vpk");
   const archive = readVpkArchive(downloads[0].bytes);
   assert.deepEqual(archive.files.map((file) => file.path), [REWRITE_PRESET_ARCHIVE_PATH]);
   assert.ok(readRewritePresetCode(archive.files[0].bytes).startsWith("HPCRP1"));
-  assert.match(dispatched.at(-1).status, /^Built pak96_dir\.vpk for hp_colors_rewrite/);
+  assert.match(dispatched.at(-1).status, /^Built pak01_dir\.vpk for hp_colors_rewrite/);
 });

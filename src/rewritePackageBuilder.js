@@ -1,9 +1,10 @@
 import { compileSource2Resource, extractSource2Resource, SOURCE2_RESOURCE_CODECS } from "./source2ResourceCodec.js";
 import { decodeRewriteTransfer } from "./rewritePresetCodec.js";
 import { createVpkArchive, normalizeVpkPath, readVpkArchive, writeVpkArchive } from "./vpkArchive.js";
+import { REWRITE_PRESET_VPK_FILE_NAME as REWRITE_PRESET_FILENAME } from "./presetVpkFileName.js";
 
 export const REWRITE_PRESET_ARCHIVE_PATH = "panorama/layout/hud_escape_menu.vxml_c";
-export const REWRITE_PRESET_VPK_FILE_NAME = "pak96_dir.vpk";
+export const REWRITE_PRESET_VPK_FILE_NAME = REWRITE_PRESET_FILENAME;
 export const REWRITE_PRESET_TEMPLATE_PATH = "templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml";
 export const REWRITE_PRESET_CONTRACT = "HPCRP1";
 export const REWRITE_PRESET_CONTRACT_VERSION = "1";
@@ -15,12 +16,12 @@ const REWRITE_PRESET_MAX_CODE_BYTES = 64 * 1024;
 const REWRITE_PRESET_STYLE_INCLUDES = Object.freeze([
   "s2r://panorama/styles/citadel_base_styles.vcss_c",
   "s2r://panorama/styles/hud_escape_menu.vcss_c",
-  "s2r://panorama/styles/hp_colors_menu.vcss_c"
+  "s2r://panorama/styles/hp_colors_v2_menu.vcss_c"
 ]);
 const REWRITE_PRESET_SCRIPT_INCLUDES = Object.freeze([
-  "s2r://panorama/scripts/hp_colors_contract.vjs_c",
-  "s2r://panorama/scripts/hp_colors_state.vjs_c",
-  "s2r://panorama/scripts/hp_colors_menu.vjs_c"
+  "s2r://panorama/scripts/hp_colors_v2_contract.vjs_c",
+  "s2r://panorama/scripts/hp_colors_v2_state.vjs_c",
+  "s2r://panorama/scripts/hp_colors_v2_menu.vjs_c"
 ]);
 const REWRITE_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   "HPColorsMenuButton",
@@ -40,6 +41,12 @@ const REWRITE_SHOWRANKS_OUT_HOOK = "if ($.ShowRankBarebonesEscapeOut) $.ShowRank
 const REWRITE_SHOWRANKS_MENU_ONLOAD = `$.HPColorsMenuBoot(); ${REWRITE_SHOWRANKS_OPEN_HOOK}`;
 const REWRITE_SHOWRANKS_MENU_ONMOUSEOVER = REWRITE_SHOWRANKS_OPEN_HOOK;
 const REWRITE_SHOWRANKS_MENU_ONMOUSEOUT = REWRITE_SHOWRANKS_OUT_HOOK;
+const REWRITE_SHOWRANKS_REQUIRED_PANEL_IDS = Object.freeze([
+  ...REWRITE_PRESET_REQUIRED_PANEL_IDS,
+  "PlayersTab",
+  "PlayersTabContents",
+  "PlayersList"
+]);
 
 export const REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME = "pak01_dir.vpk";
 export const REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH = "templates/hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml";
@@ -92,6 +99,9 @@ export const REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   "HPColorsEditorRoot",
   "HPColorsReadoutMaxTeamColorToggle",
   "HPColorsAllyTeamHighToggle",
+  "HPColorsExcludeBuildingsToggle",
+  "HPColorsExcludeBossesToggle",
+  "HPColorsExcludeGhoulsToggle",
   "HPColorsSupporterTicker",
   REWRITE_PRESET_STORE_PANEL_ID
 ]);
@@ -526,6 +536,7 @@ export function inspectRewriteShowranksPresetTemplate(templateText, { requireEmp
   return inspectRewriteXml(templateText, {
     requireEmpty,
     scriptIncludes: REWRITE_SHOWRANKS_SCRIPT_INCLUDES,
+    requiredPanelIds: REWRITE_SHOWRANKS_REQUIRED_PANEL_IDS,
     expectedOnload: REWRITE_SHOWRANKS_MENU_ONLOAD,
     expectedMenuAttributes: {
       onmouseover: REWRITE_SHOWRANKS_MENU_ONMOUSEOVER,

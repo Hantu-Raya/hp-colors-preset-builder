@@ -1,6 +1,6 @@
 # HP Colors Preset Builder
 
-HP Colors Preset Builder is a browser-only tool for editing, importing, routing, and packaging HP Colors presets. Minimal and Full packages contain the Source 2 `base_hud.vxml_c` preset store. Rewrite packages contain the hidden preset store in `hud_escape_menu.vxml_c`; the Rewrite + QOLLOCK target uses the composite Escape-menu layout. Downloads use the deterministic filename for their target: `pak96_dir.vpk` for Minimal, Full, and standalone Rewrite, or `pak01_dir.vpk` for Rewrite + QOLLOCK. The builder does not install files into Deadlock.
+HP Colors Preset Builder is a browser-only tool for editing, importing, routing, and packaging HP Colors presets. Minimal and Full packages contain the Source 2 `base_hud.vxml_c` preset store. Rewrite packages contain the hidden preset store in `hud_escape_menu.vxml_c`; the Rewrite + QOLLOCK target uses the composite Escape-menu layout. Downloads use `pak96_dir.vpk` for Minimal and Full, and `pak01_dir.vpk` for every Rewrite target so the preset Escape menu overrides the runtime package. The builder does not install files into Deadlock.
 
 ## Choose the matching target
 
@@ -18,7 +18,7 @@ Do not mix Minimal or Full packages with the other base runtime, or install stan
 1. Exit Deadlock completely.
 2. Install the runtime packages that match the target:
    - Minimal or Full: install its matching `pak96_dir.vpk` and `pak97_dir.vpk` pair.
-   - Rewrite: install the current `hp_colors_rewrite` `pak01_dir.vpk`.
+   - Rewrite: install the current `hp_colors_rewrite_v2` runtime as `pak02_dir.vpk`.
    - Rewrite + QOLLOCK: install the support runtime as `pak02_dir.vpk`, then the pinned QOLLOCK package as `pak03_dir.vpk`.
 3. Use this exact add-on directory (replace `<SteamLibrary>` with the drive that contains Steam):
 
@@ -28,7 +28,7 @@ Do not mix Minimal or Full packages with the other base runtime, or install stan
 
 4. Build the preset and place it in the same directory:
    - Minimal or Full: replace the selected base mod's `pak96_dir.vpk` and keep its matching `pak97_dir.vpk`.
-   - Rewrite: install the generated `pak96_dir.vpk` beside the rewrite's `pak01_dir.vpk`. The generated package overrides only `panorama/layout/hud_escape_menu.vxml_c`; do not install another mod that overrides that layout.
+   - Rewrite: install the generated `pak01_dir.vpk` beside the rewrite runtime's `pak02_dir.vpk`. The generated package overrides only `panorama/layout/hud_escape_menu.vxml_c`; do not install another mod that overrides that layout.
    - Rewrite + QOLLOCK: install the generated `pak01_dir.vpk` beside `pak02_dir.vpk` and `pak03_dir.vpk`. It overrides only `panorama/layout/hud_escape_menu.vxml_c`.
 5. Restart Deadlock after replacing any VPK. A live Panorama context can retain the previous package.
 

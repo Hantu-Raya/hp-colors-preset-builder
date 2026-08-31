@@ -3413,7 +3413,7 @@
   width: var(--healthbar-width);
   height: var(--healthbar-height);
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   border: 2px solid #111616;
   border-radius: 1px;
   background: #050707;
@@ -3521,13 +3521,32 @@
     var(--healthbar-major-pip-step) 100%;
 }
 
+.healthbar-preview-pips::after {
+  content: "";
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 8%;
+  width: 58%;
+  height: max(4px, calc(var(--healthbar-height) * 0.28));
+  border: 1px solid #260707;
+  background-color: #651313;
+  background-image: linear-gradient(
+    90deg,
+    transparent calc(100% - 2px),
+    rgba(16, 3, 3, 0.96) calc(100% - 2px)
+  );
+  background-repeat: repeat-x;
+  background-size: var(--healthbar-minor-pip-step) 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+}
+
 .healthbar-preview-pips.is-precise {
   opacity: 0.78;
 }
 
 .healthbar-preview-readout {
   position: relative;
-  z-index: 8;
+  z-index: 1000;
   grid-column: 3;
   grid-row: 1;
   justify-self: center;
@@ -3573,7 +3592,7 @@
 }
 
 .healthbar-preview-level {
-  z-index: 6;
+  z-index: 200;
   display: grid;
   grid-column: 1;
   grid-row: 2;
@@ -3592,6 +3611,15 @@
   font-weight: 800;
   line-height: 1;
   transform: translateX(-70%);
+}
+
+.healthbar-preview-level-text {
+  position: relative;
+  z-index: 201;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
 }
 
 .healthbar-preview-unit-info {
@@ -3823,5 +3851,128 @@
 @media (prefers-reduced-motion: reduce) {
   .healthbar-preview-pulse-overlay.is-active {
     animation: healthbar-preview-pulse var(--healthbar-preview-pulse-duration, 0.8s) ease-in-out infinite !important;
+  }
+}
+
+.v2-import-page {
+  display: grid;
+  min-height: 100vh;
+  padding: clamp(24px, 5vw, 72px);
+  place-items: center;
+}
+
+.v2-import-converter {
+  display: grid;
+  width: min(100%, 980px);
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--primary) 34%, var(--border));
+  border-radius: 22px;
+  background: #0d1114;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+}
+
+.v2-import-converter-copy,
+.v2-import-converter-form {
+  padding: clamp(24px, 4vw, 48px);
+}
+
+.v2-import-converter-copy {
+  align-content: center;
+  background:
+    linear-gradient(145deg, rgba(253, 73, 73, 0.14), transparent 52%),
+    #11171a;
+}
+
+.v2-import-converter-copy h1 {
+  max-width: 12ch;
+  margin: 10px 0 18px;
+  font-size: clamp(2rem, 5vw, 4.4rem);
+  line-height: 0.92;
+  letter-spacing: -0.055em;
+}
+
+.v2-import-converter-copy p:last-child {
+  max-width: 45ch;
+  color: var(--muted-foreground);
+  line-height: 1.65;
+}
+
+.v2-import-converter-form {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+}
+
+.v2-import-converter-form label {
+  font-size: 0.76rem;
+  font-weight: 760;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.v2-import-converter-form textarea {
+  width: 100%;
+  min-height: 260px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #080b0d;
+  color: var(--foreground);
+  font: 0.78rem/1.55 "Geist Mono", "SF Mono", Consolas, monospace;
+}
+
+.v2-import-converter-form textarea:focus {
+  border-color: var(--primary);
+  outline: 2px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  outline-offset: 2px;
+}
+
+.v2-import-converter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+}
+
+.v2-import-converter-actions button {
+  min-height: 44px;
+}
+
+.v2-import-converter-actions a {
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  font-weight: 720;
+}
+
+.v2-import-converter-feedback {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+}
+
+.v2-import-converter-feedback.is-error {
+  color: var(--destructive);
+}
+
+.v2-import-converter-feedback.is-success {
+  color: var(--primary);
+}
+
+@media (max-width: 760px) {
+  .v2-import-page {
+    padding: 16px;
+    place-items: start center;
+  }
+
+  .v2-import-converter {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-import-converter-copy h1 {
+    max-width: 14ch;
+  }
+
+  .v2-import-converter-form textarea {
+    min-height: 220px;
   }
 }

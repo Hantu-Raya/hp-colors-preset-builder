@@ -1,28 +1,31 @@
 import { normalizeHeroIds, HP_HERO_SCOPE_ALL, HP_HERO_SCOPE_SELECTED } from './hpHeroData.js';
-import { HP_FIELD_CATALOG, REWRITE_FIELD_BINDINGS, REWRITE_FIELD_CATALOG } from './hpSchema.js';
+import { HP_FIELD_CATALOG, REWRITE_CODEC_FIELD_BINDINGS, REWRITE_FIELD_BINDINGS, REWRITE_FIELD_CATALOG } from './hpSchema.js';
 
 const SETTINGS_PREFIX = 'HPCR2';
 const PRESET_PREFIX = 'HPCRP1';
 const USER_ID = /^user_\d{4,}$/;
 
-const REWRITE_KEYS = Object.freeze(REWRITE_FIELD_BINDINGS.map((binding) => binding.canonicalKey));
-const DEFAULTS = Object.freeze(REWRITE_FIELD_BINDINGS.map((binding) => binding.defaultValue));
-const BOOLEAN_INDEXES = new Set(REWRITE_FIELD_BINDINGS
+const REWRITE_KEYS = Object.freeze(REWRITE_CODEC_FIELD_BINDINGS.map((binding) => binding.canonicalKey));
+const DEFAULTS = Object.freeze(REWRITE_CODEC_FIELD_BINDINGS.map((binding) => binding.defaultValue));
+const BOOLEAN_INDEXES = new Set(REWRITE_CODEC_FIELD_BINDINGS
   .map((binding, index) => binding.canonicalType === 'boolean' ? index : null)
   .filter((index) => index !== null));
-const COLOR_INDEXES = new Set(REWRITE_FIELD_BINDINGS
+const COLOR_INDEXES = new Set(REWRITE_CODEC_FIELD_BINDINGS
   .map((binding, index) => binding.canonicalType === 'color' ? index : null)
   .filter((index) => index !== null));
-const ENUMS = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS
+const ENUMS = Object.freeze(Object.fromEntries(REWRITE_CODEC_FIELD_BINDINGS
   .map((binding, index) => binding.canonicalType === 'enum' || binding.canonicalType === 'enum-toggle'
     ? [index, binding.canonicalOptions]
     : null)
   .filter(Boolean)));
-const BOUNDS = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS
+const BOUNDS = Object.freeze(Object.fromEntries(REWRITE_CODEC_FIELD_BINDINGS
   .map((binding, index) => binding.bounds ? [index, [binding.bounds.min, binding.bounds.max]] : null)
   .filter(Boolean)));
 const KEY_INDEX = Object.freeze(Object.fromEntries(REWRITE_KEYS.map((key, index) => [key, index])));
 const BINDING_BY_KEY = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS.map((binding) => [binding.canonicalKey, binding])));
+const RETIRED_INDEXES = new Set(REWRITE_KEYS
+  .map((key, index) => BINDING_BY_KEY[key] ? null : index)
+  .filter((index) => index !== null));
 
 function clone(value) {
   return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
@@ -62,9 +65,19 @@ function normalizeRewriteValue(index, value, strict = false) {
 
 function normalizeRewriteValues(values) {
   const normalized = DEFAULTS.map((fallback, index) => normalizeRewriteValue(index, values?.[index] ?? fallback));
+  for (const index of RETIRED_INDEXES) normalized[index] = DEFAULTS[index];
   normalized[42] = Math.min(normalized[42], Math.max(0, normalized[43] - 1));
   normalized[43] = Math.max(normalized[43], Math.min(100, normalized[42] + 1));
   return normalized;
+}
+
+const SHIPPED_DEFAULTS = Object.freeze(normalizeRewriteValues(
+  REWRITE_CODEC_FIELD_BINDINGS.map((binding) => binding.webCanonicalDefault)
+));
+
+function matchesShippedDefaults(values) {
+  const normalized = normalizeRewriteValues(values);
+  return normalized.every((value, index) => Object.is(value, SHIPPED_DEFAULTS[index]));
 }
 
 function parsePairs(raw, errorLabel) {
@@ -79,6 +92,7 @@ function parsePairs(raw, errorLabel) {
     if (seen.has(index)) throw new Error(`DUPLICATE ${errorLabel} SETTING`);
     if (index >= REWRITE_KEYS.length) throw new Error(`UNKNOWN ${errorLabel} SETTING`);
     seen.add(index);
+    if (RETIRED_INDEXES.has(index)) continue;
     values[index] = normalizeRewriteValue(index, pair[1], true);
   }
   return normalizeRewriteValues(values);
@@ -142,7 +156,7 @@ function canonicalValuesFromMetadata(raw, fallback = DEFAULTS) {
   const values = [...fallback];
   for (const [key, value] of Object.entries(raw)) {
     const index = KEY_INDEX[key];
-    if (index !== undefined) values[index] = value;
+    if (index !== undefined && !RETIRED_INDEXES.has(index)) values[index] = value;
   }
   return normalizeRewriteValues(values);
 }
@@ -299,7 +313,7 @@ function parseRecord(raw, index, defaultState, usedIds) {
   if (!Array.isArray(raw.heroes) || JSON.stringify(heroes) !== JSON.stringify(raw.heroes)) throw new Error('INVALID PRESET HEROES');
   const conditions = parseConditions(raw.conditions, false);
   if (kind === 'baked') {
-    if (id !== 'baked_default' || raw.mode !== 'off' || heroes.length || pairsFor(values).length || conditions) {
+    if (id !== 'baked_default' || raw.mode !== 'off' || heroes.length || !matchesShippedDefaults(values) || conditions) {
       throw new Error('INVALID BAKED PRESET');
     }
   } else {
@@ -366,8 +380,8 @@ function userRecord(profile, index) {
   const values = profileValues(profile);
   const valuePairs = pairsFor(values);
   const conditions = webConditionsToRewrite(profile);
-  if (profile?.rewrite?.kind === 'baked' && !valuePairs.length && !conditions && mode === HP_HERO_SCOPE_ALL) {
-    return { id: 'baked_default', kind: 'baked', name, mode: 'off', heroes: [], values: [], conditions: null };
+  if (profile?.rewrite?.kind === 'baked' && matchesShippedDefaults(values) && !conditions && mode === HP_HERO_SCOPE_ALL) {
+    return { id: 'baked_default', kind: 'baked', name, mode: 'off', heroes: [], values: pairsFor(SHIPPED_DEFAULTS), conditions: null };
   }
   return {
     id: USER_ID.test(sourceId) ? sourceId : `user_${String(index + 1).padStart(4, '0')}`,

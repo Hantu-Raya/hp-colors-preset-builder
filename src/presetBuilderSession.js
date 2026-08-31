@@ -24,7 +24,7 @@ import {
 } from "./profileStore.js";
 import { createRewriteProfileMetadata, getRewriteEditorState } from "./rewritePresetCodec.js";
 import { getTargetModeDetails, isFullTargetMode, isRewriteQollockTarget, loadTargetModeState } from "./targetModeStore.js";
-import { PRESET_VPK_FILE_NAME, REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME, REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME } from "./presetVpkFileName.js";
+import { PRESET_VPK_FILE_NAME, REWRITE_PRESET_VPK_FILE_NAME, REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME, REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME } from "./presetVpkFileName.js";
 import { loadShowranksCompatibleState } from "./showranksCompatibleStore.js";
 
 const BUILD_VARIANTS = new Set(Object.values(HP_COLORS_MOD_VARIANTS));
@@ -213,6 +213,7 @@ function resolvePresetVpkFileName(session) {
   if (isRewriteQollockTarget(session.targetMode)) return REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME;
   const containsRewriteProfiles = (Array.isArray(session.profiles) ? session.profiles : []).some((profile) => Boolean(profile?.rewrite));
   if (containsRewriteProfiles && session.showranksCompatible) return REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME;
+  if (containsRewriteProfiles) return REWRITE_PRESET_VPK_FILE_NAME;
   return PRESET_VPK_FILE_NAME;
 }
 

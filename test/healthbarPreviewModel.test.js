@@ -13,6 +13,43 @@ function scenario(overrides = {}) {
   return { ...DEFAULT_SCENARIO, ...overrides };
 }
 
+test("Rewrite defaults use the requested enemy gradient and reference scenario", () => {
+  assert.deepEqual(
+    {
+      mode: defaults.hp_mode,
+      low: defaults.hp_color_low,
+      mid: defaults.hp_color_mid,
+      high: defaults.hp_color_high
+    },
+    {
+      mode: 1,
+      low: "#FD4949",
+      mid: "#FF7B00",
+      high: "#00FF00"
+    }
+  );
+  assert.deepEqual(DEFAULT_SCENARIO, {
+    healthPercent: 100,
+    relation: "enemy",
+    team: "enemy",
+    unitKind: "hero",
+    maxHealth: 800,
+    level: 1,
+    healingPercent: 0,
+    damagePercent: 0,
+    bulletShieldPercent: 0,
+    techShieldPercent: 0,
+    animationPaused: false
+  });
+
+  const model = createHealthbarPreviewModel(defaults, DEFAULT_SCENARIO);
+  assert.equal(model.bar.color, "#00ff00");
+  assert.equal(model.readout.text, "800 / ");
+  assert.equal(model.readout.maxText, "800");
+  assert.equal(model.level.value, 1);
+  assert.equal(model.ult.color, "#00ff00");
+});
+
 test("preview returns the documented stable groups and normalizes without mutation", () => {
   const profile = state({ hp_low_threshold: 98, hp_high_threshold: 2 });
   const input = {
@@ -38,7 +75,7 @@ test("preview returns the documented stable groups and normalizes without mutati
     relation: "enemy",
     team: "team2",
     unitKind: "hero",
-    maxHealth: 1000,
+    maxHealth: 800,
     level: 100,
     healingPercent: 100,
     damagePercent: 0,
@@ -215,7 +252,7 @@ test("stock mode preserves the scenario but restores stock colors and geometry",
   assert.equal(model.pulse.active, false);
 });
 
-test("geometry follows stock unit dimensions, scale, and translation", () => {
+test("geometry follows Rewrite V2 dimensions, scale, and translation", () => {
   const profile = state({
     hp_width_scale: 120,
     hp_height_scale: 80,
@@ -234,7 +271,7 @@ test("geometry follows stock unit dimensions, scale, and translation", () => {
       widthScalePercent: model.bar.widthScalePercent,
       heightScalePercent: model.bar.heightScalePercent
     },
-    { baseWidthPx: 1400, baseHeightPx: 170, widthPx: 1680, heightPx: 136, widthScalePercent: 120, heightScalePercent: 80 }
+    { baseWidthPx: 750, baseHeightPx: 120, widthPx: 900, heightPx: 96, widthScalePercent: 120, heightScalePercent: 80 }
   );
   assert.equal(model.bar.transform, "translateX(42px) translateY(-17px)");
 });
@@ -280,7 +317,7 @@ test("maximum HP preview uses team color without recoloring current HP", () => {
       hp_text_color_high: "#333333",
       hp_pulse_enabled: false
     }),
-    scenario({ healthPercent: 50, team: "team2" })
+    scenario({ healthPercent: 50, team: "team2", maxHealth: 1000, bulletShieldPercent: 18, techShieldPercent: 6 })
   );
 
   assert.equal(model.readout.text, "500 / ");
@@ -442,19 +479,19 @@ test("pip geometry preserves stock groups without collapsing below four pixels",
 test("team colors override the high HP bucket only for team1 and team2 scenarios", () => {
   const team1 = createHealthbarPreviewModel(
     state({ hp_pulse_enabled: false, hp_team_colors: true }),
-    scenario({ healthPercent: 95, team: "team1" })
+    scenario({ healthPercent: 100, team: "team1" })
   );
   const team2 = createHealthbarPreviewModel(
     state({ hp_pulse_enabled: false, hp_team_colors: true }),
-    scenario({ healthPercent: 95, team: "team2" })
+    scenario({ healthPercent: 100, team: "team2" })
   );
   const toggleOff = createHealthbarPreviewModel(
     state({ hp_pulse_enabled: false }),
-    scenario({ healthPercent: 95, team: "team1" })
+    scenario({ healthPercent: 100, team: "team1" })
   );
   const nonTeam = createHealthbarPreviewModel(
     state({ hp_pulse_enabled: false, hp_team_colors: true }),
-    scenario({ healthPercent: 95 })
+    scenario({ healthPercent: 100 })
   );
   const allyTeam1 = createHealthbarPreviewModel(
     state({
@@ -462,7 +499,7 @@ test("team colors override the high HP bucket only for team1 and team2 scenarios
       hp_friend_team_colors: true,
       hp_friend_pulse_enabled: false
     }),
-    scenario({ relation: "ally", healthPercent: 95, team: "team1" })
+    scenario({ relation: "ally", healthPercent: 100, team: "team1" })
   );
   const allyTeam2 = createHealthbarPreviewModel(
     state({
@@ -470,7 +507,7 @@ test("team colors override the high HP bucket only for team1 and team2 scenarios
       hp_friend_team_colors: true,
       hp_friend_pulse_enabled: false
     }),
-    scenario({ relation: "ally", healthPercent: 95, team: "team2" })
+    scenario({ relation: "ally", healthPercent: 100, team: "team2" })
   );
   const allyUnknown = createHealthbarPreviewModel(
     state({
@@ -479,14 +516,14 @@ test("team colors override the high HP bucket only for team1 and team2 scenarios
       hp_friend_color_high: "#ABCDEF",
       hp_friend_pulse_enabled: false
     }),
-    scenario({ relation: "ally", healthPercent: 95 })
+    scenario({ relation: "ally", healthPercent: 100 })
   );
   const neutralTeam = createHealthbarPreviewModel(
     state({
       hp_friend_team_colors: true,
       hp_friend_pulse_enabled: false
     }),
-    scenario({ relation: "neutral", healthPercent: 95, team: "team1" })
+    scenario({ relation: "neutral", healthPercent: 100, team: "team1" })
   );
 
   assert.equal(team1.bar.color, "#e7b659");
@@ -501,6 +538,7 @@ test("team colors override the high HP bucket only for team1 and team2 scenarios
 
 test("healing, damage, bullet shield, and tech shield remain independent layers", () => {
   const model = createHealthbarPreviewModel(state({ hp_pulse_enabled: false }), scenario({
+    healthPercent: 72,
     maxHealth: 2000,
     healingPercent: 12,
     damagePercent: 34,
@@ -521,7 +559,7 @@ test("healing, damage, bullet shield, and tech shield remain independent layers"
   );
 });
 
-test("excluded enemy units fall back to stock paint while retaining Rewrite geometry", () => {
+test("retired exclusion values do not disable Rewrite paint", () => {
   const profile = state({
     hp_exclude_buildings: true,
     hp_width_scale: 120,
@@ -531,9 +569,9 @@ test("excluded enemy units fall back to stock paint while retaining Rewrite geom
   });
   const model = createHealthbarPreviewModel(profile, scenario({ unitKind: "building", healthPercent: 10 }));
 
-  assert.equal(model.bar.color, "#FD4949");
-  assert.equal(model.bar.layers.healing.color, "#5FFF80");
-  assert.equal(model.bar.widthPx, 1080);
-  assert.equal(model.readout.visible, false);
-  assert.equal(model.pulse.active, false);
+  assert.equal(model.bar.color, "#010101");
+  assert.equal(model.bar.layers.healing.color, "#020202");
+  assert.equal(model.bar.widthPx, 900);
+  assert.equal(model.readout.visible, true);
+  assert.equal(model.pulse.active, true);
 });

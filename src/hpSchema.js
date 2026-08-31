@@ -283,21 +283,19 @@ const REWRITE_BINDING_DATA = [
   ["enemyEnabled", "hp_enemy_enabled", "toggle", "Color enemy HP bars", "ENEMY|BAR", true],
   ["enemyVisible", "hp_enemy_visible", "toggle", "Show enemy HP bars", "ENEMY|BAR", true, null, null, "hp_bg_visible"],
   ["enemyMode", "hp_mode", "cycler", "Enemy color behavior", "ENEMY|BAR", "gradient", null, ["fixed", "gradient"]],
-  ["enemyLow", "hp_color_low", "colorpicker", "Low HP bar color", "ENEMY|BAR", "#E16161"],
+  ["enemyLow", "hp_color_low", "colorpicker", "Low HP bar color", "ENEMY|BAR", "#E16161", null, null, null, "#FD4949"],
   ["enemyMid", "hp_color_mid", "colorpicker", "Mid HP bar color", "ENEMY|BAR", "#FF7B00"],
   ["enemyHigh", "hp_color_high", "colorpicker", "High HP bar color", "ENEMY|BAR", "#00FF00"],
   ["enemyTeamHigh", "hp_team_colors", "toggle", "Use team color at high HP", "ENEMY|BAR", false],
-  ["excludeBuildings", "hp_exclude_buildings", "toggle", "Ignore buildings", "ENEMY|BAR", false, null, null, "hp_skip_buildings"],
-  ["excludeBosses", "hp_exclude_bosses", "toggle", "Ignore bosses", "ENEMY|BAR", false, null, null, "hp_skip_buildings"],
   ["enemyHealing", "hp_heal_color", "colorpicker", "Healing bar color", "ENEMY|HEAL & DAMAGE", "#5FFF80"],
   ["enemyDelta", "hp_delta_color", "colorpicker", "Damage delta color", "ENEMY|HEAL & DAMAGE", "#FFE55B"],
   ["enemyBulletShield", "hp_bullet_shield_color", "colorpicker", "Enemy bullet shield color", "ENEMY|SHIELDS", "#FFFFFF"],
   ["allyEnabled", "hp_friend_enabled", "toggle", "Color ally HP bars", "ALLY|BAR", false],
   ["allyVisible", "hp_friend_visible", "toggle", "Show ally HP bars", "ALLY|BAR", true],
   ["allyMode", "hp_friend_mode", "cycler", "Ally color behavior", "ALLY|BAR", "fixed", null, ["fixed", "gradient"]],
-  ["allyLow", "hp_friend_color_low", "colorpicker", "Ally low HP color", "ALLY|BAR", "#E16161"],
-  ["allyMid", "hp_friend_color_mid", "colorpicker", "Ally mid HP color", "ALLY|BAR", "#FFED79"],
-  ["allyHigh", "hp_friend_color_high", "colorpicker", "Ally high HP color", "ALLY|BAR", "#70F8C1"],
+  ["allyLow", "hp_friend_color_low", "colorpicker", "Ally low HP color", "ALLY|BAR", "#E16161", null, null, null, "#FFEFD7"],
+  ["allyMid", "hp_friend_color_mid", "colorpicker", "Ally mid HP color", "ALLY|BAR", "#FFED79", null, null, null, "#FFEFD7"],
+  ["allyHigh", "hp_friend_color_high", "colorpicker", "Ally high HP color", "ALLY|BAR", "#70F8C1", null, null, null, "#FFEFD7"],
   ["allyHealing", "hp_friend_heal_color", "colorpicker", "Ally healing bar color", "ALLY|HEAL & DAMAGE", "#5FFF80"],
   ["allyDelta", "hp_friend_delta_color", "colorpicker", "Ally damage delta color", "ALLY|HEAL & DAMAGE", "#504C47"],
   ["allyBulletShield", "hp_friend_bullet_shield_color", "colorpicker", "Ally bullet shield color", "ALLY|SHIELDS", "#FFFFFF"],
@@ -342,7 +340,6 @@ const REWRITE_BINDING_DATA = [
   ["enemyKillMarkerThreshold", "hp_kill_zone_threshold", "slider", "Marker position %", "ENEMY|KILL MARKER", 25, { min: 5, max: 80, step: 1 }],
   ["enemyKillMarkerWidth", "hp_kill_zone_width", "slider", "Marker width", "ENEMY|KILL MARKER", 3, { min: 1, max: 100, step: 1 }],
   ["enemyKillMarkerColor", "hp_kill_zone_color", "colorpicker", "Marker color", "ENEMY|KILL MARKER", "#FF2222"],
-  ["excludeGhouls", "hp_exclude_ghouls", "toggle", "Exclude ghoul colors", "ENEMY|BAR", false],
   ["ghoulOpacityEnabled", "hp_ghoul_opacity_enabled", "toggle", "Use custom ghoul opacity", "ENEMY|BAR", false],
   ["ghoulOpacity", "hp_ghoul_opacity", "slider", "Ghoul HUD opacity", "ENEMY|BAR", 100, { min: 0, max: 100, step: 1 }],
   ["readoutMaxTeamColor", "hp_readout_max_team_color", "toggle", "Team color max HP", "HEALTH INFO|HP TEXT", false],
@@ -350,7 +347,7 @@ const REWRITE_BINDING_DATA = [
 ];
 
 function freezeRewriteBinding(data) {
-  const [canonicalKey, webId, webType, label, category, defaultValue, bounds = null, options = null, sharedSource = null] = data;
+  const [canonicalKey, webId, webType, label, category, defaultValue, bounds = null, options = null, sharedSource = null, webDefaultOverride] = data;
   const canonicalType = webType === "colorpicker"
     ? "color"
     : webType === "toggle" && options
@@ -360,11 +357,12 @@ function freezeRewriteBinding(data) {
         : webType === "cycler"
           ? "enum"
           : "number";
+  const webCanonicalDefault = webDefaultOverride ?? defaultValue;
   const webDefault = canonicalType === "enum"
-    ? options.indexOf(defaultValue)
+    ? options.indexOf(webCanonicalDefault)
     : canonicalType === "enum-toggle"
-      ? defaultValue === "follow"
-      : defaultValue;
+      ? webCanonicalDefault === "follow"
+      : webCanonicalDefault;
   return Object.freeze({
     canonicalKey,
     webId,
@@ -374,6 +372,7 @@ function freezeRewriteBinding(data) {
     defaultValue,
     canonicalType,
     canonicalOptions: options ? Object.freeze([...options]) : Object.freeze([]),
+    webCanonicalDefault,
     webDefault,
     bounds: bounds ? Object.freeze({ ...bounds }) : null,
     sharedSource: sharedSource && typeof sharedSource === "object"
@@ -385,6 +384,15 @@ function freezeRewriteBinding(data) {
 }
 
 export const REWRITE_FIELD_BINDINGS = Object.freeze(REWRITE_BINDING_DATA.map(freezeRewriteBinding));
+const RETIRED_REWRITE_CODEC_BINDINGS = [
+  freezeRewriteBinding(["excludeBuildings", null, "toggle", "", "", false]),
+  freezeRewriteBinding(["excludeBosses", null, "toggle", "", "", false]),
+  freezeRewriteBinding(["excludeGhouls", null, "toggle", "", "", false])
+];
+const rewriteCodecBindings = [...REWRITE_FIELD_BINDINGS];
+rewriteCodecBindings.splice(12, 0, ...RETIRED_REWRITE_CODEC_BINDINGS.slice(0, 2));
+rewriteCodecBindings.splice(67, 0, RETIRED_REWRITE_CODEC_BINDINGS[2]);
+export const REWRITE_CODEC_FIELD_BINDINGS = Object.freeze(rewriteCodecBindings);
 const REWRITE_SCHEMA = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS.map((binding) => {
   const schemaEntry = {
     type: binding.webType,
@@ -392,7 +400,7 @@ const REWRITE_SCHEMA = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS.m
     category: binding.category,
     defaultValue: binding.webDefault,
     canonicalKey: binding.canonicalKey,
-    canonicalDefault: binding.defaultValue,
+    canonicalDefault: binding.webCanonicalDefault,
     conditionEligible: binding.conditionEligible
   };
   if (binding.bounds) schemaEntry.bounds = binding.bounds;

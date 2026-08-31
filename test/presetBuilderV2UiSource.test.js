@@ -7,7 +7,8 @@ const v2IslandPath = new URL("../src/components/PresetBuilderV2Island.jsx", impo
 const healthbarPreviewPath = new URL("../src/components/HealthbarPreview.jsx", import.meta.url);
 const v2StylesPath = new URL("../src/styles/v2.css", import.meta.url);
 const v2TreePath = new URL("../src/components/schema-tree-v2.jsx", import.meta.url);
-const v2PagePath = new URL("../src/pages/v2.astro", import.meta.url);
+const v2PagePath = new URL("../src/pages/hpv2.astro", import.meta.url);
+const converterPagePath = new URL("../src/pages/v2.astro", import.meta.url);
 const v2TickerPath = new URL("../src/components/KofiLeaderboardTicker.jsx", import.meta.url);
 const supportersDataPath = new URL("../src/supportersData.js", import.meta.url);
 const supportersCsvPath = new URL("../public/data/supporters.csv", import.meta.url);
@@ -107,23 +108,28 @@ const rewriteQollockTemplatePath = new URL("../public/templates/hp_colors_rewrit
 const oldRewriteScriptPath = new URL("../public/templates/hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.js", import.meta.url);
 const oldRewriteCompiledPath = new URL("../public/templates/hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.vjs_c", import.meta.url);
 
-test("v1 and v2 link to separate GitHub Pages routes", async () => {
-  const [v1Island, v2Island, v2Page] = await Promise.all([
+test("v1, v2 converter, and hpv2 use separate GitHub Pages routes", async () => {
+  const [v1Island, v2Island, v2Page, converterPage] = await Promise.all([
     readFile(v1IslandPath, "utf8"),
     readFile(v2IslandPath, "utf8"),
-    readFile(v2PagePath, "utf8")
+    readFile(v2PagePath, "utf8"),
+    readFile(converterPagePath, "utf8")
   ]);
 
   assert.match(v1Island, />\s*V1 original\s*</);
   assert.match(v1Island, />\s*V2 game menu\s*</);
   for (const island of [v1Island, v2Island]) {
-    assert.match(island, /import\.meta\.env\.BASE_URL\}v2\//);
+    assert.match(island, /import\.meta\.env\.BASE_URL\}hpv2\//);
   }
   assert.match(v2Island, /aria-label="V1 original builder"/);
   assert.match(v2Island, /aria-label="V2 game menu builder"/);
   assert.match(v2Page, /PresetBuilderV2Island/);
   assert.match(v2Page, /styles\/v2\.css/);
   assert.match(v2Page, /<title>HP Colors Preset Builder V2<\/title>/);
+  assert.match(converterPage, /V2ImportConverter/);
+  assert.match(converterPage, /styles\/v2\.css/);
+  assert.match(converterPage, /<title>Convert HP Colors presets to HPv2<\/title>/);
+  assert.doesNotMatch(converterPage, /PresetBuilderV2Island|http-equiv=["']refresh/);
 });
 
 test("v2 disables Minimal and uses Rewrite download links without changing v1", async () => {
@@ -185,7 +191,7 @@ test("v2 preview renders only on Rewrite settings pages and keeps state outside 
   assert.match(island, /const targeted = commitPresetBuilderTargetMode\(\{[\s\S]*?targetMode: HP_COLORS_MOD_VARIANTS\.FULL/);
   assert.match(island, /return reducePresetBuilderSession\(targeted, \{ type: 'ENSURE_REWRITE_PROFILES' \}/);
   assert.match(island, /onConvert=\{handlePreviewConvert\}/);
-  assert.match(preview, /healingPercent: 0,[\s\S]*damagePercent: 0,[\s\S]*bulletShieldPercent: 0,[\s\S]*techShieldPercent: 0/);
+  assert.match(preview, /import \{ DEFAULT_SCENARIO,[\s\S]*\} from '\.\.\/healthbarPreviewModel\.js'/);
   assert.match(island, /activeCatalog\.variant !== 'rewrite'/);
   assert.match(preview, /onConvert = null/);
   assert.match(preview, /<button type="button" className="primary-action" onClick=\{onConvert\}>Convert to Rewrite<\/button>/);
@@ -237,8 +243,12 @@ test("v2 preview maps each texture role and explicit geometry once", async () =>
   assert.match(css, /\.healthbar-preview-relation,[\s\S]*grid-template-columns:\s*auto repeat\(2/);
   assert.doesNotMatch(css, /\.healthbar-preview-team-switch\s*\{/);
   assert.match(css, /\.healthbar-preview-unit-info[\s\S]*transform:\s*translateX\(30%\)/);
-  assert.match(css, /\.healthbar-preview-level[\s\S]*z-index:\s*6;[\s\S]*transform:\s*translateX\(-70%\)/);
+  assert.match(preview, /healthbar-preview-level-text/);
+  assert.match(css, /\.healthbar-preview-level\s*\{[\s\S]*z-index:\s*200;[\s\S]*transform:\s*translateX\(-70%\)/);
+  assert.match(css, /\.healthbar-preview-level-text\s*\{[^}]*z-index:\s*201;/);
   assert.match(css, /\.healthbar-preview-unit-info[\s\S]*z-index:\s*9;/);
+  assert.match(css, /\.healthbar-preview-readout\s*\{[\s\S]*z-index:\s*1000;/);
+  assert.match(css, /\.healthbar-preview-pips::after\s*\{[\s\S]*top:\s*calc\(100% \+ 2px\)/);
   assert.match(css, /\.healthbar-preview-hud[\s\S]*grid-template-columns:\s*var\(--healthbar-level-size\)\s+6px\s+var\(--healthbar-width\)/);
   assert.match(css, /\.healthbar-preview-canvas\.is-zoomed[\s\S]*overflow:\s*auto;/);
   assert.match(css, /\.healthbar-preview-hud[\s\S]*transform:\s*translate\(/);
@@ -315,8 +325,8 @@ test("rewrite template is XML-only, strict, and stores the hidden HPCRP1 label",
   assert.match(template, /HPColorsRewritePresetStore/);
   assert.match(template, /HPColorsRewritePreset_001/);
   assert.match(template, /hp_colors_rewrite_preset_entry/);
-  assert.match(template, /hp_colors_state\.vjs_c/);
-  assert.match(template, /hp_colors_menu\.vjs_c/);
+  assert.match(template, /hp_colors_v2_state\.vjs_c/);
+  assert.match(template, /hp_colors_v2_menu\.vjs_c/);
   assert.doesNotMatch(template, /anita|hp_colors_builder_presets|base_hud/i);
   assert.match(packageBuilder, /REWRITE_PRESET_ARCHIVE_PATH/);
   assert.match(packageBuilder, /REWRITE_PRESET_CONTRACT_VERSION/);

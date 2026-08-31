@@ -81,7 +81,13 @@ test("Rewrite QOLLOCK VPK rejects runtime assets and stale composite layouts", (
     () => validateRewriteQollockPresetTemplate(templateText.replace("qollock_hp_colors_bridge.vjs_c", "hp_colors_menu.vjs_c")),
     /stale or incompatible/
   );
-  for (const id of ["HPColorsReadoutMaxTeamColorToggle", "HPColorsAllyTeamHighToggle"]) {
+  for (const id of [
+    "HPColorsReadoutMaxTeamColorToggle",
+    "HPColorsAllyTeamHighToggle",
+    "HPColorsExcludeBuildingsToggle",
+    "HPColorsExcludeBossesToggle",
+    "HPColorsExcludeGhoulsToggle"
+  ]) {
     assert.throws(
       () => validateRewriteQollockPresetTemplate(templateText.replace(`id="${id}"`, `id="Missing${id}"`)),
       /panel contract is stale or incompatible/
