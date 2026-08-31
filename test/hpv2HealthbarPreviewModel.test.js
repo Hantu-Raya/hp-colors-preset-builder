@@ -254,7 +254,7 @@ test("stock mode preserves the scenario but restores stock colors and geometry",
 
 test("geometry follows Rewrite V2 dimensions, scale, and translation", () => {
   const profile = state({
-    hp_width_scale: 120,
+    hp_width_scale: 230,
     hp_height_scale: 80,
     hp_bar_offset_x: 42,
     hp_bar_offset_y: -17,
@@ -271,7 +271,7 @@ test("geometry follows Rewrite V2 dimensions, scale, and translation", () => {
       widthScalePercent: model.bar.widthScalePercent,
       heightScalePercent: model.bar.heightScalePercent
     },
-    { baseWidthPx: 750, baseHeightPx: 120, widthPx: 900, heightPx: 96, widthScalePercent: 120, heightScalePercent: 80 }
+    { baseWidthPx: 750, baseHeightPx: 120, widthPx: 1725, heightPx: 96, widthScalePercent: 230, heightScalePercent: 80 }
   );
   assert.equal(model.bar.transform, "translateX(42px) translateY(-17px)");
 });

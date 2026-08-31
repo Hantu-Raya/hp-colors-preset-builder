@@ -276,7 +276,7 @@ function createHpFieldCatalog(schema = HP_SCHEMA, {
 
 const REWRITE_BINDING_DATA = [
   ["enabled", "hp_enabled", "toggle", "Enable enemy HP colors", "OVERVIEW|MASTER", true],
-  ["widthScale", "hp_width_scale", "slider", "Healthbar width", "OVERVIEW|LAYOUT", 100, { min: 60, max: 160, step: 1 }],
+  ["widthScale", "hp_width_scale", "slider", "Healthbar width", "OVERVIEW|LAYOUT", 100, { min: 60, max: 230, step: 1 }],
   ["heightScale", "hp_height_scale", "slider", "Healthbar height", "OVERVIEW|LAYOUT", 100, { min: 60, max: 160, step: 1 }],
   ["positionX", "hp_bar_offset_x", "slider", "Healthbar horizontal offset", "OVERVIEW|LAYOUT", 0, { min: -300, max: 300, step: 1 }],
   ["positionY", "hp_bar_offset_y", "slider", "Healthbar vertical offset", "OVERVIEW|LAYOUT", 0, { min: -200, max: 200, step: 1 }],

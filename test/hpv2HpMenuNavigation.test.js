@@ -45,6 +45,11 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
   assert.deepEqual(canonicalKeys.sort(), REWRITE_FIELD_CATALOG.bindings.map((binding) => binding.canonicalKey).sort());
   assert.equal(fields.some((field) => forbiddenIds.includes(field.id)), false);
   assert.equal(fields.some((field) => field.canonicalKey === "precisePipsEnabled" && field.conditionEligible === false), true);
+  const overviewLayout = groups
+    .find((group) => group.name === "OVERVIEW")
+    .children.find((page) => page.pageId === "overview-layout");
+  const widthScale = overviewLayout.fields.find((field) => field.canonicalKey === "widthScale");
+  assert.deepEqual(widthScale.bounds, { min: 60, max: 230, step: 1 });
   const enemyBar = groups
     .find((group) => group.name === "ENEMY")
     .children.find((page) => page.pageId === "enemy-bar");
