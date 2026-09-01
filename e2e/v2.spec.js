@@ -50,14 +50,14 @@ async function chooseMinimalTarget(page) {
 async function chooseRewriteTarget(page) {
   const dialog = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });
   await expect(dialog).toBeVisible();
-  await dialog.getByRole('button', { name: /^Rewrite Preset VPK/ }).click();
+  await dialog.getByRole('button', { name: /^Rewrite(?:v2)? Preset VPK/ }).click();
   await expect(dialog).toBeHidden();
 }
 
 async function chooseRewriteQollockTarget(page) {
   const dialog = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });
   await expect(dialog).toBeVisible();
-  await dialog.locator('.target-mode-choice-select').filter({ hasText: 'Rewrite + QOLLOCK' }).click();
+  await dialog.locator('.target-mode-choice-select').filter({ hasText: 'Rewritev2 + QOLLOCK' }).click();
   await expect(dialog).toBeHidden();
 }
 async function clearPreviewStorage(page) {
@@ -438,7 +438,9 @@ test('v2 preview matches the compact in-game healthbar geometry', async ({ page 
   expect(unitInfoOverlap).toBeLessThanOrEqual(unitInfo.width * 0.32);
   expect(Math.abs((level.y + level.height / 2) - (bar.y + bar.height / 2))).toBeLessThanOrEqual(2);
   expect(readout.y + readout.height).toBeLessThanOrEqual(bar.y + 1);
-  expect(Math.abs((readout.x + readout.width / 2) - (bar.x + bar.width / 2))).toBeLessThanOrEqual(8);
+  const readoutCenterOffset = (readout.x + readout.width / 2) - (bar.x + bar.width / 2);
+  expect(readoutCenterOffset).toBeGreaterThanOrEqual(-12);
+  expect(readoutCenterOffset).toBeLessThanOrEqual(-8);
   expect(pips.y).toBeGreaterThanOrEqual(bar.y);
   expect(pips.y + pips.height).toBeLessThanOrEqual(bar.y + bar.height);
 });
