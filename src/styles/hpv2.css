@@ -3550,24 +3550,6 @@
     var(--healthbar-major-pip-step) 100%;
 }
 
-.healthbar-preview-pips::after {
-  content: "";
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 8%;
-  width: 58%;
-  height: max(4px, calc(var(--healthbar-height) * 0.28));
-  border: 1px solid #260707;
-  background-color: #651313;
-  background-image: linear-gradient(
-    90deg,
-    transparent calc(100% - 2px),
-    rgba(16, 3, 3, 0.96) calc(100% - 2px)
-  );
-  background-repeat: repeat-x;
-  background-size: var(--healthbar-minor-pip-step) 100%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
-}
 
 .healthbar-preview-pips.is-precise {
   opacity: 0.78;

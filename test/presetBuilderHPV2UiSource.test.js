@@ -222,6 +222,7 @@ test("v2 preview maps each texture role and explicit geometry once", async () =>
   assert.match(preview, /--healthbar-stamina-width[\s\S]*staminaWidth/);
   assert.match(preview, /--healthbar-stamina-height[\s\S]*staminaHeight/);
   assert.match(css, /\.healthbar-preview-stamina-pip\.is-empty\s*\{[^}]*background:\s*#000;/);
+  assert.match(css, /\.healthbar-preview-stamina\s*\{[^}]*bottom:\s*calc\(-1 \* var\(--healthbar-stamina-height\) - 2px\);/);
   assert.match(preview, /--healthbar-width[\s\S]*barWidth/);
   assert.doesNotMatch(preview, /scaleX|barScale|widthScalePercent/);
   assert.match(css, /\.healthbar-preview-missing-layer[\s\S]*right:\s*0;[\s\S]*left:\s*auto;/);
@@ -245,7 +246,7 @@ test("v2 preview maps each texture role and explicit geometry once", async () =>
   assert.match(css, /\.healthbar-preview-level-text\s*\{[^}]*z-index:\s*201;/);
   assert.match(css, /\.healthbar-preview-unit-info[\s\S]*z-index:\s*9;/);
   assert.match(css, /\.healthbar-preview-readout\s*\{[\s\S]*z-index:\s*1000;/);
-  assert.match(css, /\.healthbar-preview-pips::after\s*\{[\s\S]*top:\s*calc\(100% \+ 2px\)/);
+  assert.doesNotMatch(css, /\.healthbar-preview-pips::after\s*\{/);
   assert.match(css, /\.healthbar-preview-hud[\s\S]*grid-template-columns:\s*var\(--healthbar-level-size\)\s+6px\s+var\(--healthbar-width\)/);
   assert.match(css, /\.healthbar-preview-canvas\.is-zoomed[\s\S]*overflow:\s*auto;/);
   assert.match(css, /\.healthbar-preview-hud[\s\S]*transform:\s*translate\(/);
