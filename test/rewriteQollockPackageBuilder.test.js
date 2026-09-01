@@ -56,6 +56,11 @@ test("Rewrite QOLLOCK template mirrors the composite include and panel contract"
   );
   assert.doesNotMatch(templateText, /qollock_settings_guard\.vjs_c/);
   assert.doesNotMatch(templateText, /anita|hp_colors_builder_presets|base_hud/i);
+  assert.equal((templateText.match(/&amp;&amp;/g) || []).length, 2);
+  assert.doesNotMatch(
+    templateText,
+    /&(?!amp;|apos;|quot;|lt;|gt;|#\d+;|#x[\da-f]+;)/i
+  );
 });
 
 test("Rewrite QOLLOCK package emits one composite layout and round-trips HPCRP1", () => {

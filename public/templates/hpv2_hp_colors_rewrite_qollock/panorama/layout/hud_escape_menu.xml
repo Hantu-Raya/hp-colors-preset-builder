@@ -38,8 +38,8 @@
 		<include src="s2r://panorama/scripts/hp_colors_menu.vjs_c" />
 		<include src="s2r://panorama/scripts/qollock_hp_colors_bridge.vjs_c" />
 	</scripts>
-	<CitadelHudEscapeMenu oncancel="if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { $.DispatchEvent(&apos;CitadelResumePlaying&apos;, $.GetContextPanel()); }" onload="$.HPColorsMenuBoot()">
-		<Panel id="EscapeBackground" onactivate="if ($.HPColorsMenuCancel && $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { $.DispatchEvent(&apos;CitadelResumePlaying&apos;, $.GetContextPanel()); }" />
+	<CitadelHudEscapeMenu oncancel="if ($.HPColorsMenuCancel &amp;&amp; $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { $.DispatchEvent(&apos;CitadelResumePlaying&apos;, $.GetContextPanel()); }" onload="$.HPColorsMenuBoot()">
+		<Panel id="EscapeBackground" onactivate="if ($.HPColorsMenuCancel &amp;&amp; $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { $.DispatchEvent(&apos;CitadelResumePlaying&apos;, $.GetContextPanel()); }" />
 		<Panel id="SettingsWindow" hittest="true" onactivate="">
 			<Panel id="SettingsHeader">
 				<Label id="SettingsTitle" text="QOL LOCK" />
