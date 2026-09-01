@@ -608,7 +608,7 @@ test("retired exclusion values do not disable Rewrite paint", () => {
   assert.equal(model.pulse.active, true);
 });
 
-test("enemy stamina preview follows HPv2 geometry, color, and stock fallback", () => {
+test("enemy stamina preview follows HPv2 geometry and uses the red stock color", () => {
   const customized = createHealthbarPreviewModel(
     state({
       hpv2_stamina_width: 150,
@@ -638,7 +638,7 @@ test("enemy stamina preview follows HPv2 geometry, color, and stock fallback", (
     }),
     scenario({ relation: "enemy" }),
   );
-  assert.equal(fallbackColor.stamina.color, "#FFFFFF");
+  assert.equal(fallbackColor.stamina.color, "#FD4949");
 
   const stock = createHealthbarPreviewModel(
     state({
@@ -656,7 +656,7 @@ test("enemy stamina preview follows HPv2 geometry, color, and stock fallback", (
     heightPx: 44.8,
     offsetX: 0,
     offsetY: 0,
-    color: "#FFFFFF",
+    color: "#FD4949",
     pips: [{ empty: false }, { empty: false }, { empty: true }],
   });
 

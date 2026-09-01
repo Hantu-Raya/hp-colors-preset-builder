@@ -403,7 +403,7 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
   const staminaOffsetY = staminaCustomized ? state.hpv2_stamina_offset_y : 0;
   const staminaColor = staminaCustomized && state.hpv2_enemy_stamina_color_enabled
     ? state.hpv2_enemy_stamina_color
-    : "#FFFFFF";
+    : STOCK.enemy;
   const stamina = {
     visible: enemyRole,
     customized: staminaCustomized,
