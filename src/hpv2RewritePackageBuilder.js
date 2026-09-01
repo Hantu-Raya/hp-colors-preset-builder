@@ -54,7 +54,7 @@ export const REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES = Object.freeze([
   "s2r://panorama/styles/citadel_base_styles.vcss_c",
   "s2r://panorama/styles/hud_escape_menu.vcss_c",
   "s2r://panorama/styles/ql_settings.vcss_c",
-  "s2r://panorama/styles/hp_colors_menu.vcss_c"
+  "s2r://panorama/styles/hp_colors_v2_menu.vcss_c"
 ]);
 export const REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES = Object.freeze([
   "s2r://panorama/scripts/ql_utils.vjs_c",
@@ -83,9 +83,9 @@ export const REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES = Object.freeze([
   "s2r://panorama/scripts/ql_settings_persistence.vjs_c",
   "s2r://panorama/scripts/ql_update_checker.vjs_c",
   "s2r://panorama/scripts/ql_settings.vjs_c",
-  "s2r://panorama/scripts/hp_colors_contract.vjs_c",
-  "s2r://panorama/scripts/hp_colors_state.vjs_c",
-  "s2r://panorama/scripts/hp_colors_menu.vjs_c",
+  "s2r://panorama/scripts/hp_colors_v2_contract.vjs_c",
+  "s2r://panorama/scripts/hp_colors_v2_state.vjs_c",
+  "s2r://panorama/scripts/hp_colors_v2_menu.vjs_c",
   "s2r://panorama/scripts/qollock_hp_colors_bridge.vjs_c"
 ]);
 export const REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
@@ -95,15 +95,10 @@ export const REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   "newgame",
   "watchgame",
   "guides",
-  "HPColorsMenuButton",
-  "HPColorsEditorRoot",
-  "HPColorsReadoutMaxTeamColorToggle",
-  "HPColorsAllyTeamHighToggle",
-  "HPColorsExcludeBuildingsToggle",
-  "HPColorsExcludeBossesToggle",
-  "HPColorsExcludeGhoulsToggle",
-  "HPColorsSupporterTicker",
-  REWRITE_PRESET_STORE_PANEL_ID
+  ...REWRITE_PRESET_REQUIRED_PANEL_IDS,
+  "HPColorsStaminaWidthEntry",
+  "HPColorsAllyPulseColorModeRow",
+  "HPColorsSupporterTicker"
 ]);
 const REWRITE_MENU_ONCANCEL = "if (!$.HPColorsMenuCancel()) $.DispatchEvent('CitadelResumePlaying', $.GetContextPanel())";
 const REWRITE_MENU_ONCANCEL_XML = REWRITE_MENU_ONCANCEL.replaceAll("'", "&apos;");

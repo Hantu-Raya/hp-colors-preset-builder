@@ -61,9 +61,9 @@ Whenever the canonical layout changes:
 3. Run `npm test` and `npm run build`.
 4. Require `diff -u public/templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml F:/Users/FoxOS_User/Desktop/Deadlock-mods-collection/hp_colors_rewrite_v2/panorama/layout/hud_escape_menu.xml` to produce no output.
 
-The QOLLOCK preset template must likewise exactly mirror
-`F:\Users\FoxOS_User\Desktop\Deadlock-mods-collection\hp_colors_rewrite_qollock\panorama\layout\hud_escape_menu.xml`.
-Sync it after every compatibility refresh so generated `pak01` presets preserve QOLLOCK's menu hierarchy, settings, and runtime includes.
+The legacy QOLLOCK preset template must exactly mirror
+`F:\Users\FoxOS_User\Desktop\Deadlock-mods-collection\hp_colors_rewrite_qollock\panorama\layout\hud_escape_menu.xml`. The HPv2 QOLLOCK template must exactly mirror `F:\Users\FoxOS_User\Desktop\Deadlock-mods-collection\hp_colors_rewrite_v2_qollock\panorama\layout\hud_escape_menu.xml`.
+Sync the matching template after every compatibility refresh so generated `pak01` presets preserve that runtime's QOLLOCK menu hierarchy, settings, and includes.
 
 ## Code Conventions & Common Patterns
 

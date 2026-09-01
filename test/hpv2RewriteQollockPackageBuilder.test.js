@@ -35,12 +35,17 @@ test("Rewrite QOLLOCK template mirrors the composite include and panel contract"
   assert.deepEqual(inspected.styleIncludes, REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES);
   assert.deepEqual(inspected.scriptIncludes, REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES);
   for (const id of REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS) assert.equal(hasId(id), true, id);
+  assert.match(templateText, /hp_colors_v2_menu\.vcss_c/);
+  assert.match(templateText, /hp_colors_v2_contract\.vjs_c/);
+  assert.match(templateText, /hp_colors_v2_state\.vjs_c/);
+  assert.match(templateText, /hp_colors_v2_menu\.vjs_c/);
+  assert.doesNotMatch(templateText, /(?:styles|scripts)\/hp_colors_(?:menu|contract|state)\.v(?:css|js)_c/);
 
   const qolIndex = templateText.indexOf('<Button id="ModSettingsBtn"');
   const hpIndex = templateText.indexOf('<Button id="HPColorsMenuButton"');
   assert.ok(qolIndex >= 0 && qolIndex < hpIndex);
   assert.match(templateText, /<Label text="QOL LOCK" class="menuButtonLabel" \/>/);
-  assert.match(templateText, /<Label text="HP COLORS" class="menuButtonLabel" \/>/);
+  assert.match(templateText, /<Label text="HP COLORS V2" class="menuButtonLabel" \/>/);
   assert.match(templateText, /<Panel id="SettingsWindow"/);
   assert.match(templateText, /<Panel id="HPColorsEditorRoot"/);
   assert.match(
@@ -86,16 +91,10 @@ test("Rewrite QOLLOCK VPK rejects runtime assets and stale composite layouts", (
     () => validateRewriteQollockPresetTemplate(templateText.replace("qollock_hp_colors_bridge.vjs_c", "hp_colors_menu.vjs_c")),
     /stale or incompatible/
   );
-  for (const id of [
-    "HPColorsReadoutMaxTeamColorToggle",
-    "HPColorsAllyTeamHighToggle",
-    "HPColorsExcludeBuildingsToggle",
-    "HPColorsExcludeBossesToggle",
-    "HPColorsExcludeGhoulsToggle"
-  ]) {
+  for (const id of REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS) {
     assert.throws(
       () => validateRewriteQollockPresetTemplate(templateText.replace(`id="${id}"`, `id="Missing${id}"`)),
-      /panel contract is stale or incompatible/
+      /panel contract is stale or incompatible|must contain exactly one HPColorsRewritePresetStore panel/
     );
   }
   assert.throws(
