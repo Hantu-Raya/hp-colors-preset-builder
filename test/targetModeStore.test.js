@@ -121,10 +121,12 @@ test("getTargetModeDetails exposes choice copy and download links", () => {
   assert.match(full.description, /Anita UI/i);
   assert.match(full.downloadHref, /^https:\/\//);
   assert.equal(full.v2Title, "Rewrite");
+  assert.equal(full.hpv2Title, "Rewritev2");
   assert.equal(full.downloadHrefV2, "https://gamebanana.com/mods/download/603113#FileInfo_1792071");
   assert.equal(qollock.id, HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
   assert.match(qollock.description, /pak01|pak02|pak03/);
   assert.match(qollock.downloadHref, /^https:\/\//);
+  assert.equal(qollock.hpv2Title, "Rewritev2 + QOLLOCK");
   assert.equal(qollock.downloadHrefV2, "https://gamebanana.com/mods/download/603113#FileInfo_1792072");
 });
 

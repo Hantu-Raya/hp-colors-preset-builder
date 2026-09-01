@@ -15,6 +15,9 @@ export const TARGET_MODE_CHOICES = Object.freeze([
     v2Summary: "Not available in V2.",
     v2Description: "Use the V1 original builder for HP Colors Minimal presets.",
     downloadHrefV2: "https://gamebanana.com/mods/download/603113#FileInfo_1701235",
+    hpv2Title: "Minimal mod",
+    hpv2Summary: "Not available in Rewritev2.",
+    hpv2Description: "Use the V1 original builder for HP Colors Minimal presets.",
     unavailableInV2: true
   }),
   Object.freeze({
@@ -28,6 +31,9 @@ export const TARGET_MODE_CHOICES = Object.freeze([
     v2Summary: "Preset VPK for HP Colors Rewrite.",
     v2Description: "Use this with the HP Colors Rewrite runtime and its Escape-menu editor.",
     downloadHrefV2: "https://gamebanana.com/mods/download/603113#FileInfo_1792071",
+    hpv2Title: "Rewritev2",
+    hpv2Summary: "Preset VPK for HP Colors Rewritev2.",
+    hpv2Description: "Use this with the HP Colors Rewritev2 runtime and its Escape-menu editor.",
     unavailableInV2: false
   }),
   Object.freeze({
@@ -41,6 +47,9 @@ export const TARGET_MODE_CHOICES = Object.freeze([
     v2Summary: "Preset VPK for HP Colors Rewrite + QOLLOCK.",
     v2Description: "Use this with the fixed pak01/pak02/pak03 Rewrite + QOLLOCK install order.",
     downloadHrefV2: "https://gamebanana.com/mods/download/603113#FileInfo_1792072",
+    hpv2Title: "Rewritev2 + QOLLOCK",
+    hpv2Summary: "Preset VPK for HP Colors Rewritev2 + QOLLOCK.",
+    hpv2Description: "Use this with the fixed pak01/pak02/pak03 Rewritev2 + QOLLOCK install order.",
     unavailableInV2: false
   })
 ]);

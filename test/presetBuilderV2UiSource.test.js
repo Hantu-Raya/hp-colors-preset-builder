@@ -334,6 +334,8 @@ test("Rewrite QOLLOCK is a separate selectable target with a composite template"
   assert.match(island, /runRewriteQollockPresetBuildWorkflow/);
   assert.match(island, /createRewriteQollockPresetTemplateLoader/);
   assert.match(targetMode, /REWRITE_QOLLOCK/);
+  assert.match(targetMode, /v2Title: "Rewrite"/);
+  assert.match(targetMode, /v2Title: "Rewrite \+ QOLLOCK"/);
   assert.match(workflow, /REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH/);
   assert.match(workflow, /REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME/);
   const qolIndex = template.indexOf('<Button id="ModSettingsBtn"');
@@ -352,6 +354,7 @@ test("showranks compatibility is a v2-only rewrite toggle with merged menu outpu
   ]);
   assert.doesNotMatch(v1Island, /showranks|ShowRank/i);
   assert.match(v2Island, /Showranks compatible/);
+  assert.match(v2Island, /Rewrite \+ ShowRank/);
   assert.match(v2Island, /rewriteBuildTarget && !rewriteQollockTarget \? \(/);
   assert.match(v2Island, /commitShowranksCompatibleState/);
   assert.match(v2Island, /showranksCompatible: session\.showranksCompatible/);

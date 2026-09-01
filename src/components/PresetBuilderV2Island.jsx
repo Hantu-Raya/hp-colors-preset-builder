@@ -771,7 +771,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
               <Layers3 aria-hidden="true" />
               <span className="target-mode-text">
                 <span>Target</span>
-                <strong>{containsRewriteProfiles && !rewriteQollockTarget ? 'Rewrite' : targetModeDetails.label}</strong>
+                <strong>{rewriteBuildTarget
+                  ? rewriteQollockTarget
+                    ? 'Rewrite + QOLLOCK'
+                    : session.showranksCompatible ? 'Rewrite + ShowRank' : 'Rewrite'
+                  : targetModeDetails.label}</strong>
               </span>
             </button>
             <button
@@ -793,7 +797,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
               >
                 <ShieldCheck aria-hidden="true" />
                 <span className="target-mode-text">
-                  <span>ShowRank</span>
+                  <span>Rewrite + ShowRank</span>
                   <strong>{session.showranksCompatible ? 'On' : 'Off'}</strong>
                 </span>
               </button>
@@ -1351,7 +1355,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
             <div className="target-mode-summary-card">
               {rewriteBuildTarget ? (
                 <div>
-                  <span className="target-mode-summary-label">{rewriteQollockTarget ? 'Rewrite + QOLLOCK runtime' : 'Rewrite runtime'}</span>
+                  <span className="target-mode-summary-label">{rewriteQollockTarget
+                    ? 'Rewrite + QOLLOCK runtime'
+                    : session.showranksCompatible ? 'Rewrite + ShowRank runtime' : 'Rewrite runtime'}</span>
                   <strong>{rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}</strong>
                   <p>
                     {rewriteQollockTarget

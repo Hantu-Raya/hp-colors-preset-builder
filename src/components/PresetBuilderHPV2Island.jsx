@@ -771,7 +771,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
               <Layers3 aria-hidden="true" />
               <span className="target-mode-text">
                 <span>Target</span>
-                <strong>{containsRewriteProfiles && !rewriteQollockTarget ? 'Rewrite' : targetModeDetails.label}</strong>
+                <strong>{rewriteBuildTarget
+                  ? rewriteQollockTarget
+                    ? 'Rewritev2 + QOLLOCK'
+                    : session.showranksCompatible ? 'Rewritev2 + ShowRank' : 'Rewritev2'
+                  : targetModeDetails.label}</strong>
               </span>
             </button>
             <button
@@ -793,7 +797,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
               >
                 <ShieldCheck aria-hidden="true" />
                 <span className="target-mode-text">
-                  <span>ShowRank</span>
+                  <span>Rewritev2 + ShowRank</span>
                   <strong>{session.showranksCompatible ? 'On' : 'Off'}</strong>
                 </span>
               </button>
@@ -1282,11 +1286,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                     >
                       <span className="target-mode-choice-title">
                         <Layers3 aria-hidden="true" />
-                        <strong>{'v2Title' in choice ? choice.v2Title : choice.title}</strong>
+                        <strong>{choice.hpv2Title || choice.v2Title || choice.title}</strong>
                         {selected && !unavailable ? <Check aria-hidden="true" /> : null}
                       </span>
-                      <span className="target-mode-choice-summary">{'v2Summary' in choice ? choice.v2Summary : choice.summary}</span>
-                      <span className="target-mode-choice-description">{'v2Description' in choice ? choice.v2Description : choice.description}</span>
+                      <span className="target-mode-choice-summary">{choice.hpv2Summary || choice.v2Summary || choice.summary}</span>
+                      <span className="target-mode-choice-description">{choice.hpv2Description || choice.v2Description || choice.description}</span>
                     </button>
                     {unavailable ? (
                       <button type="button" className="target-mode-choice-download is-disabled" disabled>
@@ -1351,7 +1355,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
             <div className="target-mode-summary-card">
               {rewriteBuildTarget ? (
                 <div>
-                  <span className="target-mode-summary-label">{rewriteQollockTarget ? 'Rewrite + QOLLOCK runtime' : 'Rewrite runtime'}</span>
+                  <span className="target-mode-summary-label">{rewriteQollockTarget
+                    ? 'Rewritev2 + QOLLOCK runtime'
+                    : session.showranksCompatible ? 'Rewritev2 + ShowRank runtime' : 'Rewritev2 runtime'}</span>
                   <strong>{rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}</strong>
                   <p>
                     {rewriteQollockTarget
@@ -1376,8 +1382,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                 <>
                   <div>
                     <span className="target-mode-summary-label">Selected base mod</span>
-                    <strong>{'v2Title' in targetModeDetails ? targetModeDetails.v2Title : targetModeDetails.title}</strong>
-                    <p>{'v2Summary' in targetModeDetails ? targetModeDetails.v2Summary : targetModeDetails.summary}</p>
+                    <strong>{targetModeDetails.hpv2Title || targetModeDetails.v2Title || targetModeDetails.title}</strong>
+                    <p>{targetModeDetails.hpv2Summary || targetModeDetails.v2Summary || targetModeDetails.summary}</p>
                     {targetModeDetails.unavailableInV2 ? (
                       <span className="target-mode-summary-download-link is-disabled" aria-disabled="true">
                         This target is unavailable in V2.

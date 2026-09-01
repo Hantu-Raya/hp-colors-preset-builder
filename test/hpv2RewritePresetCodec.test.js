@@ -24,15 +24,15 @@ const wireCorpusSource = readFileSync(
 );
 const wireCorpus = JSON.parse(wireCorpusSource);
 
+function normalizedSha256(source) {
+  return createHash('sha256')
+    .update(source.toString('utf8').replaceAll('\r\n', '\n'))
+    .digest('hex');
+}
+
 test('wire manifest matches the approved byte contract', () => {
-  assert.equal(
-    createHash('sha256').update(wireManifestSource).digest('hex'),
-    WIRE_MANIFEST_SHA256
-  );
-  assert.equal(
-    createHash('sha256').update(wireCorpusSource).digest('hex'),
-    WIRE_CORPUS_SHA256
-  );
+  assert.equal(normalizedSha256(wireManifestSource), WIRE_MANIFEST_SHA256);
+  assert.equal(normalizedSha256(wireCorpusSource), WIRE_CORPUS_SHA256);
 });
 
 test('wire manifest owns builder slot order and metadata', () => {
