@@ -14,7 +14,7 @@ import {
 const FIXTURE = 'HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Shiv","mode":"selected","heroes":["hero_shiv"],"values":[[7,"fixed"],[11,true],[12,true],[13,true],[30,167],[31,"oracle"],[34,"custom"],[37,"#FFFFFF"],[42,18],[45,18],[52,true],[53,true],[54,205],[56,440],[63,true],[64,18],[65,31],[67,true]],"conditions":{"lowThreshold":{"slot":4,"minTier":3,"value":28},"enemyPulseThreshold":{"slot":4,"minTier":3,"value":28},"enemyKillMarkerThreshold":{"slot":4,"minTier":3,"value":28}}}],"selectedPresetId":"user_0001"}';
 
 const WIRE_MANIFEST_SHA256 = 'd4ba7a4e8c4b48c99e7dd55d587813b12b47cc6257c251758f126eaded2af2fa';
-const WIRE_CORPUS_SHA256 = 'ac1705bdffeee6f56520f5f460624ad9e6354707dc3073819d7ae9d9c79961c4';
+const WIRE_CORPUS_SHA256 = 'b3a749d8450be0bf39c1693b24c1a20f5885bbec208c73e96e5e4237ce72dfa0';
 const wireManifestSource = readFileSync(
   new URL('../src/fixtures/hp-colors-rewrite-wire-v1.json', import.meta.url)
 );
@@ -141,6 +141,8 @@ test('web shipped defaults retain the HPCRP1 codec baseline', () => {
   assert.equal(webValues.hp_friend_color_low, '#FFEFD7');
   assert.equal(webValues.hp_friend_color_mid, '#FFEFD7');
   assert.equal(webValues.hp_friend_color_high, '#FFEFD7');
+  assert.equal(webValues.hp_readout_offset_x, -30);
+  assert.equal(webValues.hp_readout_offset_y, 434);
 
   const profile = {
     id: 'profile-1',
@@ -159,6 +161,8 @@ test('web shipped defaults retain the HPCRP1 codec baseline', () => {
   };
   const record = payload(createRewritePresetCode(profile), 'HPCRP1').records[0];
   assert.ok(record.values.some(([index, value]) => index === 8 && value === '#FD4949'));
+  assert.ok(record.values.some(([index, value]) => index === 32 && value === -30));
+  assert.ok(record.values.some(([index, value]) => index === 33 && value === 434));
 });
 
 test('imports the supplied HPCRP1 preset without losing rewrite-only settings', () => {
@@ -299,7 +303,7 @@ test('copies multiple profiles with unique rewrite user IDs', () => {
 });
 
 test('preserves an unchanged baked preset record in a copied bundle', () => {
-  const code = 'HPCRP1{"records":[{"id":"baked_default","kind":"baked","name":"Rewrite Default","mode":"off","heroes":[],"values":[[8,"#FD4949"],[20,"#FFEFD7"],[21,"#FFEFD7"],[22,"#FFEFD7"]],"conditions":null}],"selectedPresetId":"baked_default"}';
+  const code = 'HPCRP1{"records":[{"id":"baked_default","kind":"baked","name":"Rewrite Default","mode":"off","heroes":[],"values":[[8,"#FD4949"],[20,"#FFEFD7"],[21,"#FFEFD7"],[22,"#FFEFD7"],[32,-30],[33,434]],"conditions":null}],"selectedPresetId":"baked_default"}';
   const profile = decodeRewriteTransfer(code).profiles[0];
   const record = payload(createRewritePresetCode(profile), 'HPCRP1').records[0];
   assert.deepEqual(record, {
@@ -308,7 +312,7 @@ test('preserves an unchanged baked preset record in a copied bundle', () => {
     name: 'Rewrite Default',
     mode: 'off',
     heroes: [],
-    values: [[8, '#FD4949'], [20, '#FFEFD7'], [21, '#FFEFD7'], [22, '#FFEFD7']],
+    values: [[8, '#FD4949'], [20, '#FFEFD7'], [21, '#FFEFD7'], [22, '#FFEFD7'], [32, -30], [33, 434]],
     conditions: null
   });
 });

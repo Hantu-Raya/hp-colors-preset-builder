@@ -3409,7 +3409,7 @@
   position: absolute;
   z-index: 12;
   right: calc(var(--healthbar-width) / 2);
-  bottom: calc(var(--healthbar-height) + 8px);
+  bottom: calc(-1 * var(--healthbar-stamina-height) - 2px);
   display: flex;
   gap: 3px;
   transform: translate(

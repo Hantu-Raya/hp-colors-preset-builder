@@ -512,7 +512,7 @@
                     <Panel class="HPColorsSettingCopy"><Label text="HORIZONTAL OFFSET" class="HPColorsSettingTitle" /><Label text="Move the health text left or right without moving the healthbar." class="HPColorsSettingHelp" /></Panel>
                     <Panel class="HPColorsSliderGroup">
                       <Panel id="HPColorsReadoutOffsetXSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" />
-                      <TextEntry id="HPColorsReadoutOffsetXEntry" class="HPColorsNumberEntry" text="27" />
+                      <TextEntry id="HPColorsReadoutOffsetXEntry" class="HPColorsNumberEntry" text="-30" />
                       <Label text="PX" class="HPColorsUnitLabel" />
                     </Panel>
                   </Panel>
@@ -520,7 +520,7 @@
                     <Panel class="HPColorsSettingCopy"><Label text="VERTICAL OFFSET" class="HPColorsSettingTitle" /><Label text="Move the health text up or down without changing the surrounding layout." class="HPColorsSettingHelp" /></Panel>
                     <Panel class="HPColorsSliderGroup">
                       <Panel id="HPColorsReadoutOffsetYSliderHost" class="HPColorsSliderTrackContainer" hittest="false" hittestchildren="true" />
-                      <TextEntry id="HPColorsReadoutOffsetYEntry" class="HPColorsNumberEntry" text="500" />
+                      <TextEntry id="HPColorsReadoutOffsetYEntry" class="HPColorsNumberEntry" text="434" />
                       <Label text="PX" class="HPColorsUnitLabel" />
                     </Panel>
                   </Panel>
