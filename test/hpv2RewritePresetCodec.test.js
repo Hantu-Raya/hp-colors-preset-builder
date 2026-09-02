@@ -13,8 +13,8 @@ import {
 
 const FIXTURE = 'HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Shiv","mode":"selected","heroes":["hero_shiv"],"values":[[7,"fixed"],[11,true],[12,true],[13,true],[30,167],[31,"oracle"],[34,"custom"],[37,"#FFFFFF"],[42,18],[45,18],[52,true],[53,true],[54,205],[56,440],[63,true],[64,18],[65,31],[67,true]],"conditions":{"lowThreshold":{"slot":4,"minTier":3,"value":28},"enemyPulseThreshold":{"slot":4,"minTier":3,"value":28},"enemyKillMarkerThreshold":{"slot":4,"minTier":3,"value":28}}}],"selectedPresetId":"user_0001"}';
 
-const WIRE_MANIFEST_SHA256 = 'd4ba7a4e8c4b48c99e7dd55d587813b12b47cc6257c251758f126eaded2af2fa';
-const WIRE_CORPUS_SHA256 = 'b3a749d8450be0bf39c1693b24c1a20f5885bbec208c73e96e5e4237ce72dfa0';
+const WIRE_MANIFEST_SHA256 = '743988f126566f6327d5b104740553f7769407af1c42b523ca278e87d6dfa16b';
+const WIRE_CORPUS_SHA256 = '1a6e60cf7e93cc655a84a47b140f4a8e43b19b6ace742cf89626591031862f31';
 const wireManifestSource = readFileSync(
   new URL('../src/fixtures/hp-colors-rewrite-wire-v1.json', import.meta.url)
 );
@@ -376,6 +376,11 @@ test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => 
   assert.equal(decoded.rewrite.values[76], true);
   assert.equal(decoded.rewrite.values[77], '#123456');
   assert.equal(decoded.rewrite.values[78], 'gradient');
+  assert.equal(decoded.rewrite.values[79], false);
+  assert.equal(decoded.rewrite.values[80], -300);
+  assert.equal(decoded.rewrite.values[81], -200);
+  assert.equal(decoded.rewrite.values[82], -300);
+  assert.equal(decoded.rewrite.values[83], -200);
   const pairs = payload(code, 'HPCRP1').records[0].values;
   for (const retiredIndex of [12, 13, 67])
     assert.equal(pairs.some(([index]) => index === retiredIndex), false);
@@ -390,7 +395,12 @@ test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => 
       [3, -200],
       [4, true],
       [5, '#123456'],
-      [6, 'gradient']
+      [6, 'gradient'],
+      [7, false],
+      [8, -300],
+      [9, -200],
+      [10, -300],
+      [11, -200]
     ],
     conditions: {}
   });
@@ -405,7 +415,12 @@ test('HPv2-only settings round-trip through the preset extension but not HPCR2',
     hpv2_stamina_offset_y: -18,
     hpv2_enemy_stamina_color_enabled: true,
     hpv2_enemy_stamina_color: '#123456',
-    hpv2_friend_pulse_color_mode: 1
+    hpv2_friend_pulse_color_mode: 1,
+    hpv2_accessory_anchor_enabled: false,
+    hpv2_ult_offset_x: 12,
+    hpv2_ult_offset_y: -7,
+    hpv2_level_offset_x: -20,
+    hpv2_level_offset_y: 9,
   };
   const profile = {
     id: 'stamina',
@@ -436,7 +451,12 @@ test('HPv2-only settings round-trip through the preset extension but not HPCR2',
       [3, -18],
       [4, true],
       [5, '#123456'],
-      [6, 'gradient']
+      [6, 'gradient'],
+      [7, false],
+      [8, 12],
+      [9, -7],
+      [10, -20],
+      [11, 9]
     ],
     conditions: {
       staminaWidth: { slot: 4, minTier: 3, value: 180 }
@@ -451,6 +471,11 @@ test('HPv2-only settings round-trip through the preset extension but not HPCR2',
   assert.equal(decoded.rewrite.webValues.hpv2_enemy_stamina_color_enabled, true);
   assert.equal(decoded.rewrite.webValues.hpv2_enemy_stamina_color, '#123456');
   assert.equal(decoded.rewrite.webValues.hpv2_friend_pulse_color_mode, 1);
+  assert.equal(decoded.rewrite.webValues.hpv2_accessory_anchor_enabled, false);
+  assert.equal(decoded.rewrite.webValues.hpv2_ult_offset_x, 12);
+  assert.equal(decoded.rewrite.webValues.hpv2_ult_offset_y, -7);
+  assert.equal(decoded.rewrite.webValues.hpv2_level_offset_x, -20);
+  assert.equal(decoded.rewrite.webValues.hpv2_level_offset_y, 9);
   assert.deepEqual(decoded.rewrite.webOverrides.hpv2_stamina_width, {
     slot: 4,
     minTier: 3,
@@ -467,6 +492,11 @@ test('HPv2-only settings round-trip through the preset extension but not HPCR2',
   assert.equal(legacy.rewrite.webValues.hpv2_stamina_height, 44.8);
   assert.equal(legacy.rewrite.webValues.hpv2_enemy_stamina_color_enabled, false);
   assert.equal(legacy.rewrite.webValues.hpv2_friend_pulse_color_mode, 0);
+  assert.equal(legacy.rewrite.webValues.hpv2_accessory_anchor_enabled, true);
+  assert.equal(legacy.rewrite.webValues.hpv2_ult_offset_x, 0);
+  assert.equal(legacy.rewrite.webValues.hpv2_ult_offset_y, 0);
+  assert.equal(legacy.rewrite.webValues.hpv2_level_offset_x, 0);
+  assert.equal(legacy.rewrite.webValues.hpv2_level_offset_y, 0);
 
   assert.throws(
     () => decodeRewriteTransfer('HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Bad","mode":"all","heroes":[],"values":[],"conditions":null,"hpv2":{"v":2,"values":[],"conditions":{}}}],"selectedPresetId":"user_0001"}'),

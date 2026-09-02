@@ -350,7 +350,12 @@ const REWRITE_BINDING_DATA = [
   ["staminaOffsetY", "hpv2_stamina_offset_y", "slider", "Stamina vertical offset", "HEALTH INFO|STAMINA", 0, { min: -200, max: 200, step: 1 }],
   ["enemyStaminaColorEnabled", "hpv2_enemy_stamina_color_enabled", "toggle", "Use custom enemy stamina color", "HEALTH INFO|STAMINA", false],
   ["enemyStaminaColor", "hpv2_enemy_stamina_color", "colorpicker", "Enemy stamina color", "HEALTH INFO|STAMINA", "#FD4949"],
-  ["allyPulseColorMode", "hpv2_friend_pulse_color_mode", "cycler", "Ally pulse color behavior", "ALLY|PULSE", "fixed", null, ["fixed", "gradient"]]
+  ["allyPulseColorMode", "hpv2_friend_pulse_color_mode", "cycler", "Ally pulse color behavior", "ALLY|PULSE", "fixed", null, ["fixed", "gradient"]],
+  ["accessoryAnchorEnabled", "hpv2_accessory_anchor_enabled", "toggle", "Anchor indicators to healthbar", "HEALTH INFO|INDICATORS", true],
+  ["ultOffsetX", "hpv2_ult_offset_x", "slider", "Ultimate horizontal position", "HEALTH INFO|INDICATORS", 0, { min: -300, max: 300, step: 1 }],
+  ["ultOffsetY", "hpv2_ult_offset_y", "slider", "Ultimate vertical position", "HEALTH INFO|INDICATORS", 0, { min: -200, max: 200, step: 1 }],
+  ["levelOffsetX", "hpv2_level_offset_x", "slider", "Level horizontal position", "HEALTH INFO|INDICATORS", 0, { min: -300, max: 300, step: 1 }],
+  ["levelOffsetY", "hpv2_level_offset_y", "slider", "Level vertical position", "HEALTH INFO|INDICATORS", 0, { min: -200, max: 200, step: 1 }]
 ];
 
 function freezeRewriteBinding(data) {
@@ -472,7 +477,12 @@ const HPV2_EXTENSION_KEYS = Object.freeze([
   "staminaOffsetY",
   "enemyStaminaColorEnabled",
   "enemyStaminaColor",
-  "allyPulseColorMode"
+  "allyPulseColorMode",
+  "accessoryAnchorEnabled",
+  "ultOffsetX",
+  "ultOffsetY",
+  "levelOffsetX",
+  "levelOffsetY"
 ]);
 function retiredRewriteBinding(key) {
   return Object.freeze({

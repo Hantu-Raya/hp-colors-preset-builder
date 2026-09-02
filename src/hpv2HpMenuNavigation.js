@@ -214,10 +214,21 @@ const MENU_DEFINITION = Object.freeze([
       {
         name: "PIPS & LEVELS",
         title: "PIPS & LEVELS",
-        description: "Show or hide health pips and player levels. Precise pip counts require the shown config commands.",
+        description: "Control health pips, level visibility, ultimate color, and both indicators' positions.",
         pageId: "health-pips-levels",
         fieldIds: ["hp_level_number_visible", "hp_pip_visible", "hp_precise_pips_enabled"],
-        rewriteKeys: ["pipsVisible", "precisePipsEnabled", "levelsVisible", "ultMode", "ultCustom"]
+        rewriteKeys: [
+          "pipsVisible",
+          "precisePipsEnabled",
+          "levelsVisible",
+          "ultMode",
+          "ultCustom",
+          "accessoryAnchorEnabled",
+          "ultOffsetX",
+          "ultOffsetY",
+          "levelOffsetX",
+          "levelOffsetY"
+        ]
       },
       {
         name: "STAMINA",

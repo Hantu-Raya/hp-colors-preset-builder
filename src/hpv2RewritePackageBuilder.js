@@ -28,6 +28,11 @@ const REWRITE_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   "HPColorsEditorRoot",
   "HPColorsReadoutMaxTeamColorToggle",
   "HPColorsAllyTeamHighToggle",
+  "HPColorsAccessoryAnchorToggle",
+  "HPColorsUltOffsetXEntry",
+  "HPColorsUltOffsetYEntry",
+  "HPColorsLevelOffsetXEntry",
+  "HPColorsLevelOffsetYEntry",
   REWRITE_PRESET_STORE_PANEL_ID
 ]);
 export const REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME = "pak01_dir.vpk";
