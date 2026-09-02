@@ -335,6 +335,18 @@ test("rewrite template is XML-only, strict, and stores the hidden HPCRP1 label",
   await assert.rejects(() => readFile(oldRewriteCompiledPath));
 });
 
+test("HPv2 Rewrite targets select Rewrite catalog/defaults and hydrate profiles", async () => {
+  const island = await readFile(v2IslandPath, "utf8");
+  assert.match(island, /isFullTargetMode\(session\.targetMode\) \|\| rewriteQollockTarget/);
+  assert.match(island, /isRewriteQollockTarget\(session\.targetMode\)/);
+  assert.match(island, /const rewriteBuildTarget = isFullTargetMode\(session\.targetMode\) \|\| rewriteQollockTarget \|\| containsRewriteProfiles;/);
+  assert.match(island, /const activeCatalog = rewriteBuildTarget \? REWRITE_FIELD_CATALOG : HP_FIELD_CATALOG;/);
+  assert.match(island, /const activeDefaultState = rewriteBuildTarget \? rewriteDefaultState : defaultState;/);
+  assert.match(island, /loadPresetBuilderSession\(storage, defaultState, \{[\s\S]*?targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY[\s\S]*?\}\)/);
+  assert.match(island, /commitPresetBuilderTargetMode\(\{[\s\S]*?targetMode: nextMode[\s\S]*?targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY[\s\S]*?\}\)/);
+  assert.match(island, /if \(!rewriteBuildTarget \|\| profiles\.every\(\(profile\) => profile\?\.rewrite\)\) return;\s*dispatchSessionIntent\(\{ type: 'ENSURE_REWRITE_PROFILES' \}\);/);
+});
+
 test("Rewrite QOLLOCK is a separate selectable target with a composite template", async () => {
   const [island, targetMode, workflow, template] = await Promise.all([
     readFile(v2IslandPath, "utf8"),

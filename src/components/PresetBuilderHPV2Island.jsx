@@ -35,6 +35,7 @@ import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitComm
 import {
   TARGET_MODE_CHOICES,
   V2_TARGET_MODE_STORAGE_KEY,
+  isFullTargetMode,
   isRewriteQollockTarget
 } from '../targetModeStore.js';
 import { copyText, downloadText } from '../download.js';
@@ -314,7 +315,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
   const latestProfileSnapshot = useRef(createProfilePersistenceSnapshot(session));
   const containsRewriteProfiles = (session.profiles || []).some((profile) => Boolean(profile?.rewrite));
   const rewriteQollockTarget = isRewriteQollockTarget(session.targetMode);
-  const rewriteBuildTarget = containsRewriteProfiles || rewriteQollockTarget;
+  const rewriteBuildTarget = isFullTargetMode(session.targetMode) || rewriteQollockTarget || containsRewriteProfiles;
   const activeCatalog = rewriteBuildTarget ? REWRITE_FIELD_CATALOG : HP_FIELD_CATALOG;
   const activeDefaultState = rewriteBuildTarget ? rewriteDefaultState : defaultState;
   const groups = useMemo(
