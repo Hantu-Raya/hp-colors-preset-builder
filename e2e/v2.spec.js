@@ -610,19 +610,12 @@ test('v2 preview keeps scenario and mobile collapse in session storage across re
   expect(afterReload.localPreviewKeys).toEqual([]);
 });
 
-test('v2 plain Rewrite target requires explicit preview conversion', async ({ page }) => {
+test('v2 plain Rewrite target loads Rewrite preview without conversion', async ({ page }) => {
   await page.goto('hpv2/');
   await clearPreviewStorage(page);
   await chooseRewriteTarget(page);
 
   const preview = page.locator('.healthbar-preview');
-  await expect(preview.locator('.healthbar-preview-status')).toHaveText('Conversion required');
-  await expect(preview.locator('#healthbar-preview-health')).toHaveCount(0);
-
-  const convert = preview.getByRole('button', { name: 'Convert to Rewrite', exact: true });
-  await expect(convert).toBeVisible();
-  await convert.click();
-
   await expect(preview.locator('#healthbar-preview-health')).toBeVisible();
   await expect(preview.getByRole('button', { name: 'Convert to Rewrite', exact: true })).toHaveCount(0);
 
@@ -710,7 +703,7 @@ test('v2 mirrors the in-game category and page navigation', async ({ page }) => 
   await page.getByRole('option', { name: /OVERVIEW/ }).click();
   await page.getByRole('tab', { name: 'PRESETS' }).click();
   await expect(page.getByRole('button', { name: 'Import game preset codes' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Convert VPK' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Convert VPK' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export profiles' })).toBeVisible();
 });
 
