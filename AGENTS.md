@@ -52,14 +52,14 @@ There are no configured lint, format, typecheck, or coverage commands. Do not in
 
 ### Rewrite v2 XML sync gate
 
-`F:\Users\FoxOS_User\Desktop\Deadlock-mods-collection\hp_colors_rewrite_v2\panorama\layout\hud_escape_menu.xml` is the canonical Rewrite v2 layout. `public/templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml` must be an exact mirror so generated preset VPKs remain compatible with the installed Rewrite v2 runtime.
+`F:\Users\FoxOS_User\Desktop\Deadlock-mods-collection\hp_colors_rewrite_v2\panorama\layout\hud_escape_menu.xml` is the canonical Rewrite v2 layout. `public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml` must be an exact mirror so generated preset VPKs remain compatible with the installed Rewrite v2 runtime.
 
 Whenever the canonical layout changes:
 
-1. Copy it over the web-builder template without modifying the hidden store label.
-2. If script/style includes, required panels, or menu lifecycle attributes changed, update `src/rewritePackageBuilder.js` and `test/rewritePackageBuilder.test.js` in the same commit.
+1. Copy it over the HPv2 web-builder template without modifying the hidden store label.
+2. If script/style includes, required panels, or menu lifecycle attributes changed, update `src/hpv2RewritePackageBuilder.js` and `test/hpv2RewritePackageBuilder.test.js` in the same commit.
 3. Run `npm test` and `npm run build`.
-4. Require `diff -u public/templates/hp_colors_rewrite/panorama/layout/hud_escape_menu.xml F:/Users/FoxOS_User/Desktop/Deadlock-mods-collection/hp_colors_rewrite_v2/panorama/layout/hud_escape_menu.xml` to produce no output.
+4. Require `diff -u public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml F:/Users/FoxOS_User/Desktop/Deadlock-mods-collection/hp_colors_rewrite_v2/panorama/layout/hud_escape_menu.xml` to produce no output.
 
 The legacy QOLLOCK preset template must exactly mirror
 `F:\Users\FoxOS_User\Desktop\Deadlock-mods-collection\hp_colors_rewrite_qollock\panorama\layout\hud_escape_menu.xml`. The HPv2 QOLLOCK template must exactly mirror `F:\Users\FoxOS_User\Desktop\Deadlock-mods-collection\hp_colors_rewrite_v2_qollock\panorama\layout\hud_escape_menu.xml`.
