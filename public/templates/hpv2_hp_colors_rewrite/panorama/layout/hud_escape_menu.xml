@@ -563,7 +563,7 @@
                     <TextEntry id="HPColorsUltCustomHex" class="HPColorsHexEntry" text="#E16161" maxchars="7" />
                   </Panel>
                   <Panel class="HPColorsSettingRow">
-                    <Panel class="HPColorsSettingCopy"><Label text="ANCHOR INDICATORS TO BAR" class="HPColorsSettingTitle" /><Label text="Keep the ultimate icon and level badge on the healthbar's left edge. Their position offsets still apply." class="HPColorsSettingHelp" /></Panel>
+                    <Panel class="HPColorsSettingCopy"><Label text="ANCHOR INDICATORS TO BAR" class="HPColorsSettingTitle" /><Label text="Move the ultimate icon and level badge with the bar's X/Y offsets. Bar scale and their own offsets apply in either mode." class="HPColorsSettingHelp" /></Panel>
                     <Button id="HPColorsAccessoryAnchorToggle" class="HPColorsToggle"><Panel class="HPColorsToggleKnob" /></Button>
                   </Panel>
                   <Panel class="HPColorsSettingRow">
