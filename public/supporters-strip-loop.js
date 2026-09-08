@@ -10,21 +10,18 @@
   if (!cycle) return;
   const thanks = cycle.querySelector(".supporter-strip-thanks");
   if (!thanks) return;
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let animation = null;
   let measuredWidth = 0;
   let measuredViewport = 0;
-  let measuredReducedMotion = null;
 
   function measure() {
     const cycleBox = cycle.getBoundingClientRect();
     const width = cycleBox.width;
     const viewport = track.parentElement.clientWidth;
     if (!width || !viewport) return;
-    if (width === measuredWidth && viewport === measuredViewport && reducedMotion.matches === measuredReducedMotion) return;
+    if (width === measuredWidth && viewport === measuredViewport) return;
     measuredWidth = width;
     measuredViewport = viewport;
-    measuredReducedMotion = reducedMotion.matches;
     const copies = Math.ceil(viewport / width) + 1;
     while (track.children.length < copies) {
       const duplicate = cycle.cloneNode(true);
@@ -38,7 +35,6 @@
     const duration = width / SPEED_PX_PER_SECOND * 1000 + THANKS_HOLD_MS;
     if (animation) animation.cancel();
     animation = null;
-    if (reducedMotion.matches) return;
     const centered = `translate3d(${-holdDistance}px, 0, 0)`;
     animation = track.animate([
       { transform: "translate3d(0, 0, 0)", offset: 0 },
@@ -49,7 +45,6 @@
   }
 
   measure();
-  reducedMotion.addEventListener("change", measure);
   if ("ResizeObserver" in window) {
     const observer = new ResizeObserver(measure);
     observer.observe(cycle);
