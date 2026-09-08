@@ -16,7 +16,7 @@ const MENU_DEFINITION = Object.freeze([
         description: "Adjust the healthbar height and its spacing from the unit information above it.",
         pageId: "overview-layout",
         fieldIds: ["hp_info_health_margin_top", "hp_healthbar_height"],
-        rewriteKeys: ["widthScale", "heightScale", "positionX", "positionY"]
+        rewriteKeys: ["widthScale", "heightScale", "positionX", "positionY", "accessoryAnchorEnabled"]
       },
       {
         name: "PRESETS",
@@ -71,7 +71,9 @@ const MENU_DEFINITION = Object.freeze([
       },
       {
         name: "SHIELDS & ICONS",
+        rewriteName: "SHIELDS",
         title: "SHIELDS & ICONS",
+        rewriteTitle: "SHIELDS",
         description: "Choose colors for enemy bullet shields and ultimate-ready icons. Their visibility stays the same.",
         pageId: "enemy-shields",
         fieldIds: ["hp_bullet_shield_color", "hp_ult_color_enabled", "hp_ult_color_custom"],
@@ -167,14 +169,15 @@ const MENU_DEFINITION = Object.freeze([
           "allyPulseBpm",
           "allyPulseIntensity",
           "allyPulseColorEnabled",
-          "allyPulseColorMode",
-          "allyPulseColor"
+          "allyPulseColor",
+          "allyPulseColorMode"
         ]
       }
     ]
   },
   {
     name: "HEALTH INFO",
+    rewriteName: "HUD DETAILS",
     pages: [
       {
         name: "HP TEXT",
@@ -246,6 +249,97 @@ const MENU_DEFINITION = Object.freeze([
           "enemyStaminaColor"
         ]
       }
+    ],
+    rewritePages: [
+      {
+        name: "HP TEXT",
+        title: "HP TEXT",
+        description: "Choose how enemy HP appears: current and maximum, percentage, or current only.",
+        pageId: "health-text",
+        rewriteKeys: [
+          "readoutVisible",
+          "readoutFormat",
+          "readoutSize",
+          "readoutFont",
+          "readoutColorMode",
+          "readoutMode",
+          "readoutLow",
+          "readoutMid",
+          "readoutHigh",
+          "readoutMaxTeamColor"
+        ]
+      },
+      {
+        name: "TEXT POSITION",
+        title: "TEXT POSITION",
+        description: "Move the HP text without moving the healthbar or unit icon.",
+        pageId: "health-text-position",
+        rewriteKeys: ["readoutOffsetX", "readoutOffsetY"]
+      },
+      {
+        name: "PIPS & LEVEL",
+        title: "HEALTH PIPS & PLAYER LEVEL",
+        description: "Set health pips, level visibility, and level badge position.",
+        pageId: "health-pips-levels",
+        rewriteKeys: [
+          "pipsVisible",
+          "precisePipsEnabled",
+          "levelsVisible",
+          "levelOffsetX",
+          "levelOffsetY"
+        ]
+      },
+      {
+        name: "PICKUPS",
+        title: "TOPBAR PICKUP TIMERS",
+        description: "Show and style gun, movement, spirit, and survival timers beside the topbar ultimate icons.",
+        pageId: "health-pickups",
+        rewriteKeys: [
+          "pickupTimersEnabled",
+          "pickupGunColor",
+          "pickupMovementColor",
+          "pickupSpiritColor",
+          "pickupSurvivalColor",
+          "pickupBackgroundDarkness",
+          "pickupGlyphColor",
+          "pickupSize",
+          "pickupSpacing",
+          "pickupOffsetX",
+          "pickupOffsetY"
+        ]
+      },
+      {
+        name: "ULTIMATE",
+        title: "ULTIMATE ICON & TIMER",
+        description: "Set the base icon color, progress override, position, and cooldown visibility.",
+        pageId: "health-ultimate",
+        rewriteKeys: [
+          "ultMode",
+          "ultCustom",
+          "ultimateTimerColorMode",
+          "ultimateTimerUnavailableColor",
+          "ultimateTimerAvailableColor",
+          "ultimateTimerEnabled",
+          "ultimateTimerSize",
+          "ultimateTimerDarkness",
+          "ultOffsetX",
+          "ultOffsetY"
+        ]
+      },
+      {
+        name: "STAMINA",
+        title: "ENEMY STAMINA",
+        description: "Resize, move, and recolor enemy stamina pips without changing ally or neutral indicators.",
+        pageId: "health-stamina",
+        rewriteKeys: [
+          "staminaWidth",
+          "staminaHeight",
+          "staminaOffsetX",
+          "staminaOffsetY",
+          "enemyStaminaColorEnabled",
+          "enemyStaminaColor"
+        ]
+      }
     ]
   }
 ]);
@@ -256,8 +350,13 @@ export function createHpMenuGroups(catalogOrSchema) {
   const rewrite = catalog?.variant === "rewrite";
   const usedFieldIds = new Set();
   const groups = MENU_DEFINITION.map((category) => {
-    const path = [category.name];
-    const children = category.pages.filter((page) => rewrite || !page.rewriteOnly).map((page) => {
+    const categoryName = rewrite ? category.rewriteName || category.name : category.name;
+    const path = [categoryName];
+    const pages = rewrite ? category.rewritePages || category.pages : category.pages;
+    const children = pages.filter((page) => rewrite || !page.rewriteOnly).map((page) => {
+      const pageName = rewrite ? page.rewriteName || page.name : page.name;
+      const pageTitle = rewrite ? page.rewriteTitle || page.title : page.title;
+      const pageDescription = rewrite ? page.rewriteDescription || page.description : page.description;
       const ids = rewrite
         ? page.rewriteKeys
         : page.fieldIds;
@@ -273,16 +372,16 @@ export function createHpMenuGroups(catalogOrSchema) {
         return { id: resolvedId, ...spec };
       });
       return {
-        name: page.name,
-        title: page.title,
-        description: page.description,
+        name: pageName,
+        title: pageTitle,
+        description: pageDescription,
         pageId: page.pageId,
-        path: [...path, page.name],
+        path: [...path, pageName],
         fields,
         children: []
       };
     });
-    return { name: category.name, path, fields: [], children };
+    return { name: categoryName, path, fields: [], children };
   });
 
   const schemaFieldIds = Object.keys(schema);
@@ -292,4 +391,3 @@ export function createHpMenuGroups(catalogOrSchema) {
   }
   return groups;
 }
-

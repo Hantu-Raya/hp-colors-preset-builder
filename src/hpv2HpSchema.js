@@ -299,8 +299,8 @@ const REWRITE_BINDING_DATA = [
   ["allyHealing", "hp_friend_heal_color", "colorpicker", "Ally healing bar color", "ALLY|HEAL & DAMAGE", "#5FFF80"],
   ["allyDelta", "hp_friend_delta_color", "colorpicker", "Ally damage delta color", "ALLY|HEAL & DAMAGE", "#504C47"],
   ["allyBulletShield", "hp_friend_bullet_shield_color", "colorpicker", "Ally bullet shield color", "ALLY|SHIELDS", "#FFFFFF"],
-  ["ultMode", "hp_ult_color_enabled", "toggle", "Color ult icon", "HEALTH INFO|INDICATORS", "follow", null, ["follow", "custom"]],
-  ["ultCustom", "hp_ult_color_custom", "colorpicker", "Ult icon custom color", "HEALTH INFO|INDICATORS", "#E16161"],
+  ["ultMode", "hp_ult_color_enabled", "toggle", "Color ult icon", "HEALTH INFO|ULTIMATE", "follow", null, ["follow", "custom"]],
+  ["ultCustom", "hp_ult_color_custom", "colorpicker", "Ult icon custom color", "HEALTH INFO|ULTIMATE", "#E16161"],
   ["readoutVisible", "hp_counter_visible", "toggle", "Show HP number", "HEALTH INFO|HP TEXT", true],
   ["readoutFormat", "hp_counter_format", "cycler", "HP number format", "HEALTH INFO|HP TEXT", "hp", null, ["hp", "percent", "current"]],
   ["readoutSize", "hp_counter_size", "slider", "HP number size", "HEALTH INFO|HP TEXT", 145, { min: 72, max: 320, step: 1 }],
@@ -312,9 +312,9 @@ const REWRITE_BINDING_DATA = [
   ["readoutLow", "hp_text_color_low", "colorpicker", "Low HP number color", "HEALTH INFO|HP TEXT", "#E16161"],
   ["readoutMid", "hp_text_color_mid", "colorpicker", "Mid HP number color", "HEALTH INFO|HP TEXT", "#FF7B00"],
   ["readoutHigh", "hp_text_color_high", "colorpicker", "High HP number color", "HEALTH INFO|HP TEXT", "#FFFFFF"],
-  ["pipsVisible", "hp_pip_visible", "toggle", "Show pip HP segments", "HEALTH INFO|INDICATORS", true],
-  ["precisePipsEnabled", "hp_precise_pips_enabled", "toggle", "More Precise HP Pips", "HEALTH INFO|INDICATORS", false],
-  ["levelsVisible", "hp_level_number_visible", "toggle", "Show level number", "HEALTH INFO|INDICATORS", true],
+  ["pipsVisible", "hp_pip_visible", "toggle", "Show pip HP segments", "HEALTH INFO|PIPS & LEVEL", true],
+  ["precisePipsEnabled", "hp_precise_pips_enabled", "toggle", "More Precise HP Pips", "HEALTH INFO|PIPS & LEVEL", false],
+  ["levelsVisible", "hp_level_number_visible", "toggle", "Show level number", "HEALTH INFO|PIPS & LEVEL", true],
   ["lowThreshold", "hp_low_threshold", "slider", "Low HP starts at %", "ENEMY|BAR", 25, { min: 0, max: 99, step: 1 }],
   ["highThreshold", "hp_high_threshold", "slider", "High HP starts at %", "ENEMY|BAR", 65, { min: 1, max: 100, step: 1 }],
   ["enemyPulseEnabled", "hp_pulse_enabled", "toggle", "Pulse enemy bars at low HP", "ENEMY|PULSE", true],
@@ -351,11 +351,28 @@ const REWRITE_BINDING_DATA = [
   ["enemyStaminaColorEnabled", "hpv2_enemy_stamina_color_enabled", "toggle", "Use custom enemy stamina color", "HEALTH INFO|STAMINA", false],
   ["enemyStaminaColor", "hpv2_enemy_stamina_color", "colorpicker", "Enemy stamina color", "HEALTH INFO|STAMINA", "#FD4949"],
   ["allyPulseColorMode", "hpv2_friend_pulse_color_mode", "cycler", "Ally pulse color behavior", "ALLY|PULSE", "fixed", null, ["fixed", "gradient"]],
-  ["accessoryAnchorEnabled", "hpv2_accessory_anchor_enabled", "toggle", "Anchor indicators to healthbar", "HEALTH INFO|INDICATORS", true],
-  ["ultOffsetX", "hpv2_ult_offset_x", "slider", "Ultimate horizontal position", "HEALTH INFO|INDICATORS", 0, { min: -300, max: 300, step: 1 }],
-  ["ultOffsetY", "hpv2_ult_offset_y", "slider", "Ultimate vertical position", "HEALTH INFO|INDICATORS", 0, { min: -200, max: 200, step: 1 }],
-  ["levelOffsetX", "hpv2_level_offset_x", "slider", "Level horizontal position", "HEALTH INFO|INDICATORS", 0, { min: -300, max: 300, step: 1 }],
-  ["levelOffsetY", "hpv2_level_offset_y", "slider", "Level vertical position", "HEALTH INFO|INDICATORS", 0, { min: -200, max: 200, step: 1 }]
+  ["accessoryAnchorEnabled", "hpv2_accessory_anchor_enabled", "toggle", "Anchor indicators to healthbar", "OVERVIEW|LAYOUT", true],
+  ["ultOffsetX", "hpv2_ult_offset_x", "slider", "Ultimate horizontal position", "HEALTH INFO|ULTIMATE", 0, { min: -300, max: 300, step: 1 }],
+  ["ultOffsetY", "hpv2_ult_offset_y", "slider", "Ultimate vertical position", "HEALTH INFO|ULTIMATE", 0, { min: -200, max: 200, step: 1 }],
+  ["levelOffsetX", "hpv2_level_offset_x", "slider", "Level horizontal position", "HEALTH INFO|PIPS & LEVEL", 0, { min: -300, max: 300, step: 1 }],
+  ["levelOffsetY", "hpv2_level_offset_y", "slider", "Level vertical position", "HEALTH INFO|PIPS & LEVEL", 0, { min: -200, max: 200, step: 1 }],
+  ["pickupTimersEnabled", "hpv2_pickup_timers_enabled", "toggle", "Show pickup timers", "HEALTH INFO|PICKUPS", true],
+  ["pickupGunColor", "hpv2_pickup_gun_color", "colorpicker", "Pickup gun color", "HEALTH INFO|PICKUPS", "#EC9719"],
+  ["pickupMovementColor", "hpv2_pickup_movement_color", "colorpicker", "Pickup movement color", "HEALTH INFO|PICKUPS", "#6E65EA"],
+  ["pickupSpiritColor", "hpv2_pickup_spirit_color", "colorpicker", "Pickup spirit color", "HEALTH INFO|PICKUPS", "#CE90FF"],
+  ["pickupSurvivalColor", "hpv2_pickup_survival_color", "colorpicker", "Pickup survival color", "HEALTH INFO|PICKUPS", "#7BBA1D"],
+  ["pickupBackgroundDarkness", "hpv2_pickup_background_darkness", "slider", "Pickup background darkness", "HEALTH INFO|PICKUPS", 70, { min: 0, max: 100, step: 1 }],
+  ["pickupGlyphColor", "hpv2_pickup_glyph_color", "colorpicker", "Pickup glyph color", "HEALTH INFO|PICKUPS", "#10130D"],
+  ["pickupSize", "hpv2_pickup_size", "slider", "Pickup size", "HEALTH INFO|PICKUPS", 22, { min: 12, max: 64, step: 1 }],
+  ["pickupSpacing", "hpv2_pickup_spacing", "slider", "Pickup spacing", "HEALTH INFO|PICKUPS", 1, { min: 0, max: 16, step: 1 }],
+  ["pickupOffsetX", "hpv2_pickup_offset_x", "slider", "Pickup horizontal offset", "HEALTH INFO|PICKUPS", 0, { min: -200, max: 200, step: 1 }],
+  ["pickupOffsetY", "hpv2_pickup_offset_y", "slider", "Pickup vertical offset", "HEALTH INFO|PICKUPS", 0, { min: -100, max: 100, step: 1 }],
+  ["ultimateTimerEnabled", "hpv2_ultimate_timer_enabled", "toggle", "Show ultimate timer", "HEALTH INFO|ULTIMATE", true],
+  ["ultimateTimerSize", "hpv2_ultimate_timer_size", "slider", "Ultimate timer size", "HEALTH INFO|ULTIMATE", 100, { min: 25, max: 200, step: 5 }],
+  ["ultimateTimerDarkness", "hpv2_ultimate_timer_darkness", "slider", "Ultimate timer darkness", "HEALTH INFO|ULTIMATE", 99, { min: 0, max: 100, step: 1 }],
+  ["ultimateTimerColorMode", "hpv2_ultimate_timer_color_mode", "cycler", "Ultimate timer color mode", "HEALTH INFO|ULTIMATE", "follow", null, ["follow", "fixed", "gradient"]],
+  ["ultimateTimerUnavailableColor", "hpv2_ultimate_timer_unavailable_color", "colorpicker", "Ultimate progress unavailable color", "HEALTH INFO|ULTIMATE", "#E16161"],
+  ["ultimateTimerAvailableColor", "hpv2_ultimate_timer_available_color", "colorpicker", "Ultimate progress ready color", "HEALTH INFO|ULTIMATE", "#7BBA1D"],
 ];
 
 function freezeRewriteBinding(data) {
@@ -470,26 +487,6 @@ const REWRITE_CODEC_KEYS = Object.freeze([
   "readoutMaxTeamColor",
   "allyTeamHigh"
 ]);
-// Preserve runtime timer settings even when the web editor has no control for them.
-const HPV2_WIRE_ONLY_BINDINGS = [
-  ["pickupTimersEnabled", null, "toggle", "", "", true],
-  ["pickupGunColor", null, "colorpicker", "", "", "#EC9719"],
-  ["pickupMovementColor", null, "colorpicker", "", "", "#6E65EA"],
-  ["pickupSpiritColor", null, "colorpicker", "", "", "#CE90FF"],
-  ["pickupSurvivalColor", null, "colorpicker", "", "", "#7BBA1D"],
-  ["pickupBackgroundDarkness", null, "slider", "", "", 70, { min: 0, max: 100 }],
-  ["pickupGlyphColor", null, "colorpicker", "", "", "#10130D"],
-  ["pickupSize", null, "slider", "", "", 22, { min: 12, max: 64 }],
-  ["pickupSpacing", null, "slider", "", "", 1, { min: 0, max: 16 }],
-  ["pickupOffsetX", null, "slider", "", "", 0, { min: -200, max: 200 }],
-  ["pickupOffsetY", null, "slider", "", "", 0, { min: -100, max: 100 }],
-  ["ultimateTimerEnabled", null, "toggle", "", "", true],
-  ["ultimateTimerSize", null, "slider", "", "", 100, { min: 25, max: 200 }],
-  ["ultimateTimerDarkness", null, "slider", "", "", 99, { min: 0, max: 100 }],
-  ["ultimateTimerColorMode", null, "cycler", "", "", "follow", null, ["follow", "fixed", "gradient"]],
-  ["ultimateTimerUnavailableColor", null, "colorpicker", "", "", "#E16161"],
-  ["ultimateTimerAvailableColor", null, "colorpicker", "", "", "#7BBA1D"]
-].map(freezeRewriteBinding);
 const HPV2_EXTENSION_KEYS = Object.freeze([
   "staminaWidth",
   "staminaHeight",
@@ -503,7 +500,23 @@ const HPV2_EXTENSION_KEYS = Object.freeze([
   "ultOffsetY",
   "levelOffsetX",
   "levelOffsetY",
-  ...HPV2_WIRE_ONLY_BINDINGS.map((binding) => binding.canonicalKey)
+  "pickupTimersEnabled",
+  "pickupGunColor",
+  "pickupMovementColor",
+  "pickupSpiritColor",
+  "pickupSurvivalColor",
+  "pickupBackgroundDarkness",
+  "pickupGlyphColor",
+  "pickupSize",
+  "pickupSpacing",
+  "pickupOffsetX",
+  "pickupOffsetY",
+  "ultimateTimerEnabled",
+  "ultimateTimerSize",
+  "ultimateTimerDarkness",
+  "ultimateTimerColorMode",
+  "ultimateTimerUnavailableColor",
+  "ultimateTimerAvailableColor"
 ]);
 function retiredRewriteBinding(key) {
   return Object.freeze({
@@ -517,7 +530,7 @@ const RETIRED_REWRITE_CODEC_BINDINGS = [
   retiredRewriteBinding("excludeGhouls")
 ];
 const REWRITE_BINDING_BY_KEY = new Map(
-  [...REWRITE_FIELD_BINDINGS, ...RETIRED_REWRITE_CODEC_BINDINGS, ...HPV2_WIRE_ONLY_BINDINGS]
+  [...REWRITE_FIELD_BINDINGS, ...RETIRED_REWRITE_CODEC_BINDINGS]
     .map((binding) => [binding.canonicalKey, binding])
 );
 const REWRITE_WIRE_KEYS = [...REWRITE_CODEC_KEYS, ...HPV2_EXTENSION_KEYS];

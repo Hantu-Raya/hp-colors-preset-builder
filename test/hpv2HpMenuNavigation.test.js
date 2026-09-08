@@ -39,10 +39,20 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
   ];
   const retiredCanonicalKeys = ["excludeBuildings", "excludeBosses", "excludeGhouls"];
 
-  assert.equal(fields.length, 81);
-  assert.equal(new Set(fields.map((field) => field.id)).size, 81);
-  assert.equal(new Set(canonicalKeys).size, 81);
-  assert.deepEqual(canonicalKeys.sort(), REWRITE_FIELD_CATALOG.bindings.map((binding) => binding.canonicalKey).sort());
+  assert.equal(fields.length, Object.keys(REWRITE_FIELD_CATALOG.schema).length);
+  assert.equal(new Set(fields.map((field) => field.id)).size, fields.length);
+  assert.equal(new Set(canonicalKeys).size, fields.length);
+  assert.deepEqual(
+    canonicalKeys.sort(),
+    Object.values(REWRITE_FIELD_CATALOG.schema).map((field) => field.canonicalKey).sort()
+  );
+  assert.deepEqual(groups.map((group) => group.name), ["OVERVIEW", "ENEMY", "ALLY", "HUD DETAILS"]);
+  assert.deepEqual(groups.map((group) => group.children.map((page) => page.name)), [
+    ["MASTER", "LAYOUT", "PRESETS"],
+    ["BAR", "HEAL & DAMAGE", "SHIELDS", "PULSE", "KILL MARKER"],
+    ["BAR", "HEAL & DAMAGE", "SHIELDS", "PULSE"],
+    ["HP TEXT", "TEXT POSITION", "PIPS & LEVEL", "PICKUPS", "ULTIMATE", "STAMINA"]
+  ]);
   assert.equal(fields.some((field) => forbiddenIds.includes(field.id)), false);
   assert.equal(fields.some((field) => field.canonicalKey === "precisePipsEnabled" && field.conditionEligible === false), true);
   const overviewLayout = groups
@@ -50,6 +60,10 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
     .children.find((page) => page.pageId === "overview-layout");
   const widthScale = overviewLayout.fields.find((field) => field.canonicalKey === "widthScale");
   assert.deepEqual(widthScale.bounds, { min: 60, max: 230, step: 1 });
+  assert.deepEqual(
+    overviewLayout.fields.map((field) => field.canonicalKey),
+    ["widthScale", "heightScale", "positionX", "positionY", "accessoryAnchorEnabled"]
+  );
   const enemyBar = groups
     .find((group) => group.name === "ENEMY")
     .children.find((page) => page.pageId === "enemy-bar");
@@ -57,7 +71,7 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
     .find((group) => group.name === "ALLY")
     .children.find((page) => page.pageId === "ally-bar");
   const healthText = groups
-    .find((group) => group.name === "HEALTH INFO")
+    .find((group) => group.name === "HUD DETAILS")
     .children.find((page) => page.pageId === "health-text");
   assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "lowThreshold"), true);
   assert.equal(enemyBar.fields.some((field) => field.canonicalKey === "highThreshold"), true);
@@ -69,31 +83,86 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
   assert.equal(healthText.fields.some((field) => field.canonicalKey === "highThreshold"), false);
   assert.equal(healthText.fields.some((field) => field.canonicalKey === "readoutMaxTeamColor"), true);
   const indicators = groups
-    .find((group) => group.name === "HEALTH INFO")
+    .find((group) => group.name === "HUD DETAILS")
     .children.find((page) => page.pageId === "health-pips-levels");
   assert.deepEqual(indicators.fields.map((field) => field.canonicalKey), [
     "pipsVisible",
     "precisePipsEnabled",
     "levelsVisible",
-    "ultMode",
-    "ultCustom",
-    "accessoryAnchorEnabled",
-    "ultOffsetX",
-    "ultOffsetY",
     "levelOffsetX",
     "levelOffsetY"
   ]);
+  const pickups = groups
+    .find((group) => group.name === "HUD DETAILS")
+    .children.find((page) => page.pageId === "health-pickups");
+  assert.deepEqual(pickups.fields.map((field) => field.canonicalKey), [
+    "pickupTimersEnabled",
+    "pickupGunColor",
+    "pickupMovementColor",
+    "pickupSpiritColor",
+    "pickupSurvivalColor",
+    "pickupBackgroundDarkness",
+    "pickupGlyphColor",
+    "pickupSize",
+    "pickupSpacing",
+    "pickupOffsetX",
+    "pickupOffsetY"
+  ]);
+  assert.deepEqual(pickups.fields.map((field) => field.id), [
+    "hpv2_pickup_timers_enabled",
+    "hpv2_pickup_gun_color",
+    "hpv2_pickup_movement_color",
+    "hpv2_pickup_spirit_color",
+    "hpv2_pickup_survival_color",
+    "hpv2_pickup_background_darkness",
+    "hpv2_pickup_glyph_color",
+    "hpv2_pickup_size",
+    "hpv2_pickup_spacing",
+    "hpv2_pickup_offset_x",
+    "hpv2_pickup_offset_y"
+  ]);
+  const ultimate = groups
+    .find((group) => group.name === "HUD DETAILS")
+    .children.find((page) => page.pageId === "health-ultimate");
+  assert.deepEqual(ultimate.fields.map((field) => field.canonicalKey), [
+    "ultMode",
+    "ultCustom",
+    "ultimateTimerColorMode",
+    "ultimateTimerUnavailableColor",
+    "ultimateTimerAvailableColor",
+    "ultimateTimerEnabled",
+    "ultimateTimerSize",
+    "ultimateTimerDarkness",
+    "ultOffsetX",
+    "ultOffsetY"
+  ]);
+  assert.deepEqual(
+    ultimate.fields
+      .filter((field) => field.canonicalKey.startsWith("ultimateTimer"))
+      .map((field) => field.id),
+    [
+      "hpv2_ultimate_timer_color_mode",
+      "hpv2_ultimate_timer_unavailable_color",
+      "hpv2_ultimate_timer_available_color",
+      "hpv2_ultimate_timer_enabled",
+      "hpv2_ultimate_timer_size",
+      "hpv2_ultimate_timer_darkness"
+    ]
+  );
   const allyPulse = groups
     .find((group) => group.name === "ALLY")
     .children.find((page) => page.pageId === "ally-pulse");
-  assert.deepEqual(
-    allyPulse.fields
-      .filter((field) => field.canonicalKey.includes("PulseColor"))
-      .map((field) => field.canonicalKey),
-    ["allyPulseColorEnabled", "allyPulseColorMode", "allyPulseColor"]
-  );
+  assert.deepEqual(allyPulse.fields.map((field) => field.canonicalKey), [
+    "allyPulseEnabled",
+    "allyPulseThreshold",
+    "allyPulseBpm",
+    "allyPulseIntensity",
+    "allyPulseColorEnabled",
+    "allyPulseColor",
+    "allyPulseColorMode"
+  ]);
   const stamina = groups
-    .find((group) => group.name === "HEALTH INFO")
+    .find((group) => group.name === "HUD DETAILS")
     .children.find((page) => page.pageId === "health-stamina");
   assert.deepEqual(stamina.fields.map((field) => field.canonicalKey), [
     "staminaWidth",

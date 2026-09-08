@@ -586,13 +586,18 @@ test('v2 Rewrite target adds presets from the topbar and Presets tab', async ({ 
   await expect(page.locator('#presetName')).toHaveValue('Profile 3');
 
   await page.keyboard.press('Escape');
-  await page.getByRole('option', { name: /HEALTH INFO/ }).click();
+  await page.getByRole('option', { name: /HUD DETAILS/ }).click();
   await page.getByRole('tab', { name: 'STAMINA', exact: true }).click();
   await expect(page.locator('#hpv2_enemy_stamina_color-label')).toHaveCount(0);
   await page.getByRole('checkbox', {
     name: 'Use custom enemy stamina color'
   }).click();
   await expect(page.locator('#hpv2_enemy_stamina_color-label')).toBeVisible();
+
+  await page.getByRole('tab', { name: 'ULTIMATE', exact: true }).click();
+  await page.getByRole('radiogroup', {
+    name: REWRITE_FIELD_CATALOG.schema.hpv2_ultimate_timer_color_mode.label
+  }).getByRole('radio', { name: 'Fixed', exact: true }).click();
 
   await page.getByRole('option', { name: /ALLY/ }).click();
   await page.getByRole('tab', { name: 'PULSE', exact: true }).click();
@@ -642,8 +647,6 @@ test('v2 mirrors the in-game category and page navigation', async ({ page }) => 
   await expect(sections).toHaveCount(4);
 
   await page.getByRole('option', { name: /ENEMY/ }).click();
-  const enemyTabs = page.getByRole('tablist', { name: 'ENEMY pages' }).getByRole('tab');
-  await expect(enemyTabs).toHaveText(['BAR', 'HEAL & DAMAGE', 'SHIELDS & ICONS', 'PULSE', 'KILL MARKER']);
   await page.getByRole('tab', { name: 'KILL MARKER' }).click();
   await expect(page.getByRole('heading', { name: 'ENEMY KILL MARKER' })).toBeVisible();
 

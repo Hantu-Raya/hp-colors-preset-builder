@@ -385,24 +385,6 @@ test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => 
     assert.equal(pairs.some(([index]) => index === retiredIndex), false);
   assert.equal(pairs.some(([index]) => index === 68), true);
   assert.equal(pairs.some(([index]) => index === 69), true);
-  assert.deepEqual(payload(code, 'HPCRP1').records[0].hpv2, {
-    v: 1,
-    values: [
-      [0, 40],
-      [1, 16],
-      [2, -300],
-      [3, -200],
-      [4, true],
-      [5, '#123456'],
-      [6, 'gradient'],
-      [7, false],
-      [8, -300],
-      [9, -200],
-      [10, -300],
-      [11, -200]
-    ],
-    conditions: {}
-  });
 });
 
 test('HPv2-only settings round-trip through presets and HPCR2', () => {
@@ -502,7 +484,7 @@ test('HPv2-only settings round-trip through presets and HPCR2', () => {
   );
 });
 
-test('settings and preset transfers retain every extension, including fields without web controls', () => {
+test('settings and preset transfers retain every extension and condition', () => {
   const values = HPV2_EXTENSION_FIELD_BINDINGS.map((binding) => {
     if (binding.canonicalType === 'boolean') return !binding.defaultValue;
     if (binding.canonicalType === 'color') return '#123456';
@@ -526,4 +508,78 @@ test('settings and preset transfers retain every extension, including fields wit
   const malformed = payload(code, 'HPCR2');
   malformed.hpv2.values.push([HPV2_EXTENSION_FIELD_BINDINGS.length, 1]);
   assert.throws(() => decodeRewriteTransfer(`HPCR2${JSON.stringify(malformed)}`), /INVALID HPV2 PRESET VALUE PAIR/);
+});
+test('editing exposed timer controls exports HPCR2 and HPCRP1 values and conditions', () => {
+  const imported = decodeRewriteTransfer(`HPCR2${JSON.stringify({
+    v: [],
+    c: {},
+    hpv2: {
+      v: 1,
+      values: [
+        [12, false],
+        [19, 40],
+        [23, false],
+        [24, 125],
+        [26, 'fixed'],
+        [27, '#123456'],
+        [28, '#654321']
+      ],
+      conditions: {
+        ultimateTimerSize: { slot: 2, minTier: 1, value: 125 },
+        ultimateTimerColorMode: { slot: 1, minTier: 2, value: 'fixed' }
+      }
+    }
+  })}`).profiles[0];
+  const editedValues = {
+    ...imported.rewrite.webValues,
+    hpv2_pickup_size: 48,
+    hpv2_ultimate_timer_size: 150,
+    hpv2_ultimate_timer_color_mode: 2,
+    hpv2_ultimate_timer_available_color: '#ABCDEF'
+  };
+  const editedOverrides = {
+    ...imported.rewrite.webOverrides,
+    hpv2_ultimate_timer_size: { slot: 2, minTier: 1, value: 150 },
+    hpv2_ultimate_timer_color_mode: { slot: 1, minTier: 2, value: 2 }
+  };
+  const profile = {
+    ...imported,
+    rewrite: createRewriteProfileMetadata({
+      ...imported,
+      values: editedValues,
+      overrides: editedOverrides
+    }, { valuesAreRewrite: true })
+  };
+
+  for (const [prefix, createCode] of [
+    ['HPCR2', createRewriteSettingsCode],
+    ['HPCRP1', createRewritePresetCode]
+  ]) {
+    const code = createCode(profile);
+    const exported = payload(code, prefix);
+    const extension = prefix === 'HPCR2' ? exported.hpv2 : exported.records[0].hpv2;
+    assert.ok(extension.values.some(([index, value]) => index === 12 && value === false));
+    assert.ok(extension.values.some(([index, value]) => index === 19 && value === 48));
+    assert.ok(extension.values.some(([index, value]) => index === 23 && value === false));
+    assert.ok(extension.values.some(([index, value]) => index === 24 && value === 150));
+    assert.ok(extension.values.some(([index, value]) => index === 28 && value === '#ABCDEF'));
+    assert.deepEqual(extension.conditions, {
+      ultimateTimerSize: { slot: 2, minTier: 1, value: 150 },
+      ultimateTimerColorMode: { slot: 1, minTier: 2, value: 'gradient' }
+    });
+    const restored = decodeRewriteTransfer(code).profiles[0];
+    assert.equal(restored.rewrite.webValues.hpv2_pickup_size, 48);
+    assert.equal(restored.rewrite.webValues.hpv2_ultimate_timer_size, 150);
+    assert.equal(restored.rewrite.webValues.hpv2_ultimate_timer_color_mode, 2);
+    assert.deepEqual(restored.rewrite.webOverrides.hpv2_ultimate_timer_size, {
+      slot: 2,
+      minTier: 1,
+      value: 150
+    });
+    assert.deepEqual(restored.rewrite.webOverrides.hpv2_ultimate_timer_color_mode, {
+      slot: 1,
+      minTier: 2,
+      value: 2
+    });
+  }
 });
