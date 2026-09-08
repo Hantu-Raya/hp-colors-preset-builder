@@ -145,15 +145,14 @@ test('supporter strip holds thanks centered for three seconds and loops without 
   }
 });
 
-test('supporter strip respects reduced motion and retains the full accessible donor list', async ({ page }) => {
+test('supporter strip scrolls under reduced motion and retains the full accessible donor list', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('supporters-strip/');
   const strip = page.getByRole('group');
   await expect(strip).toHaveAttribute('aria-label', `${STATIC_SUPPORTER_LABEL}. Thank you for supporting.`);
   const donor = strip.locator('.supporter-strip-item').first();
   const before = await donor.boundingBox();
-  await page.waitForTimeout(150);
-  expect(await donor.boundingBox()).toEqual(before);
+  await expect.poll(async () => (await donor.boundingBox()).x).toBeLessThan(before.x - 2);
 });
 
 test('v2 keeps the wide title row ordered and renders the ranked supporter leaderboard', async ({ page }) => {
