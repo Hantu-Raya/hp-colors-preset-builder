@@ -52,18 +52,13 @@ There are no configured lint, format, typecheck, or coverage commands. Do not in
 
 ### Rewrite v2 XML sync gate
 
-`F:\Users\FoxOS_User\Desktop\Deadlock-mods-collection\hp_colors_rewrite_v2\panorama\layout\hud_escape_menu.xml` is the canonical Rewrite v2 layout. `public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml` must be an exact mirror so generated preset VPKs remain compatible with the installed Rewrite v2 runtime.
+`public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml` is the shared HPv2 layout snapshot. Normal uses it directly; ShowRanks adds its script and lifecycle hooks during packaging. `scripts/sync-hpv2-templates.js` applies only QOLLOCK additions to that same snapshot and generates `public/templates/hpv2_hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml`. Edit shared panels in the canonical snapshot, never in the generated QOLLOCK file.
 
-Whenever the canonical layout changes:
+The upstream source remains `F:\Users\FoxOS_User\Desktop\Deadlock-mods-collection\hp_colors_rewrite_v2\panorama\layout\hud_escape_menu.xml`. Import it with `npm run sync:hpv2 -- --source "<path-to-hud_escape_menu.xml>"`. Set `HPV2_LAYOUT_SOURCE` to that file to import automatically on each dev, test, or build invocation. Without it, those commands regenerate QOLLOCK from the checked-in snapshot so CI needs no external checkout.
 
-1. Copy it over the HPv2 web-builder template without modifying the hidden store label.
-2. If script/style includes, required panels, or menu lifecycle attributes changed, update `src/hpv2RewritePackageBuilder.js` and `test/hpv2RewritePackageBuilder.test.js` in the same commit.
-3. Run `npm test` and `npm run build`.
-4. Require `diff -u public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml F:/Users/FoxOS_User/Desktop/Deadlock-mods-collection/hp_colors_rewrite_v2/panorama/layout/hud_escape_menu.xml` to produce no output.
+When includes, required panels, or lifecycle attributes change, update the matching contracts in `src/hpv2RewritePackageBuilder.js` and focused package tests. Missing or duplicate QOLLOCK insertion targets fail generation. Run `npm test`, `npm run build`, and `npm run verify:hpv2-templates`; commit the snapshot and regenerated QOLLOCK output together.
 
-The legacy QOLLOCK preset template must exactly mirror
-`F:\Users\FoxOS_User\Desktop\Deadlock-mods-collection\hp_colors_rewrite_qollock\panorama\layout\hud_escape_menu.xml`. The HPv2 QOLLOCK template must exactly mirror `F:\Users\FoxOS_User\Desktop\Deadlock-mods-collection\hp_colors_rewrite_v2_qollock\panorama\layout\hud_escape_menu.xml`.
-Sync the matching template after every compatibility refresh so generated `pak01` presets preserve that runtime's QOLLOCK menu hierarchy, settings, and includes.
+Legacy V2 templates are separate and unchanged by HPv2 synchronization. The legacy QOLLOCK template still mirrors `F:\Users\FoxOS_User\Desktop\Deadlock-mods-collection\hp_colors_rewrite_qollock\panorama\layout\hud_escape_menu.xml`. QOLLOCK package updates require reviewing the HPv2 generator's additions against the matching runtime compatibility layout; do not copy a full compatibility layout over the generated file.
 
 ## Code Conventions & Common Patterns
 

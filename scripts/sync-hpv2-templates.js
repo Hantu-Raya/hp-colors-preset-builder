@@ -1,0 +1,106 @@
+import { readFile, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import {
+  REWRITE_PRESET_TEMPLATE_PATH,
+  REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH,
+  REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES,
+  REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES,
+  validateRewritePresetTemplate,
+  validateRewriteQollockPresetTemplate
+} from "../src/hpv2RewritePackageBuilder.js";
+
+const ROOT = new URL("../", import.meta.url);
+const CANCEL = "if ($.HPColorsMenuCancel &amp;&amp; $.HPColorsMenuCancel()) {} else if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { $.DispatchEvent(&apos;CitadelResumePlaying&apos;, $.GetContextPanel()); }";
+const SETTINGS = `<Panel id="SettingsWindow" hittest="true" onactivate="">
+  <Panel id="SettingsHeader">
+    <Label id="SettingsTitle" text="QOL LOCK" />
+    <Button id="CloseBtn" onactivate="if ($.ForceCloseModSettings) { $.ForceCloseModSettings(); } else { $.DispatchEvent(&apos;CitadelResumePlaying&apos;, $.GetContextPanel()); }">
+      <Label text="X" />
+    </Button>
+  </Panel>
+  <Panel id="SettingsBody" hittest="true">
+    <Panel id="SettingsList" hittest="true" onload="if ($.BuildUI) { $.BuildUI(); }" />
+  </Panel>
+</Panel>`;
+const NAVIGATION = `<Button id="newgame" class="nav_menu_item primary" onactivate="CitadelShowPlayPage()">
+  <Label text="#menu_play" class="menuButtonLabel" />
+</Button>
+<Button id="watchgame" class="nav_menu_item primary" onactivate="CitadelShowWatchPage( true )">
+  <Label text="#menu_watch" class="menuButtonLabel" />
+</Button>
+<Button id="guides" class="nav_menu_item primary" onactivate="CitadelShowTrainingPage()">
+  <Label text="#menu_resources" class="menuButtonLabel" />
+</Button>`;
+const SETTINGS_BUTTON = `<Panel class="SettingsRow">
+  <Button id="ModSettingsBtn" class="nav_menu_item minor" onactivate="if ($.ToggleSettingsWindow) { $.ToggleSettingsWindow(); }">
+    <Label text="QOL LOCK" class="menuButtonLabel" />
+    <Image id="ModSettingsGearIcon" class="smallIcon" src="s2r://panorama/images/icons/icon_gear.vsvg" />
+  </Button>
+</Panel>`;
+
+function replaceOnce(text, pattern, replacement, label) {
+  const matches = [...text.matchAll(pattern)];
+  if (matches.length !== 1) {
+    throw new Error(`HPv2 QOLLOCK ${label}: expected exactly one target, found ${matches.length}`);
+  }
+  return text.replace(pattern, replacement);
+}
+
+export function composeHpv2QollockTemplate(canonicalXml) {
+  const inspected = validateRewritePresetTemplate(canonicalXml);
+  const newline = canonicalXml.includes("\r\n") ? "\r\n" : "\n";
+  const fragment = (text) => text.replaceAll("\n", newline);
+  const includes = (paths) => paths.map((src) => `    <include src="${src}" />`).join(newline);
+  let xml = canonicalXml;
+  for (const id of ["SettingsWindow", "ModSettingsBtn", "newgame", "watchgame", "guides"]) {
+    if (new RegExp(`\\bid=["']${id}["']`).test(xml)) {
+      throw new Error(`HPv2 QOLLOCK canonical layout already contains ${id}`);
+    }
+  }
+  const extraStyles = REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES.filter((src) => !inspected.styleIncludes.includes(src));
+  const extraScripts = REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES.filter((src) => !inspected.scriptIncludes.includes(src));
+  const bridge = extraScripts.pop();
+  xml = replaceOnce(xml, /[ \t]*<include src="s2r:\/\/panorama\/styles\/hp_colors_v2_menu\.vcss_c"\s*\/>/g,
+    (tag) => `${includes(extraStyles)}${newline}${tag}`, "style include");
+  xml = replaceOnce(xml, /<scripts>/g, (tag) => `${tag}${newline}${includes(extraScripts)}`, "scripts");
+  xml = replaceOnce(xml, /[ \t]*<\/scripts>/g, (tag) => `${includes([bridge])}${newline}${tag}`, "bridge include");
+  xml = replaceOnce(xml, /<CitadelHudEscapeMenu\b[^>]*>/g,
+    (tag) => replaceOnce(tag, /\boncancel="[^"]*"/g, () => `oncancel="${CANCEL}"`, "cancel handler"), "menu");
+  xml = replaceOnce(xml, /<Panel\b[^>]*\bid="EscapeBackground"[^>]*\/>/g,
+    (tag) => replaceOnce(tag, /\bonactivate="[^"]*"/g, () => `onactivate="${CANCEL}"`, "background handler"), "background");
+  xml = replaceOnce(xml, /<Panel\b[^>]*\bid="LeftStripeBlur"[^>]*\/>/g,
+    (tag) => `${fragment(SETTINGS)}${newline}${tag}`, "settings window anchor");
+  xml = replaceOnce(xml, /<Button\b[^>]*\bid="changehero"[^>]*>/g,
+    (tag) => `${fragment(NAVIGATION)}${newline}${tag}`, "navigation anchor");
+  xml = replaceOnce(xml, /<Button\b[^>]*\bid="HPColorsMenuButton"[^>]*>[\s\S]*?<\/Button>/g,
+    (button) => `${fragment(SETTINGS_BUTTON)}${newline}<Panel class="SettingsRow">${newline}${button}${newline}</Panel>`, "HP menu button");
+  xml = replaceOnce(xml, /<CitadelBindingButton\b[^>]*\bid="EscapeButton"[^>]*\/>/g,
+    (button) => `<Button id="EscapeButton" onactivate="CitadelResumePlaying()">${newline}${replaceOnce(button, /\bonactivate="[^"]*"/g, () => 'onactivate="CitadelResumePlaying()"', "escape handler")}${newline}</Button>`, "escape button");
+  validateRewriteQollockPresetTemplate(xml);
+  return `<!-- Generated by scripts/sync-hpv2-templates.js; edit the canonical HPv2 XML and QOLLOCK additions, not this file. -->${newline}${xml}`;
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const check = args[0] === "--check";
+  const source = args[0] === "--source" ? args[1] : process.env.HPV2_LAYOUT_SOURCE;
+  if (args.length && !(check && args.length === 1) && !(args[0] === "--source" && args.length === 2 && source)) {
+    throw new Error("Usage: node scripts/sync-hpv2-templates.js [--check | --source path/to/hud_escape_menu.xml]");
+  }
+  const basePath = new URL(`public/${REWRITE_PRESET_TEMPLATE_PATH}`, ROOT);
+  const qollockPath = new URL(`public/${REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH}`, ROOT);
+  const canonicalXml = await readFile(source || basePath, "utf8");
+  const qollockXml = composeHpv2QollockTemplate(canonicalXml);
+  for (const [path, expected] of [[basePath, canonicalXml], [qollockPath, qollockXml]]) {
+    const actual = await readFile(path, "utf8");
+    if (actual === expected) continue;
+    if (check) throw new Error(`Stale HPv2 template: ${path.pathname}. Run npm run sync:hpv2.`);
+    await writeFile(path, expected, "utf8");
+  }
+  console.log(check ? "HPv2 templates are in sync" : "HPv2 templates synchronized");
+}
+
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
+  await main();
+}

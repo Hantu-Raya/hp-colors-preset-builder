@@ -5,6 +5,11 @@
   "author": "Hantu-Raya",
   "license": "Apache-2.0",
   "scripts": {
+    "predev": "npm run sync:hpv2",
+    "prebuild": "npm run sync:hpv2",
+    "pretest": "npm run sync:hpv2",
+    "sync:hpv2": "node scripts/sync-hpv2-templates.js",
+    "verify:hpv2-templates": "node scripts/sync-hpv2-templates.js --check",
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",

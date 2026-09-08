@@ -470,6 +470,26 @@ const REWRITE_CODEC_KEYS = Object.freeze([
   "readoutMaxTeamColor",
   "allyTeamHigh"
 ]);
+// Preserve runtime timer settings even when the web editor has no control for them.
+const HPV2_WIRE_ONLY_BINDINGS = [
+  ["pickupTimersEnabled", null, "toggle", "", "", true],
+  ["pickupGunColor", null, "colorpicker", "", "", "#EC9719"],
+  ["pickupMovementColor", null, "colorpicker", "", "", "#6E65EA"],
+  ["pickupSpiritColor", null, "colorpicker", "", "", "#CE90FF"],
+  ["pickupSurvivalColor", null, "colorpicker", "", "", "#7BBA1D"],
+  ["pickupBackgroundDarkness", null, "slider", "", "", 70, { min: 0, max: 100 }],
+  ["pickupGlyphColor", null, "colorpicker", "", "", "#10130D"],
+  ["pickupSize", null, "slider", "", "", 22, { min: 12, max: 64 }],
+  ["pickupSpacing", null, "slider", "", "", 1, { min: 0, max: 16 }],
+  ["pickupOffsetX", null, "slider", "", "", 0, { min: -200, max: 200 }],
+  ["pickupOffsetY", null, "slider", "", "", 0, { min: -100, max: 100 }],
+  ["ultimateTimerEnabled", null, "toggle", "", "", true],
+  ["ultimateTimerSize", null, "slider", "", "", 100, { min: 25, max: 200 }],
+  ["ultimateTimerDarkness", null, "slider", "", "", 99, { min: 0, max: 100 }],
+  ["ultimateTimerColorMode", null, "cycler", "", "", "follow", null, ["follow", "fixed", "gradient"]],
+  ["ultimateTimerUnavailableColor", null, "colorpicker", "", "", "#E16161"],
+  ["ultimateTimerAvailableColor", null, "colorpicker", "", "", "#7BBA1D"]
+].map(freezeRewriteBinding);
 const HPV2_EXTENSION_KEYS = Object.freeze([
   "staminaWidth",
   "staminaHeight",
@@ -482,7 +502,8 @@ const HPV2_EXTENSION_KEYS = Object.freeze([
   "ultOffsetX",
   "ultOffsetY",
   "levelOffsetX",
-  "levelOffsetY"
+  "levelOffsetY",
+  ...HPV2_WIRE_ONLY_BINDINGS.map((binding) => binding.canonicalKey)
 ]);
 function retiredRewriteBinding(key) {
   return Object.freeze({
@@ -496,7 +517,7 @@ const RETIRED_REWRITE_CODEC_BINDINGS = [
   retiredRewriteBinding("excludeGhouls")
 ];
 const REWRITE_BINDING_BY_KEY = new Map(
-  [...REWRITE_FIELD_BINDINGS, ...RETIRED_REWRITE_CODEC_BINDINGS]
+  [...REWRITE_FIELD_BINDINGS, ...RETIRED_REWRITE_CODEC_BINDINGS, ...HPV2_WIRE_ONLY_BINDINGS]
     .map((binding) => [binding.canonicalKey, binding])
 );
 const REWRITE_WIRE_KEYS = [...REWRITE_CODEC_KEYS, ...HPV2_EXTENSION_KEYS];

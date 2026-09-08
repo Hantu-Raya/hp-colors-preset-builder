@@ -61,12 +61,12 @@ test('wire manifest owns builder slot order and metadata', () => {
     wireManifest.legacySlots
   );
   assert.deepEqual(
-    HPV2_EXTENSION_FIELD_BINDINGS.map((binding, slot) => row(binding, slot)),
+    HPV2_EXTENSION_FIELD_BINDINGS.slice(0, wireManifest.extensionSlots.length).map((binding, slot) => row(binding, slot)),
     wireManifest.extensionSlots
   );
 });
 
-test('cross-repository HPCR2 corpus decodes and exports canonical bytes', () => {
+test('cross-repository HPCR2 corpus retains legacy values and conditions', () => {
   const decoded = decodeRewriteTransfer(wireCorpus.hpcr2.inputCode);
   assert.equal(decoded.format, 'HPCR2');
   assert.equal(decoded.profiles.length, 1);
@@ -79,10 +79,9 @@ test('cross-repository HPCR2 corpus decodes and exports canonical bytes', () => 
     );
   }
   assert.deepEqual(profile.rewrite.conditions, wireCorpus.hpcr2.conditions);
-  assert.equal(
-    createRewriteSettingsCode(profile),
-    wireCorpus.hpcr2.canonicalCode
-  );
+  const roundtrip = decodeRewriteTransfer(createRewriteSettingsCode(profile)).profiles[0];
+  assert.deepEqual(roundtrip.rewrite.values, profile.rewrite.values);
+  assert.deepEqual(roundtrip.rewrite.conditions, profile.rewrite.conditions);
 });
 
 test('cross-repository HPCRP1 corpus decodes and exports canonical bytes', () => {
@@ -356,7 +355,7 @@ test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => 
   const code = createRewritePresetCode(profile);
   const decoded = decodeRewriteTransfer(code).profiles[0];
   const expected = [...REWRITE_CODEC_FIELD_BINDINGS, ...HPV2_EXTENSION_FIELD_BINDINGS].map((binding) => {
-    if (binding.webId === null) return false;
+    if (binding.webId === null) return binding.defaultValue;
     const value = values[binding.webId];
     if (binding.canonicalType === 'enum') return binding.canonicalOptions[value];
     if (binding.canonicalType === 'enum-toggle') return value ? 'follow' : 'custom';
@@ -406,7 +405,7 @@ test('fresh Rewrite web values retain every canonical setting in HPCRP1', () => 
   });
 });
 
-test('HPv2-only settings round-trip through the preset extension but not HPCR2', () => {
+test('HPv2-only settings round-trip through presets and HPCR2', () => {
   const values = {
     ...REWRITE_FIELD_CATALOG.createDefaultState(),
     hpv2_stamina_width: 150,
@@ -482,10 +481,9 @@ test('HPv2-only settings round-trip through the preset extension but not HPCR2',
     value: 180
   });
 
-  const settingsPayload = payload(createRewriteSettingsCode(profile), 'HPCR2');
-  assert.deepEqual(Object.keys(settingsPayload).sort(), ['c', 'v']);
-  assert.equal(settingsPayload.v.some(([index]) => index >= 72), false);
-  assert.equal(Object.hasOwn(settingsPayload.c, 'staminaWidth'), false);
+  const settingsProfile = decodeRewriteTransfer(createRewriteSettingsCode(profile)).profiles[0];
+  assert.deepEqual(settingsProfile.rewrite.values, decoded.rewrite.values);
+  assert.deepEqual(settingsProfile.rewrite.conditions, decoded.rewrite.conditions);
 
   const legacy = decodeRewriteTransfer(FIXTURE).profiles[0];
   assert.equal(legacy.rewrite.webValues.hpv2_stamina_width, 110);
@@ -502,4 +500,30 @@ test('HPv2-only settings round-trip through the preset extension but not HPCR2',
     () => decodeRewriteTransfer('HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Bad","mode":"all","heroes":[],"values":[],"conditions":null,"hpv2":{"v":2,"values":[],"conditions":{}}}],"selectedPresetId":"user_0001"}'),
     /INVALID HPV2 PRESET EXTENSION/
   );
+});
+
+test('settings and preset transfers retain every extension, including fields without web controls', () => {
+  const values = HPV2_EXTENSION_FIELD_BINDINGS.map((binding) => {
+    if (binding.canonicalType === 'boolean') return !binding.defaultValue;
+    if (binding.canonicalType === 'color') return '#123456';
+    if (binding.canonicalType === 'enum') return binding.canonicalOptions.find((value) => value !== binding.defaultValue);
+    return binding.bounds.min === binding.defaultValue ? binding.bounds.max : binding.bounds.min;
+  });
+  const conditions = {
+    staminaWidth: { slot: 4, minTier: 3, value: 180 },
+    ultimateTimerSize: { slot: 2, minTier: 1, value: 150 },
+    ultimateTimerColorMode: { slot: 1, minTier: 2, value: 'gradient' }
+  };
+  const code = `HPCR2${JSON.stringify({
+    v: [], c: {}, hpv2: { v: 1, values: values.map((value, index) => [index, value]), conditions }
+  })}`;
+  const imported = decodeRewriteTransfer(code).profiles[0];
+  for (const exported of [createRewriteSettingsCode(imported), createRewritePresetCode(imported)]) {
+    const restored = decodeRewriteTransfer(exported).profiles[0];
+    assert.deepEqual(restored.rewrite.values.slice(72), values);
+    assert.deepEqual(restored.rewrite.conditions, conditions);
+  }
+  const malformed = payload(code, 'HPCR2');
+  malformed.hpv2.values.push([HPV2_EXTENSION_FIELD_BINDINGS.length, 1]);
+  assert.throws(() => decodeRewriteTransfer(`HPCR2${JSON.stringify(malformed)}`), /INVALID HPV2 PRESET VALUE PAIR/);
 });

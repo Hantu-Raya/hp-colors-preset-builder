@@ -28,7 +28,7 @@ const BOUNDS = Object.freeze(Object.fromEntries(ALL_BINDINGS
   .map((binding, index) => binding.bounds ? [index, [binding.bounds.min, binding.bounds.max]] : null)
   .filter(Boolean)));
 const KEY_INDEX = Object.freeze(Object.fromEntries(REWRITE_KEYS.map((key, index) => [key, index])));
-const BINDING_BY_KEY = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS.map((binding) => [binding.canonicalKey, binding])));
+const BINDING_BY_KEY = Object.freeze(Object.fromEntries([...REWRITE_FIELD_BINDINGS, ...HPV2_EXTENSION_FIELD_BINDINGS].map((binding) => [binding.canonicalKey, binding])));
 const RETIRED_INDEXES = new Set(REWRITE_KEYS
   .map((key, index) => BINDING_BY_KEY[key] ? null : index)
   .filter((index) => index !== null));
@@ -282,7 +282,7 @@ function rewriteConditionsToWeb(conditions) {
   const overrides = {};
   for (const [rewriteKey, rule] of Object.entries(conditions || {})) {
     const binding = BINDING_BY_KEY[rewriteKey];
-    if (!binding || !binding.conditionEligible) continue;
+    if (!binding?.webId || !binding.conditionEligible) continue;
     overrides[binding.webId] = {
       ...clone(rule),
       value: canonicalToWeb(binding, rule.value)
@@ -419,11 +419,14 @@ function parseSettingsTransfer(text, defaultState) {
   let pairs = payload;
   let conditions = null;
   if (isPlainObject(payload)) {
-    if (Object.keys(payload).sort().join(',') !== 'c,v') throw new Error('INVALID HPCR2 PAYLOAD');
+    if (!['c,v', 'c,hpv2,v'].includes(Object.keys(payload).sort().join(','))) throw new Error('INVALID HPCR2 PAYLOAD');
     pairs = payload.v;
     conditions = parseConditions(payload.c, true, LEGACY_KEY_SET);
   }
   const values = parsePairs(pairs, 'HPCR2');
+  const extension = parseExtension(isPlainObject(payload) ? payload.hpv2 : undefined);
+  for (let index = LEGACY_KEY_COUNT; index < values.length; index += 1) values[index] = extension.values[index];
+  conditions = mergeConditions(conditions, extension.conditions);
   return {
     format: SETTINGS_PREFIX,
     profiles: [makeProfile({ id: 'user_0001', kind: 'user', name: 'Imported rewrite settings', mode: HP_HERO_SCOPE_ALL, heroes: [], values, conditions }, 0, defaultState)]
@@ -476,8 +479,12 @@ function hiddenBakedPresetIds(records) {
 
 export function createRewriteSettingsCode(profile) {
   const values = profileValues(profile);
-  const conditions = conditionsFor(webConditionsToRewrite(profile), LEGACY_KEY_SET);
-  const payload = { v: pairsFor(values), c: conditions || {} };
+  const conditions = webConditionsToRewrite(profile);
+  const payload = {
+    v: pairsFor(values),
+    c: conditionsFor(conditions, LEGACY_KEY_SET) || {},
+    hpv2: extensionFor(values, conditions) || { v: 1, values: [], conditions: {} }
+  };
   return `${SETTINGS_PREFIX}${JSON.stringify(payload)}`;
 }
 
