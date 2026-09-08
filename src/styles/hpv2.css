@@ -448,7 +448,6 @@
 
 
 .topbar-workflow-actions .target-mode-trigger,
-.topbar-workflow-actions .showranks-toggle,
 .topbar-workflow-actions .preset-shortcut,
 .topbar-workflow-actions .build-action,
 .topbar-profile-workspace .profile-selector-trigger,
@@ -462,10 +461,6 @@
   padding: 3px 9px;
 }
 
-.topbar-workflow-actions .showranks-toggle {
-  min-width: 105px;
-  padding: 3px 8px;
-}
 
 .topbar-workflow-actions .preset-shortcut {
   min-height: 36px;
@@ -584,36 +579,6 @@
   color: var(--primary);
 }
 
-.showranks-toggle {
-  display: inline-grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 7px;
-  min-width: 132px;
-  min-height: 42px;
-  padding: 5px 9px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--muted);
-  color: var(--foreground);
-  cursor: pointer;
-  text-align: left;
-}
-
-.showranks-toggle:hover {
-  border-color: var(--ring);
-  background: var(--accent);
-}
-
-.showranks-toggle.is-active {
-  border-color: var(--primary);
-  background: var(--accent);
-}
-
-.showranks-toggle svg {
-  width: 16px;
-  height: 16px;
-}
 
 .target-mode-text {
   display: grid;
@@ -1985,6 +1950,8 @@
   display: grid;
   gap: 10px;
   width: min(560px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
   padding: 22px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -2456,46 +2423,6 @@
   height: 15px;
 }
 
-.build-validation-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--secondary) 72%, var(--card));
-}
-
-.build-validation-card.is-valid {
-  padding: 8px 10px;
-  border-color: color-mix(in srgb, var(--primary) 52%, var(--border));
-  background: color-mix(in srgb, var(--primary) 12%, var(--muted));
-}
-
-.build-validation-card div {
-  display: grid;
-  gap: 3px;
-}
-
-.build-validation-card strong {
-  color: var(--foreground);
-  font-size: 0.86rem;
-  line-height: 1.25;
-}
-
-.build-validation-label {
-  color: var(--primary);
-  font-size: 0.72rem;
-  font-weight: 780;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
-.build-validation-action {
-  flex: 0 0 auto;
-}
 
 .build-mod-warning {
   display: grid;
@@ -2925,9 +2852,6 @@
     grid-column: 1 / -1;
   }
 
-  .topbar-workflow-actions:has(.showranks-toggle) > .build-action:last-child {
-    grid-column: auto;
-  }
 
   .topbar-profile-workspace {
     display: grid;
@@ -3159,10 +3083,6 @@
     justify-content: stretch;
   }
 
-  .build-validation-card {
-    align-items: stretch;
-    flex-direction: column;
-  }
   .signature-condition-options {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

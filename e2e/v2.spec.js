@@ -3,8 +3,9 @@ import { readFile } from 'node:fs/promises';
 import { createHpMenuGroups } from '../src/hpv2HpMenuNavigation.js';
 import { REWRITE_FIELD_CATALOG } from '../src/hpv2HpSchema.js';
 import { extractSource2Resource, SOURCE2_RESOURCE_CODECS } from '../src/source2ResourceCodec.js';
-import { encodeUtf16Hex, readRewritePresetCode, REWRITE_PRESET_ARCHIVE_PATH, REWRITE_PRESET_TEMPLATE_PATH } from '../src/hpv2RewritePackageBuilder.js';
+import { encodeUtf16Hex, readRewritePresetCode, readRewriteShowranksPresetCode, readRewriteQollockPresetCode, REWRITE_PRESET_ARCHIVE_PATH, REWRITE_PRESET_TEMPLATE_PATH } from '../src/hpv2RewritePackageBuilder.js';
 import { readVpkArchive } from '../src/vpkArchive.js';
+import { loadSupporters } from '../src/supportersData.js';
 
 const REWRITE_PRESET = 'HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Shiv 🚀","mode":"selected","heroes":["hero_shiv"],"values":[[7,"fixed"],[11,true],[12,true],[13,true],[30,167],[31,"oracle"],[34,"custom"],[37,"#FFFFFF"],[42,18],[45,18],[52,true],[53,true],[54,205],[56,440],[63,true],[64,18],[65,31]],"conditions":{"lowThreshold":{"slot":4,"minTier":3,"value":28},"enemyPulseThreshold":{"slot":4,"minTier":3,"value":28},"enemyKillMarkerThreshold":{"slot":4,"minTier":3,"value":28}}}],"selectedPresetId":"user_0001"}';
 
@@ -12,18 +13,10 @@ const REWRITE_TEMPLATE_URL = new URL('../public/templates/hpv2_hp_colors_rewrite
 
 const KOFI_SCRIPT_URL = 'https://cdn.ko-fi.tools/v2/js/leaderboard.js';
 const KOFI_LEADERBOARD_URL = 'https://ko-fi.com/hantuaraya/leaderboard';
-const STATIC_SUPPORTER_LABEL = 'Ko-fi top supporters: 1 civo $100, 2 dacooder $20, 3 www.skillnshred.com $20, 4 DimpuMudit $17, 5 Ko-fi Supporter $10, 6 oOBansh33 $10, 7 greggey $5, 8 Ko-fi Supporter $5, 9 Timmcd $5';
-const STATIC_SUPPORTER_TEXT = [
-  '1civo$100',
-  '2dacooder$20',
-  '3www.skillnshred.com$20',
-  '4DimpuMudit$17',
-  '5Ko-fi Supporter$10',
-  '6oOBansh33$10',
-  '7greggey$5',
-  '8Ko-fi Supporter$5',
-  '9Timmcd$5'
-];
+const supporters = await loadSupporters();
+const donorCurrency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2, minimumFractionDigits: 0 });
+const STATIC_SUPPORTER_LABEL = `Ko-fi top supporters: ${supporters.map(({ displayName, totalUsd }, index) => `${index + 1} ${displayName} ${donorCurrency.format(totalUsd)}`).join(', ')}`;
+const STATIC_SUPPORTER_TEXT = supporters.map(({ displayName, totalUsd }, index) => `${index + 1}${displayName}${donorCurrency.format(totalUsd)}`);
 
 async function routeRewriteTemplate(page) {
   const template = await readFile(REWRITE_TEMPLATE_URL, 'utf8');
@@ -95,118 +88,72 @@ test('homepage and canonical V2 route never request the remote Ko-fi leaderboard
   expect(requestCount).toBe(0);
 });
 
-test('supporter strip holds donor one and resets through a protected transition', async ({ page }) => {
-  const externalRequests = [];
-  page.on('request', (request) => {
-    const url = new URL(request.url());
-    if (url.hostname !== '127.0.0.1') externalRequests.push(request.url());
-  });
+test('supporter strip holds thanks centered for three seconds and loops without a jump', async ({ page }) => {
+  await page.goto('supporters-strip/');
+  const track = page.locator('.supporter-strip-track');
+  await expect(track.locator('[data-cycle="primary"] .supporter-strip-item')).toHaveText(STATIC_SUPPORTER_TEXT);
 
+  for (const width of [390, 520, 1460, 3840]) {
+    await page.setViewportSize({ width, height: 60 });
+    await expect.poll(() => track.evaluate((element) => {
+      const animation = element.getAnimations()[0];
+      if (!animation) return false;
+      const cycleWidth = element.firstElementChild.getBoundingClientRect().width;
+      const end = new DOMMatrix(animation.effect.getKeyframes().at(-1).transform).m41;
+      return Math.abs(end + cycleWidth) < 0.1;
+    })).toBe(true);
+    const motion = await track.evaluate((element) => {
+      const [animation] = element.getAnimations();
+      animation.pause();
+      const duration = animation.effect.getTiming().duration;
+      const cycle = element.firstElementChild;
+      const duplicate = cycle.nextElementSibling;
+      const cycleWidth = cycle.getBoundingClientRect().width;
+      const viewport = element.parentElement.getBoundingClientRect();
+      const sequence = cycle.querySelector('.supporter-strip-sequence');
+      const thanks = cycle.querySelector('.supporter-strip-thanks-copy');
+      const holdStart = sequence.getBoundingClientRect().width / 36 * 1000;
+      const xAt = (time) => {
+        animation.currentTime = time;
+        return cycle.getBoundingClientRect().x;
+      };
+      const start = xAt(0);
+      const scrolling = xAt(1000);
+      const holdEarly = xAt(holdStart + 250);
+      const holdLate = xAt(holdStart + 2750);
+      const thanksBox = thanks.getBoundingClientRect();
+      const lastDonorRight = sequence.lastElementChild.getBoundingClientRect().right;
+      const nextDonorLeft = duplicate.querySelector('.supporter-strip-item').getBoundingClientRect().left;
+      const resumed = xAt(holdStart + 4000);
+      animation.currentTime = duration - 1;
+      const beforeSeam = duplicate.getBoundingClientRect().x;
+      const rightEdge = element.lastElementChild.getBoundingClientRect().right;
+      animation.currentTime = duration + 1;
+      const afterSeam = cycle.getBoundingClientRect().x;
+      animation.play();
+      return { duration, cycleWidth, start, scrolling, holdEarly, holdLate, resumed, beforeSeam, afterSeam, rightEdge, viewportLeft: viewport.left, viewportRight: viewport.right, center: (viewport.left + viewport.right) / 2, thanksCenter: (thanksBox.left + thanksBox.right) / 2, lastDonorRight, nextDonorLeft };
+    });
+    expect(motion.duration).toBeCloseTo(motion.cycleWidth / 36 * 1000 + 3000, 1);
+    expect(motion.start - motion.scrolling).toBeCloseTo(36, 1);
+    expect(motion.holdEarly).toBeCloseTo(motion.holdLate, 2);
+    expect(Math.abs(motion.thanksCenter - motion.center)).toBeLessThan(1);
+    expect(motion.lastDonorRight).toBeLessThanOrEqual(motion.viewportLeft);
+    expect(motion.nextDonorLeft).toBeGreaterThanOrEqual(motion.viewportRight - 1);
+    expect(motion.holdLate - motion.resumed).toBeCloseTo(36, 1);
+    expect(Math.abs(motion.beforeSeam - motion.afterSeam)).toBeLessThan(1);
+    expect(motion.rightEdge).toBeGreaterThanOrEqual(motion.viewportRight);
+  }
+});
+
+test('supporter strip respects reduced motion and retains the full accessible donor list', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('supporters-strip/');
-
-  const strip = page.locator('.supporter-strip');
-  const track = strip.locator('.supporter-strip-track');
-  const cycles = track.locator('.supporter-strip-cycle');
-  const primary = cycles.nth(0);
-  const duplicate = cycles.nth(1);
-  const primarySequence = primary.locator('.supporter-strip-sequence');
-  const duplicateSequence = duplicate.locator('.supporter-strip-sequence');
-  const thanks = primary.locator('.supporter-strip-thanks');
-  await expect(strip).toBeVisible();
-  await expect(cycles).toHaveCount(2);
-  await expect(primarySequence.locator('.supporter-strip-item')).toHaveCount(9);
-  expect(await primarySequence.locator('.supporter-strip-item').allTextContents()).toEqual(
-    STATIC_SUPPORTER_TEXT,
-  );
-  expect(await duplicateSequence.locator('.supporter-strip-item').allTextContents()).toEqual(
-    STATIC_SUPPORTER_TEXT,
-  );
-  await expect(primary.locator('.supporter-strip-thanks')).toHaveCount(1);
-  await expect(duplicate.locator('.supporter-strip-thanks')).toHaveCount(1);
-  await expect(thanks).toContainText('Thank you for supporting');
-  await expect(thanks).not.toContainText('HP COLORS COMMUNITY');
-  await expect(thanks.locator('.supporter-strip-thanks-copy')).toHaveCSS(
-    'font-family',
-    /VALVEOracle/,
-  );
-  await expect(track).toHaveCSS('animation-name', 'supporter-strip-scroll');
-  await expect(track).toHaveCSS('animation-duration', '32s');
-  await expect(track).toHaveCSS('animation-iteration-count', '1');
-  await expect(strip).toHaveCSS('background-color', 'rgb(25, 30, 23)');
-  await expect(strip).toHaveCSS(
-    'background-image',
-    /supporters-strip-header(?:\.[^"/)]+)?\.png/,
-  );
-
-  const loop = await track.evaluate((element) => {
-    const [animation] = element.getAnimations();
-    const keyframes = animation.effect.getKeyframes();
-    const duration = animation.effect.getTiming().duration;
-    const stripBox = element.parentElement.getBoundingClientRect();
-    const primaryFirstDonor = element.querySelector(
-      '[data-cycle="primary"] .supporter-strip-item',
-    );
-    const primaryThanks = element.querySelector('[data-cycle="primary"] .supporter-strip-thanks');
-    const duplicateFirstDonor = element.querySelector(
-      '[data-cycle="duplicate"] .supporter-strip-item',
-    );
-    animation.pause();
-    animation.currentTime = 0;
-    const startDonorBox = primaryFirstDonor.getBoundingClientRect();
-    animation.currentTime = 1_999;
-    const heldDonorBox = primaryFirstDonor.getBoundingClientRect();
-    animation.currentTime = duration * keyframes[2].offset;
-    const holdStartTransform = getComputedStyle(element).transform;
-    animation.currentTime = duration * keyframes[3].offset;
-    const holdEndTransform = getComputedStyle(element).transform;
-    animation.currentTime = 29_500;
-    const transitionTransform = getComputedStyle(element).transform;
-    const transitionThanksBox = primaryThanks.getBoundingClientRect();
-    const transitionDonorBox = duplicateFirstDonor.getBoundingClientRect();
-    animation.currentTime = duration - 1;
-    const endDonorBox = duplicateFirstDonor.getBoundingClientRect();
-    element.dispatchEvent(
-      new AnimationEvent('animationend', { animationName: 'supporter-strip-scroll' }),
-    );
-    const [restartedAnimation] = element.getAnimations();
-    return {
-      duration,
-      initialHoldDuration: duration * keyframes[1].offset,
-      holdDuration: duration * (keyframes[3].offset - keyframes[2].offset),
-      transitionDuration: duration * (1 - keyframes[3].offset),
-      holdStartTransform,
-      holdEndTransform,
-      transitionTransform,
-      startDonorX: startDonorBox.x,
-      heldDonorX: heldDonorBox.x,
-      transitionThanksX: transitionThanksBox.x,
-      transitionThanksRight: transitionThanksBox.right,
-      transitionDonorX: transitionDonorBox.x,
-      stripX: stripBox.x,
-      stripRight: stripBox.right,
-      endDonorX: endDonorBox.x,
-      restarted: restartedAnimation !== animation,
-      restartTime: restartedAnimation.currentTime
-    };
-  });
-  expect(loop.duration).toBe(32_000);
-  expect(loop.initialHoldDuration).toBeCloseTo(2_000, 2);
-  expect(loop.holdDuration).toBeCloseTo(3_000, 2);
-  expect(loop.transitionDuration).toBeCloseTo(5_000, 2);
-  expect(Math.abs(loop.startDonorX - loop.stripX)).toBeLessThanOrEqual(1);
-  expect(Math.abs(loop.heldDonorX - loop.stripX)).toBeLessThanOrEqual(1);
-  expect(loop.holdEndTransform).toBe(loop.holdStartTransform);
-  expect(loop.transitionTransform).not.toBe(loop.holdEndTransform);
-  expect(loop.transitionThanksX).toBeLessThan(loop.stripX);
-  expect(loop.transitionDonorX - loop.transitionThanksRight).toBeGreaterThanOrEqual(90);
-  expect(loop.transitionDonorX).toBeGreaterThan(loop.stripX);
-  expect(loop.transitionDonorX).toBeLessThan(loop.stripRight);
-  expect(Math.abs(loop.endDonorX - loop.stripX)).toBeLessThanOrEqual(1);
-  expect(loop.restarted).toBe(true);
-  expect(loop.restartTime).toBeLessThan(100);
-  await expect(strip.locator('a, button, input, form')).toHaveCount(0);
-  expect(externalRequests).toEqual([]);
+  const strip = page.getByRole('group');
+  await expect(strip).toHaveAttribute('aria-label', `${STATIC_SUPPORTER_LABEL}. Thank you for supporting.`);
+  const donor = strip.locator('.supporter-strip-item').first();
+  const before = await donor.boundingBox();
+  await page.waitForTimeout(150);
+  expect(await donor.boundingBox()).toEqual(before);
 });
 
 test('v2 keeps the wide title row ordered and renders the ranked supporter leaderboard', async ({ page }) => {
@@ -246,7 +193,7 @@ test('v2 keeps the wide title row ordered and renders the ranked supporter leade
   await expect(track.locator('.topbar-supporter-sequence')).toHaveCount(2);
   await expect(track.locator('.topbar-supporter-sequence').nth(1)).toHaveAttribute('aria-hidden', 'true');
   const supporterItems = track.locator('.topbar-supporter-sequence').first().locator('.topbar-supporter-item');
-  await expect(supporterItems).toHaveCount(9);
+  await expect(supporterItems).toHaveCount(STATIC_SUPPORTER_TEXT.length);
   expect(await supporterItems.allTextContents()).toEqual(STATIC_SUPPORTER_TEXT);
   await expect(supporterItems.filter({ hasText: 'Ko-fi Supporter' })).toHaveCount(2);
   const firstItemClasses = await supporterItems.first().locator(':scope > *').evaluateAll((nodes) => (
@@ -738,7 +685,6 @@ test('v2 rewrite profiles build a priority-safe pak01 and retain code-copy contr
   await expect(page.locator('#presetName')).toHaveValue('Shiv 🚀');
   await expect(page.locator('.hero-selector-value')).toHaveText(/Shiv/);
   await expect(page.getByRole('button', { name: 'Build VPK' })).toHaveCount(1);
-  await expect(page.getByText(/will build pak01_dir\.vpk for hp_colors_rewrite/)).toBeVisible();
 
   await page.getByRole('button', { name: 'Export profiles' }).click();
   await page.getByRole('button', { name: 'Copy all rewrite presets' }).click();
@@ -759,9 +705,9 @@ test('v2 rewrite profiles build a priority-safe pak01 and retain code-copy contr
     }
   });
   await page.getByRole('button', { name: 'Build VPK' }).click();
-  const warning = page.getByRole('dialog', { name: 'Confirm hp_colors_rewrite preset VPK' });
+  const warning = page.getByRole('dialog', { name: /^Confirm .* preset VPK$/ });
   await expect(warning).toBeVisible();
-  await warning.getByRole('button', { name: 'I installed hp_colors_rewrite' }).click();
+  await expect(warning.getByRole('button', { name: 'Confirm build' })).toBeEnabled();
   const downloadPromise = page.waitForEvent('download');
   await warning.getByRole('button', { name: 'Confirm build' }).click();
   const download = await downloadPromise;
@@ -778,6 +724,64 @@ test('v2 rewrite profiles build a priority-safe pak01 and retain code-copy contr
   expect(readRewritePresetCode(archive.files[0].bytes)).toBe(copied);
   await expect(page.locator('.status-card')).toContainText(/Built pak01_dir\.vpk for hp_colors_rewrite/);
 });
+
+for (const width of [1460, 390]) {
+  test(`HPv2 target choices persist and build the matching package without install acknowledgement at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('hpv2/');
+    const variants = [
+      { title: 'Rewritev2 + ShowRanks', read: readRewriteShowranksPresetCode, runtime: 'showrank_barebones' },
+      { title: 'Rewritev2', read: readRewritePresetCode, runtime: 'hp_colors_rewrite_v2' },
+      { title: 'Rewritev2 + QOLLOCK', read: readRewriteQollockPresetCode, runtime: 'QOLLOCK' }
+    ];
+    for (const [index, variant] of variants.entries()) {
+      const picker = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });
+      if (index > 0) await page.locator('.target-mode-trigger').click();
+      await expect(picker).toBeVisible();
+      const choice = picker.locator('.target-mode-choice-select').filter({
+        has: page.locator('strong', { hasText: new RegExp(`^${variant.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) })
+      });
+      await choice.click();
+      await expect(picker).toBeHidden();
+      await expect(page.locator('.target-mode-trigger')).toContainText(variant.title);
+      await expect(page.getByRole('button', { name: /Showranks compatible/ })).toHaveCount(0);
+      if (index === 0) {
+        await openV2Presets(page);
+        await page.getByRole('button', { name: 'Import game preset codes' }).click();
+        await page.locator('#importText').fill(REWRITE_PRESET);
+        await page.getByRole('button', { name: 'Import codes' }).click();
+        await expect(page.locator('#presetName')).toHaveValue('Shiv 🚀');
+      }
+      await page.reload();
+      await expect(page.locator('.target-mode-trigger')).toContainText(variant.title);
+      await expect(page.locator('#presetName')).toHaveValue('Shiv 🚀');
+      await page.locator('.target-mode-trigger').click();
+      await expect(choice).toHaveAttribute('aria-pressed', 'true');
+      await picker.getByRole('button', { name: 'Cancel', exact: true }).last().click();
+
+      await page.getByRole('button', { name: 'Build VPK', exact: true }).click();
+      const warning = page.getByRole('dialog', { name: /^Confirm .* preset VPK$/ });
+      await expect(warning).toContainText(variant.title);
+      await expect(warning).toContainText(variant.runtime);
+      await expect(warning).toContainText(/restart/i);
+      await expect(warning.getByRole('button', { name: /I installed|Undo.*confirmation/i })).toHaveCount(0);
+      const confirm = warning.getByRole('button', { name: 'Confirm build', exact: true });
+      await expect(confirm).toBeEnabled();
+      const viewport = await warning.locator('.build-warning-panel').boundingBox();
+      expect(viewport.x).toBeGreaterThanOrEqual(0);
+      expect(viewport.x + viewport.width).toBeLessThanOrEqual(width);
+      const downloaded = page.waitForEvent('download');
+      await confirm.click();
+      const download = await downloaded;
+      expect(download.suggestedFilename()).toBe('pak01_dir.vpk');
+      const archive = readVpkArchive(new Uint8Array(await readFile(await download.path())));
+      expect(archive.files.map((file) => file.path)).toEqual([REWRITE_PRESET_ARCHIVE_PATH]);
+      const presetCode = variant.read(archive.files[0].bytes);
+      expect(JSON.parse(presetCode.slice(6)).records.some((record) => record.name === 'Shiv 🚀')).toBe(true);
+      await page.reload();
+    }
+  });
+}
 
 test('HPv2 rewrite imports persist across reload', async ({ page }) => {
   await page.goto('hpv2/');

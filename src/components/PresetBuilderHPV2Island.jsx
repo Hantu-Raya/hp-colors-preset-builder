@@ -17,7 +17,6 @@ import {
   Library,
   Plus,
   RotateCcw,
-  ShieldCheck,
   Star,
   Trash2,
   Upload
@@ -64,7 +63,6 @@ import {
 } from '../hpv2PresetBuilderSession.js';
 import {
   commitPresetBuilderTargetMode,
-  commitShowranksCompatibleState,
   createBaseHudXmlLoader,
   createRewritePresetTemplateLoader,
   createRewriteQollockPresetTemplateLoader,
@@ -95,6 +93,32 @@ const PRECISE_PIPS_FIELD = Object.freeze({
   type: 'toggle',
   defaultValue: false
 });
+
+const HPV2_INSTALL_GUIDANCE = Object.freeze({
+  rewrite: 'Install this generated pak01 preset with Rewritev2 (hp_colors_rewrite_v2) pak02. Restart Deadlock after changing addon files.',
+  showranks: 'Install this generated pak01 preset with Rewritev2 pak02, then add showrank_barebones pak03. Restart Deadlock after changing addon files.',
+  qollock: 'Install this generated pak01 preset with hp_colors_rewrite_qollock support pak02 and pinned QOLLOCK pak03. Restart Deadlock after changing addon files.'
+});
+
+const HPV2_TARGET_MODE_CHOICES = Object.freeze(
+  TARGET_MODE_CHOICES.flatMap((choice) => choice.id === HP_COLORS_MOD_VARIANTS.FULL
+    ? [
+      Object.freeze({
+        ...choice,
+        renderKey: `${choice.id}-rewrite`,
+        showranksCompatible: false
+      }),
+      Object.freeze({
+        ...choice,
+        renderKey: `${choice.id}-showranks`,
+        showranksCompatible: true,
+        hpv2Title: 'Rewritev2 + ShowRanks',
+        hpv2Summary: 'Preset VPK for HP Colors Rewritev2 with ShowRanks.',
+        hpv2Description: 'Use this with Rewritev2 and showrank_barebones pak03.'
+      })
+    ]
+    : [Object.freeze({ ...choice, renderKey: choice.id, showranksCompatible: false })])
+);
 
 
 
@@ -382,13 +406,19 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
     convertStatus,
     previewOpen,
     warningOpen,
-    installValidated,
     targetMode,
     targetModeLoaded,
     modePickerOpen,
     modePickerUpgrade,
     conditionalFieldId
   } = session;
+  const selectedTargetChoice = HPV2_TARGET_MODE_CHOICES.find((choice) => (
+    choice.id === targetMode && Boolean(choice.showranksCompatible) === Boolean(session.showranksCompatible)
+  )) || HPV2_TARGET_MODE_CHOICES.find((choice) => choice.id === targetMode);
+  const selectedTargetLabel = selectedTargetChoice?.hpv2Title
+    || selectedTargetChoice?.v2Title
+    || selectedTargetChoice?.title
+    || targetModeDetails.label;
   const conditionalField = conditionalFieldId
     ? { id: conditionalFieldId, ...activeCatalog.schema[conditionalFieldId] }
     : null;
@@ -402,7 +432,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
   const operationLockRef = useRef(false);
   const [precisePipsOpen, setPrecisePipsOpen] = useState(false);
   const [precisePipsDialogMode, setPrecisePipsDialogMode] = useState('precise');
-  const [rewriteInstallValidated, setRewriteInstallValidated] = useState(false);
   const loadBaseHudXml = useMemo(
     () => createBaseHudXmlLoader({ baseUrl: import.meta.env.BASE_URL }),
     []
@@ -415,9 +444,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
     () => createRewriteQollockPresetTemplateLoader({ baseUrl: import.meta.env.BASE_URL }),
     []
   );
-  useEffect(() => {
-    setRewriteInstallValidated(false);
-  }, [rewriteBuildTarget, targetMode]);
 
   const dispatchSessionIntent = useCallback((intent, context = {}) => {
     setSession((prev) => reducePresetBuilderSession(prev, intent, {
@@ -434,6 +460,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
       const targeted = commitPresetBuilderTargetMode({
         session: previous,
         targetMode: HP_COLORS_MOD_VARIANTS.FULL,
+        showranksCompatible: false,
         storage,
         targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY
       });
@@ -472,22 +499,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
   const buildDialogRef = useDialogA11y(warningOpen, closeBuildWarning);
   const targetDialogRef = useDialogA11y(modePickerOpen && targetModeLoaded, closeTargetModePicker);
 
-  function commitTargetMode(nextMode) {
+  function commitTargetMode(nextMode, showranksCompatible = false) {
     const storage = typeof window !== 'undefined' ? window.localStorage : null;
     setSession((previous) => commitPresetBuilderTargetMode({
       session: previous,
       targetMode: nextMode,
+      showranksCompatible,
       storage,
       targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY
-    }));
-  }
-
-  function commitShowranksCompatible(nextValue) {
-    const storage = typeof window !== 'undefined' ? window.localStorage : null;
-    setSession((previous) => commitShowranksCompatibleState({
-      session: previous,
-      showranksCompatible: nextValue,
-      storage
     }));
   }
 
@@ -772,11 +791,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
               <Layers3 aria-hidden="true" />
               <span className="target-mode-text">
                 <span>Target</span>
-                <strong>{rewriteBuildTarget
-                  ? rewriteQollockTarget
-                    ? 'Rewritev2 + QOLLOCK'
-                    : session.showranksCompatible ? 'Rewritev2 + ShowRank' : 'Rewritev2'
-                  : targetModeDetails.label}</strong>
+                <strong>{rewriteBuildTarget ? selectedTargetLabel : targetModeDetails.label}</strong>
               </span>
             </button>
             <button
@@ -788,21 +803,6 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
               <Library aria-hidden="true" />
               <span>Presets</span>
             </button>
-            {rewriteBuildTarget && !rewriteQollockTarget ? (
-              <button
-                type="button"
-                aria-label={`Showranks compatible ${session.showranksCompatible ? 'on' : 'off'}`}
-                className={session.showranksCompatible ? 'showranks-toggle is-active' : 'showranks-toggle'}
-                onClick={() => commitShowranksCompatible(!session.showranksCompatible)}
-                aria-pressed={session.showranksCompatible}
-              >
-                <ShieldCheck aria-hidden="true" />
-                <span className="target-mode-text">
-                  <span>Rewritev2 + ShowRank</span>
-                  <strong>{session.showranksCompatible ? 'On' : 'Off'}</strong>
-                </span>
-              </button>
-            ) : null}
             <button
               type="button"
               className="build-action"
@@ -1017,10 +1017,10 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                   </article>
                   <article className="preset-overview-card">
                     <span className="panorama-kicker">{rewriteBuildTarget ? 'REWRITE TRANSFER' : 'BUILD TARGET'}</span>
-                    <strong>{rewriteBuildTarget ? 'HPCRP1 / HPCR2' : targetModeDetails.title}</strong>
+                    <strong>{rewriteBuildTarget ? selectedTargetLabel : targetModeDetails.title}</strong>
                     <p>
                       {rewriteBuildTarget
-                        ? `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will build ${presetVpkFileName} for ${rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}${!rewriteQollockTarget && session.showranksCompatible ? ' with ShowRank escape-menu hooks merged in' : ''}. Code-copy actions remain available below.`
+                        ? `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will build ${presetVpkFileName} for ${selectedTargetLabel}. ${HPV2_INSTALL_GUIDANCE[rewriteQollockTarget ? 'qollock' : session.showranksCompatible ? 'showranks' : 'rewrite']}`
                         : `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will be packaged as ${presetVpkFileName}.`}
                     </p>
                   </article>
@@ -1221,11 +1221,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
               </dl>
               <p>Move the file into <code>{buildResult.installDirectory || installDirectory}</code>.</p>
               <p>{buildResult.targetLabel === 'hp_colors_rewrite_qollock'
-                ? 'Keep hp_colors_rewrite_qollock pak02 and pinned QOLLOCK pak03 installed beside this generated pak01.'
+                ? HPV2_INSTALL_GUIDANCE.qollock
                 : buildResult.targetLabel === 'hp_colors_rewrite'
-                  ? buildResult.showranksCompatible
-                    ? 'Keep hp_colors_rewrite_v2 as pak02 and showrank_barebones as pak03 below this generated pak01 (lower pak numbers win).'
-                    : 'Keep hp_colors_rewrite_v2 as pak02 beside this generated pak01 (lower pak numbers win).'
+                  ? HPV2_INSTALL_GUIDANCE[buildResult.showranksCompatible ? 'showranks' : 'rewrite']
                   : `Keep the selected ${targetModeDetails.title.toLowerCase()} installed as the base runtime.`}</p>
             </div>
           ) : null}
@@ -1269,8 +1267,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                 : 'Pick the base mod that will read the preset VPK. You can change this later from the top bar.'}
             </p>
             <div className="target-mode-choice-grid" role="group" aria-label="HP Colors target mod">
-              {TARGET_MODE_CHOICES.map((choice) => {
-                const selected = targetMode === choice.id;
+              {HPV2_TARGET_MODE_CHOICES.map((choice) => {
+                const selected = targetMode === choice.id
+                  && Boolean(session.showranksCompatible) === Boolean(choice.showranksCompatible);
                 const unavailable = choice.unavailableInV2 === true;
                 const choiceClassName = [
                   'target-mode-choice',
@@ -1278,12 +1277,13 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                   unavailable ? 'is-unavailable' : ''
                 ].filter(Boolean).join(' ');
                 return (
-                  <div key={choice.id} className={choiceClassName} aria-disabled={unavailable || undefined}>
+                  <div key={choice.renderKey} className={choiceClassName} aria-disabled={unavailable || undefined}>
                     <button
                       type="button"
                       className="target-mode-choice-select"
                       disabled={unavailable}
-                      onClick={() => commitTargetMode(choice.id)}
+                      aria-pressed={selected}
+                      onClick={() => commitTargetMode(choice.id, choice.showranksCompatible === true)}
                     >
                       <span className="target-mode-choice-title">
                         <Layers3 aria-hidden="true" />
@@ -1302,7 +1302,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                     ) : (
                       <a className="target-mode-choice-download" href={'downloadHrefV2' in choice ? choice.downloadHrefV2 : choice.downloadHref} target="_blank" rel="noreferrer">
                         <Download aria-hidden="true" />
-                        <span>Download this mod</span>
+                        <span>{choice.showranksCompatible ? 'Download Rewritev2' : 'Download this mod'}</span>
                       </a>
                     )}
                   </div>
@@ -1321,13 +1321,13 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
           <button type="button" className="build-warning-backdrop" onClick={closeBuildWarning} aria-label="Cancel" />
           <div ref={buildDialogRef} className="build-warning-panel" tabIndex={-1}>
             <div className="build-warning-badge">{rewriteBuildTarget ? 'Rewrite install' : 'Build target'}</div>
-            <h3 id="buildWarningTitle">{rewriteBuildTarget ? `Confirm ${rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'} preset VPK` : `Confirm ${targetModeDetails.label} preset VPK`}</h3>
+            <h3 id="buildWarningTitle">{`Confirm ${rewriteBuildTarget ? selectedTargetLabel : targetModeDetails.label} preset VPK`}</h3>
             <div className="build-warning-summary" aria-label="Build summary">
               <div className="build-warning-item">
                 <span className="build-warning-item-icon"><Layers3 aria-hidden="true" /></span>
                 <span className="build-warning-item-copy">
                   <span>Target / profiles</span>
-                  <strong>{rewriteBuildTarget ? `${rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'} / ${profiles.length} total` : `${targetModeDetails.title} / ${profiles.length} total`}</strong>
+                  <strong>{`${rewriteBuildTarget ? selectedTargetLabel : targetModeDetails.title} / ${profiles.length} total`}</strong>
                 </span>
               </div>
               <div className="build-warning-item">
@@ -1356,28 +1356,18 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
             <div className="target-mode-summary-card">
               {rewriteBuildTarget ? (
                 <div>
-                  <span className="target-mode-summary-label">{rewriteQollockTarget
-                    ? 'Rewritev2 + QOLLOCK runtime'
-                    : session.showranksCompatible ? 'Rewritev2 + ShowRank runtime' : 'Rewritev2 runtime'}</span>
+                  <span className="target-mode-summary-label">{selectedTargetLabel} runtime</span>
                   <strong>{rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}</strong>
-                  <p>
-                    {rewriteQollockTarget
-                      ? 'Install the hp_colors_rewrite_qollock support pak02 and pinned QOLLOCK pak03 first. This generated pak01 contains only the composite Escape-menu layout with the HPCRP1 preset.'
-                      : session.showranksCompatible
-                        ? 'Install order (lower pak numbers win): this generated pak01 preset, then hp_colors_rewrite_v2 as pak02, then showrank_barebones as pak03. The preset layout merges the ShowRank escape-menu hooks.'
-                        : 'Install hp_colors_rewrite_v2 as pak02 first. This generated pak01 replaces its Escape-menu layout and stores HPCRP1 in a hidden XML label.'}
-                  </p>
-                  {rewriteQollockTarget ? (
-                    <div className="target-mode-summary-actions">
-                      <button type="button" className="secondary-action" onClick={() => {
-                        closeBuildWarning();
-                        openTargetModePicker();
-                      }}>
-                        <Layers3 aria-hidden="true" />
-                        <span>Change target</span>
-                      </button>
-                    </div>
-                  ) : null}
+                  <p>{HPV2_INSTALL_GUIDANCE[rewriteQollockTarget ? 'qollock' : session.showranksCompatible ? 'showranks' : 'rewrite']}</p>
+                  <div className="target-mode-summary-actions">
+                    <button type="button" className="secondary-action" onClick={() => {
+                      closeBuildWarning();
+                      openTargetModePicker();
+                    }}>
+                      <Layers3 aria-hidden="true" />
+                      <span>Change target</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -1416,44 +1406,17 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                 </span>
               </div>
             ) : null}
-            <div className={(rewriteBuildTarget ? rewriteInstallValidated : installValidated) ? 'build-validation-card is-valid' : 'build-validation-card'}>
-              <div>
-                <span className="build-validation-label">Install check</span>
-                {(rewriteBuildTarget ? rewriteInstallValidated : installValidated)
-                  ? null
-                  : <strong>{rewriteBuildTarget
-                    ? rewriteQollockTarget ? 'Validate the Rewrite + QOLLOCK install order first' : 'Validate hp_colors_rewrite first'
-                    : 'Validate the base mod first'}</strong>}
-              </div>
-              <button
-                type="button"
-                className="secondary-action build-validation-action"
-                onClick={() => {
-                  if (rewriteBuildTarget) setRewriteInstallValidated((value) => !value);
-                  else dispatchSessionIntent({ type: 'TOGGLE_INSTALL_VALIDATION' });
-                }}
-              >
-                <ShieldCheck aria-hidden="true" />
-                <span>{rewriteBuildTarget
-                  ? rewriteInstallValidated
-                    ? 'Undo Rewrite install confirmation'
-                    : rewriteQollockTarget ? 'I installed Rewrite + QOLLOCK pak02 and pak03' : 'I installed hp_colors_rewrite_v2 pak02'
-                  : installValidated ? 'Undo install confirmation' : 'I installed the selected base mod'}</span>
-              </button>
-            </div>
             <div className="build-warning-actions">
               <button type="button" className="secondary-action" onClick={closeBuildWarning}>Cancel</button>
               <button
                 type="button"
                 className="primary-action build-confirm-action"
-                disabled={rewriteBuildTarget ? !rewriteInstallValidated || busy : !canConfirmBuildVariant || busy}
+                disabled={!canConfirmBuildVariant || busy}
                 onClick={() => {
-                  if (busy) return;
+                  if (busy || !canConfirmBuildVariant) return;
                   if (rewriteBuildTarget) {
-                    if (!rewriteInstallValidated) return;
                     performRewriteBuild(rewriteQollockTarget);
                   } else {
-                    if (!canConfirmBuildVariant) return;
                     performBuild(targetMode);
                   }
                 }}

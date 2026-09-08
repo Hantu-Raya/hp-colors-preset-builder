@@ -35,19 +35,11 @@ body {
   will-change: transform;
 }
 
-.supporter-strip-track-running {
-  animation: supporter-strip-scroll 32s linear 1 forwards;
-}
 
 .supporter-strip-cycle {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  height: 100%;
-}
-.supporter-strip-cycle-gap {
-  flex: 0 0 96px;
-  width: 96px;
   height: 100%;
 }
 
@@ -57,7 +49,7 @@ body {
   flex: 0 0 auto;
   align-items: center;
   gap: 18px;
-  padding-right: 40px;
+  padding-right: 18px;
   white-space: nowrap;
 }
 
@@ -99,8 +91,8 @@ body {
   flex: 0 0 100vw;
   align-items: center;
   justify-content: center;
-  width: 100vw;
   height: 100%;
+  width: 100vw;
 }
 
 .supporter-strip-thanks-copy {
@@ -108,7 +100,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 42px;
+  gap: 12px;
   white-space: nowrap;
   color: #f0e5cf;
   text-shadow: 0 0 10px rgb(240 229 207 / 22%);
@@ -133,22 +125,4 @@ body {
   letter-spacing: 0.35px;
 }
 
-@keyframes supporter-strip-scroll {
-  0%,
-  6.25% {
-    transform: translate3d(0, 0, 0);
-  }
-
-  75% {
-    transform: translate3d(calc(-50% + 100vw + 96px), 0, 0);
-  }
-
-  84.375% {
-    transform: translate3d(calc(-50% + 100vw + 96px), 0, 0);
-  }
-
-  100% {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
 

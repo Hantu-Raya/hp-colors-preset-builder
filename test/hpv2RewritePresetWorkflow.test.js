@@ -3,8 +3,13 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 
 import { HP_FIELD_CATALOG } from "../src/hpv2HpSchema.js";
-import { createInitialProfile } from "../src/profileStore.js";
+import { HP_COLORS_MOD_VARIANTS } from "../src/hpModVariants.js";
+import { createPresetBuilderSession, loadPresetBuilderSession } from "../src/hpv2PresetBuilderSession.js";
+import { V2_STORAGE_KEY, createInitialProfile } from "../src/profileStore.js";
+import { SHOWRANKS_COMPATIBLE_STORAGE_KEY } from "../src/showranksCompatibleStore.js";
+import { TARGET_MODE_STORAGE_KEY, V2_TARGET_MODE_STORAGE_KEY } from "../src/targetModeStore.js";
 import {
+  commitPresetBuilderTargetMode,
   createRewritePresetTemplateLoader,
   runRewritePresetBuildWorkflow
 } from "../src/hpv2PresetBuilderWorkflow.js";
@@ -23,6 +28,99 @@ const TEMPLATE_PATH = new URL(
 function makeTemplate() {
   return readFileSync(TEMPLATE_PATH, "utf8");
 }
+
+function createMemoryStorage(seed = {}) {
+  const values = new Map(Object.entries(seed));
+  return {
+    getItem(key) {
+      return values.has(key) ? values.get(key) : null;
+    },
+    setItem(key, value) {
+      values.set(key, String(value));
+    },
+    values
+  };
+}
+
+test("HPv2 target commits persist ShowRanks and reload it without changing profiles", () => {
+  const storage = createMemoryStorage();
+  const defaultState = HP_FIELD_CATALOG.createDefaultState();
+  const session = createPresetBuilderSession(defaultState);
+  const profiles = session.profiles;
+  const options = { storage, targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY };
+
+  const showranks = commitPresetBuilderTargetMode({
+    ...options,
+    session,
+    targetMode: HP_COLORS_MOD_VARIANTS.FULL,
+    showranksCompatible: true
+  });
+  assert.equal(showranks.targetMode, HP_COLORS_MOD_VARIANTS.FULL);
+  assert.equal(showranks.showranksCompatible, true);
+  assert.strictEqual(showranks.profiles, profiles);
+  assert.equal(storage.values.get(V2_TARGET_MODE_STORAGE_KEY), HP_COLORS_MOD_VARIANTS.FULL);
+  assert.equal(storage.values.get(SHOWRANKS_COMPATIBLE_STORAGE_KEY), "true");
+  assert.equal(storage.values.has(TARGET_MODE_STORAGE_KEY), false);
+
+  const reloaded = loadPresetBuilderSession(storage, defaultState, {
+    targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY
+  });
+  assert.equal(reloaded.targetMode, HP_COLORS_MOD_VARIANTS.FULL);
+  assert.equal(reloaded.showranksCompatible, true);
+
+  const normal = commitPresetBuilderTargetMode({
+    ...options,
+    session: showranks,
+    targetMode: HP_COLORS_MOD_VARIANTS.FULL
+  });
+  assert.equal(normal.showranksCompatible, false);
+  assert.equal(storage.values.get(SHOWRANKS_COMPATIBLE_STORAGE_KEY), "false");
+  assert.strictEqual(normal.profiles, profiles);
+
+  const legacyShowranksStorage = createMemoryStorage({
+    [V2_STORAGE_KEY]: JSON.stringify({
+      version: 1,
+      activeProfileId: "profile-1",
+      profiles: [{
+        id: "profile-1",
+        name: "Rewrite",
+        values: defaultState,
+        heroMode: "all",
+        heroes: [],
+        overrides: {},
+        rewrite: { values: {}, conditions: null }
+      }]
+    }),
+    [V2_TARGET_MODE_STORAGE_KEY]: HP_COLORS_MOD_VARIANTS.MINIMAL,
+    [SHOWRANKS_COMPATIBLE_STORAGE_KEY]: "true"
+  });
+  const migrated = loadPresetBuilderSession(legacyShowranksStorage, defaultState, {
+    profileStorageKey: V2_STORAGE_KEY,
+    targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY
+  });
+  assert.equal(migrated.targetMode, HP_COLORS_MOD_VARIANTS.FULL);
+  assert.equal(migrated.showranksCompatible, true);
+  assert.equal(migrated.modePickerOpen, false);
+
+  legacyShowranksStorage.setItem(V2_TARGET_MODE_STORAGE_KEY, HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
+  const qollockReload = loadPresetBuilderSession(legacyShowranksStorage, defaultState, {
+    profileStorageKey: V2_STORAGE_KEY,
+    targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY
+  });
+  assert.equal(qollockReload.targetMode, HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
+  assert.equal(qollockReload.showranksCompatible, false);
+
+  const qollock = commitPresetBuilderTargetMode({
+    ...options,
+    session: normal,
+    targetMode: HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK,
+    showranksCompatible: true
+  });
+  assert.equal(qollock.targetMode, HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK);
+  assert.equal(qollock.showranksCompatible, false);
+  assert.equal(storage.values.get(SHOWRANKS_COMPATIBLE_STORAGE_KEY), "false");
+  assert.strictEqual(qollock.profiles, profiles);
+});
 
 test("rewrite template loader caches successful XML text and retries failed fetches", async () => {
   const template = makeTemplate();

@@ -13,12 +13,17 @@ Select the target that matches the runtime you installed:
 
 Do not mix Minimal or Full packages with the other base runtime, or install standalone Rewrite beside Rewrite + QOLLOCK. The selected target is saved in browser storage; V2 still switches to standalone Rewrite automatically when loaded profiles contain rewrite data.
 
+On **HPv2**, choose **Rewritev2**, **Rewritev2 + ShowRanks**, or **Rewritev2 + QOLLOCK** from the Target menu. ShowRanks is a target choice, not a separate top-bar toggle. Existing saved ShowRanks selections are preserved; choosing normal Rewritev2 or QOLLOCK clears that compatibility option without changing your presets.
+
+The HPv2 build dialog shows the selected target, output, and install order. **Confirm build** downloads the preset without an extra installation acknowledgement. The browser cannot inspect your Deadlock installation; follow the displayed package order and restart the game after replacing files.
+
 ## Install order
 
 1. Exit Deadlock completely.
 2. Install the runtime packages that match the target:
    - Minimal or Full: install its matching `pak96_dir.vpk` and `pak97_dir.vpk` pair.
    - Rewrite: install the current `hp_colors_rewrite_v2` runtime as `pak02_dir.vpk`.
+   - Rewritev2 + ShowRanks: install Rewritev2 as `pak02_dir.vpk` and `showrank_barebones` as `pak03_dir.vpk`.
    - Rewrite + QOLLOCK: install the support runtime as `pak02_dir.vpk`, then the pinned QOLLOCK package as `pak03_dir.vpk`.
 3. Use this exact add-on directory (replace `<SteamLibrary>` with the drive that contains Steam):
 
@@ -29,6 +34,7 @@ Do not mix Minimal or Full packages with the other base runtime, or install stan
 4. Build the preset and place it in the same directory:
    - Minimal or Full: replace the selected base mod's `pak96_dir.vpk` and keep its matching `pak97_dir.vpk`.
    - Rewrite: install the generated `pak01_dir.vpk` beside the rewrite runtime's `pak02_dir.vpk`. The generated package overrides only `panorama/layout/hud_escape_menu.vxml_c`; do not install another mod that overrides that layout.
+   - Rewritev2 + ShowRanks: install the generated `pak01_dir.vpk` beside Rewritev2 `pak02_dir.vpk` and ShowRanks `pak03_dir.vpk`. The preset layout includes the ShowRanks Escape-menu hooks.
    - Rewrite + QOLLOCK: install the generated `pak01_dir.vpk` beside `pak02_dir.vpk` and `pak03_dir.vpk`. It overrides only `panorama/layout/hud_escape_menu.vxml_c`.
 5. Restart Deadlock after replacing any VPK. A live Panorama context can retain the previous package.
 
@@ -84,6 +90,8 @@ V2 and the in-game Rewrite strip use `public/data/supporters.csv`. The file cont
 
 The V2 ticker links to the public Ko-fi leaderboard. The in-game strip has no links or input handling.
 
+The standalone `/supporters-strip/` scrolls at 36 pixels per second, gives the thank-you message its own viewport-wide space, and holds it centered for three seconds before resuming. The next donor list joins seamlessly at the loop boundary. The page recalculates on resize. Reduced-motion users receive a static strip with the complete donor list in its accessible label.
+
 ## Run locally
 
 ```powershell
@@ -98,6 +106,27 @@ npm run build
 ```
 
 The build output is written to `dist/` and should not be committed.
+
+### Shared HPv2 XML
+
+Edit `public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml` once for all three HPv2 categories. Normal uses it directly. ShowRanks adds its compatibility hooks during packaging. QOLLOCK's full template is generated from it by `scripts/sync-hpv2-templates.js`, which contains only QOLLOCK-specific additions.
+
+`npm run dev`, `npm test`, and `npm run build` regenerate the QOLLOCK template first. Restart the dev command after XML edits. Do not edit the generated QOLLOCK XML. Commit it with the shared source; missing or duplicate insertion targets stop generation.
+
+To import the canonical layout from the mod repository and regenerate QOLLOCK in one command:
+
+```powershell
+npm run sync:hpv2 -- --source "F:/Users/FoxOS_User/Desktop/Deadlock-mods-collection/hp_colors_rewrite_v2/panorama/layout/hud_escape_menu.xml"
+```
+
+For automatic imports in your current PowerShell session:
+
+```powershell
+$env:HPV2_LAYOUT_SOURCE = "F:/Users/FoxOS_User/Desktop/Deadlock-mods-collection/hp_colors_rewrite_v2/panorama/layout/hud_escape_menu.xml"
+npm run build
+```
+
+Without that variable, the checked-in shared XML is the source, including in CI. `npm run verify:hpv2-templates` checks synchronization without writing files. This affects HPv2 only, not legacy V2, Minimal, or Full.
 
 ## Code health checks
 

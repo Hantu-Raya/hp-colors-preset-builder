@@ -29,24 +29,6 @@ import { loadShowranksCompatibleState } from "./showranksCompatibleStore.js";
 
 const BUILD_VARIANTS = new Set(Object.values(HP_COLORS_MOD_VARIANTS));
 
-function canConfirmBuild({ installValidated, buildVariant }) {
-  return installValidated === true && BUILD_VARIANTS.has(buildVariant);
-}
-
-function getNextInstallValidationState({ installValidated, buildVariant }) {
-  if (installValidated === true) {
-    return {
-      installValidated: false,
-      buildVariant: null
-    };
-  }
-  return {
-    installValidated: true,
-    buildVariant: BUILD_VARIANTS.has(buildVariant) ? buildVariant : DEFAULT_HP_COLORS_MOD_VARIANT
-  };
-}
-
-
 function formatHeroSelection(heroMode, heroIds) {
   const selected = normalizeHeroIds(heroIds);
   const mode = normalizeHeroScopeMode(heroMode, selected);
@@ -172,7 +154,6 @@ export function createPresetBuilderSession(defaultState) {
     previewOpen: false,
     warningOpen: false,
     conditionalFieldId: null,
-    installValidated: false,
     targetMode: DEFAULT_HP_COLORS_MOD_VARIANT,
     targetModeLoaded: false,
     modePickerOpen: false,
@@ -192,18 +173,24 @@ export function loadPresetBuilderSession(storage, defaultState, {
     storageKey: targetModeStorageKey
   });
   const showranksState = loadShowranksCompatibleState(storage);
+  const hasRewriteProfiles = profileState.profiles.some((profile) => Boolean(profile?.rewrite));
+  const legacyShowranksSelection = targetModeState.targetMode === HP_COLORS_MOD_VARIANTS.MINIMAL
+    && hasRewriteProfiles
+    && showranksState.showranksCompatible;
+  const targetMode = legacyShowranksSelection ? HP_COLORS_MOD_VARIANTS.FULL : targetModeState.targetMode;
   const storageError = profileState.error || targetModeState.error || showranksState.error || null;
+  const showranksCompatible = isFullTargetMode(targetMode) && showranksState.showranksCompatible;
   return {
     ...createPresetBuilderSession(defaultState),
     profiles: profileState.profiles,
     activeProfileId: profileState.activeProfileId,
     profilesLoaded: true,
-    targetMode: targetModeState.targetMode,
+    targetMode,
     targetModeLoaded: true,
-    modePickerOpen: targetModeState.shouldShowPicker,
-    modePickerRequired: targetModeState.shouldShowPicker,
-    modePickerUpgrade: targetModeState.isUpgradePrompt,
-    showranksCompatible: showranksState.showranksCompatible,
+    modePickerOpen: targetModeState.shouldShowPicker && !legacyShowranksSelection,
+    modePickerRequired: targetModeState.shouldShowPicker && !legacyShowranksSelection,
+    modePickerUpgrade: targetModeState.isUpgradePrompt && !legacyShowranksSelection,
+    showranksCompatible,
     feedback: storageError ? { type: "error", message: storageError } : null,
     status: storageError ? `Status: ${storageError}` : "Status: Ready"
   };
@@ -212,7 +199,7 @@ export function loadPresetBuilderSession(storage, defaultState, {
 function resolvePresetVpkFileName(session) {
   if (isRewriteQollockTarget(session.targetMode)) return REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME;
   const containsRewriteProfiles = (Array.isArray(session.profiles) ? session.profiles : []).some((profile) => Boolean(profile?.rewrite));
-  if (containsRewriteProfiles && session.showranksCompatible) return REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME;
+  if (containsRewriteProfiles && isFullTargetMode(session.targetMode) && session.showranksCompatible) return REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME;
   if (containsRewriteProfiles) return REWRITE_PRESET_VPK_FILE_NAME;
   return PRESET_VPK_FILE_NAME;
 }
@@ -272,7 +259,7 @@ export function selectPresetBuilderSession(session, defaultState, groups, active
     targetModeDetails,
     fullTargetMode: isFullTargetMode(session.targetMode),
     buildProfilePresets,
-    canConfirmBuildVariant: !session.busy && canConfirmBuild({ installValidated: session.installValidated, buildVariant: session.targetMode }),
+    canConfirmBuildVariant: !session.busy && BUILD_VARIANTS.has(session.targetMode),
     presetVpkFileName: resolvePresetVpkFileName(session),
     installDirectory: "Deadlock/game/citadel/addons",
     catalog,
@@ -413,33 +400,25 @@ export function reducePresetBuilderSession(session, intent, context = {}) {
     }
     case "OPEN_BUILD_WARNING":
       if (session.busy) return session;
-      return { ...session, installValidated: false, warningOpen: true };
+      return { ...session, warningOpen: true };
     case "CLOSE_BUILD_WARNING":
       return { ...session, warningOpen: false };
-    case "COMMIT_TARGET_MODE":
+    case "COMMIT_TARGET_MODE": {
+      const showranksCompatible = isFullTargetMode(intent.targetMode) && intent.showranksCompatible === true;
       return {
         ...session,
         targetMode: intent.targetMode,
         modePickerOpen: false,
         modePickerRequired: false,
         modePickerUpgrade: false,
-        installValidated: false,
         targetModeLoaded: true,
         profileMenuOpen: false,
-        heroMenuOpen: false
+        heroMenuOpen: false,
+        showranksCompatible
       };
-    case "SET_SHOWRANKS_COMPATIBLE":
-      if (session.showranksCompatible === (intent.showranksCompatible === true)) return session;
-      return { ...session, showranksCompatible: intent.showranksCompatible === true };
+    }
     case "OPEN_TARGET_MODE_PICKER":
       return { ...session, modePickerRequired: false, modePickerOpen: true };
-    case "TOGGLE_INSTALL_VALIDATION": {
-      const next = getNextInstallValidationState({ installValidated: session.installValidated, buildVariant: session.targetMode });
-      if (next.buildVariant) {
-        return { ...session, installValidated: next.installValidated, targetMode: next.buildVariant };
-      }
-      return { ...session, installValidated: false };
-    }
     case "UPDATE_FIELD": {
       const catalog = context.catalog || HP_FIELD_CATALOG;
       return updateActiveProfile(session, (profile) => {

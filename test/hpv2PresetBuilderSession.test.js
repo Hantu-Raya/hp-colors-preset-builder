@@ -16,12 +16,13 @@ function selection(session, activeKey = null) {
   return selectPresetBuilderSession(session, defaultState, groups, activeKey);
 }
 
-test("session selector requires install validation and a selected target before confirming", () => {
+test("session selector confirms only idle known targets", () => {
   const session = createPresetBuilderSession(defaultState);
 
-  assert.equal(selection(session).canConfirmBuildVariant, false);
-  assert.equal(selection({ ...session, installValidated: true, targetMode: null }).canConfirmBuildVariant, false);
-  assert.equal(selection({ ...session, installValidated: true, targetMode: HP_COLORS_MOD_VARIANTS.MINIMAL }).canConfirmBuildVariant, true);
+  assert.equal(selection(session).canConfirmBuildVariant, true);
+  assert.equal(selection({ ...session, busy: true }).canConfirmBuildVariant, false);
+  assert.equal(selection({ ...session, targetMode: null }).canConfirmBuildVariant, false);
+  assert.equal(selection({ ...session, targetMode: "unknown" }).canConfirmBuildVariant, false);
 });
 
 test("new session profiles apply all-hero defaults without overriding imported off", () => {
@@ -92,30 +93,9 @@ test("minimal import feedback identifies omitted precise pips and signature cond
   );
 });
 
-test("build validation toggles through the session reducer", () => {
-  const session = createPresetBuilderSession(defaultState);
-  const validated = reducePresetBuilderSession(
-    { ...session, targetMode: null },
-    { type: "TOGGLE_INSTALL_VALIDATION" }
-  );
-
-  assert.equal(validated.installValidated, true);
-  assert.equal(validated.targetMode, HP_COLORS_MOD_VARIANTS.MINIMAL);
-
-  const unvalidated = reducePresetBuilderSession(
-    { ...validated, targetMode: HP_COLORS_MOD_VARIANTS.FULL },
-    { type: "TOGGLE_INSTALL_VALIDATION" }
-  );
-
-  assert.equal(unvalidated.installValidated, false);
-  assert.equal(unvalidated.targetMode, HP_COLORS_MOD_VARIANTS.FULL);
-});
-
-
-test("committing a target mode clears picker and validation state", () => {
+test("committing a target mode clears picker state and applies ShowRanks only to FULL", () => {
   const session = {
     ...createPresetBuilderSession(defaultState),
-    installValidated: true,
     modePickerOpen: true,
     modePickerRequired: true,
     modePickerUpgrade: true,
@@ -125,11 +105,12 @@ test("committing a target mode clears picker and validation state", () => {
 
   const next = reducePresetBuilderSession(session, {
     type: "COMMIT_TARGET_MODE",
-    targetMode: HP_COLORS_MOD_VARIANTS.FULL
+    targetMode: HP_COLORS_MOD_VARIANTS.FULL,
+    showranksCompatible: true
   });
 
   assert.equal(next.targetMode, HP_COLORS_MOD_VARIANTS.FULL);
-  assert.equal(next.installValidated, false);
+  assert.equal(next.showranksCompatible, true);
   assert.equal(next.modePickerOpen, false);
   assert.equal(next.modePickerRequired, false);
   assert.equal(next.modePickerUpgrade, false);
@@ -229,7 +210,7 @@ test("failed imports keep existing profiles", () => {
 test("build actions prevent double submit and retain the completed result", () => {
   const session = reducePresetBuilderSession(createPresetBuilderSession(defaultState), { type: "BUILD_STARTED" });
   assert.equal(session.busy, true);
-  assert.equal(selection({ ...session, installValidated: true }).canConfirmBuildVariant, false);
+  assert.equal(selection(session).canConfirmBuildVariant, false);
   assert.strictEqual(reducePresetBuilderSession(session, { type: "BUILD_STARTED" }), session);
 
   const result = {
@@ -285,28 +266,32 @@ test("both dialogs can close through reducer actions", () => {
   assert.equal(pickerClosed.modePickerOpen, false);
 });
 
-test("showranks compatibility preserves the Rewrite preset priority slot", () => {
+test("target commits switch ShowRanks to normal and QOLLOCK without changing profiles", () => {
   const rewriteProfile = { name: "Lane", values: {}, heroMode: "off", heroes: [], rewrite: { values: {}, conditions: null } };
   let session = { ...createPresetBuilderSession(defaultState), profiles: [rewriteProfile] };
-  assert.equal(selection(session).presetVpkFileName, "pak01_dir.vpk");
+  const profiles = session.profiles;
 
-  session = reducePresetBuilderSession(session, { type: "SET_SHOWRANKS_COMPATIBLE", showranksCompatible: true });
+  session = reducePresetBuilderSession(session, {
+    type: "COMMIT_TARGET_MODE",
+    targetMode: HP_COLORS_MOD_VARIANTS.FULL,
+    showranksCompatible: true
+  });
   assert.equal(session.showranksCompatible, true);
-  assert.equal(selection(session).presetVpkFileName, "pak01_dir.vpk");
+  assert.strictEqual(session.profiles, profiles);
 
-  session = reducePresetBuilderSession(session, { type: "SET_SHOWRANKS_COMPATIBLE", showranksCompatible: false });
+  session = reducePresetBuilderSession(session, {
+    type: "COMMIT_TARGET_MODE",
+    targetMode: HP_COLORS_MOD_VARIANTS.FULL,
+    showranksCompatible: false
+  });
   assert.equal(session.showranksCompatible, false);
-  assert.equal(selection(session).presetVpkFileName, "pak01_dir.vpk");
-});
+  assert.strictEqual(session.profiles, profiles);
 
-test("showranks compatibility never applies to qollock or non-rewrite targets", () => {
-  const rewriteProfile = { name: "Lane", values: {}, heroMode: "off", heroes: [], rewrite: { values: {}, conditions: null } };
-  const qollockSession = reducePresetBuilderSession(
-    { ...createPresetBuilderSession(defaultState), profiles: [rewriteProfile], showranksCompatible: true },
-    { type: "COMMIT_TARGET_MODE", targetMode: HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK }
-  );
-  assert.equal(selection(qollockSession).presetVpkFileName, "pak01_dir.vpk");
-
-  const minimalSession = { ...createPresetBuilderSession(defaultState), showranksCompatible: true };
-  assert.equal(selection(minimalSession).presetVpkFileName, "pak96_dir.vpk");
+  session = reducePresetBuilderSession(session, {
+    type: "COMMIT_TARGET_MODE",
+    targetMode: HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK,
+    showranksCompatible: true
+  });
+  assert.equal(session.showranksCompatible, false);
+  assert.strictEqual(session.profiles, profiles);
 });

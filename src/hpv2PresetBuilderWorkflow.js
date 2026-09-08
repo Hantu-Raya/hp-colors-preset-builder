@@ -73,28 +73,26 @@ export function createRewriteQollockPresetTemplateLoader({ baseUrl = "/", fetchI
 export function commitPresetBuilderTargetMode({
   session,
   targetMode,
+  showranksCompatible = false,
   storage = null,
   targetModeStorageKey
 }) {
   const normalizedTargetMode = normalizeTargetMode(targetMode);
-  const saved = saveTargetModeState(storage, normalizedTargetMode, {
+  const nextShowranksCompatible = normalizedTargetMode === HP_COLORS_MOD_VARIANTS.FULL && showranksCompatible === true;
+  const targetModeSaved = saveTargetModeState(storage, normalizedTargetMode, {
     storageKey: targetModeStorageKey
   });
-  const nextSession = reducePresetBuilderSession(session, { type: "COMMIT_TARGET_MODE", targetMode: normalizedTargetMode });
-  if (saved.ok) return nextSession;
-  return reducePresetBuilderSession(nextSession, {
-    type: "SET_FEEDBACK",
-    feedback: { type: "error", message: saved.error }
+  const showranksSaved = saveShowranksCompatibleState(storage, nextShowranksCompatible);
+  const nextSession = reducePresetBuilderSession(session, {
+    type: "COMMIT_TARGET_MODE",
+    targetMode: normalizedTargetMode,
+    showranksCompatible: nextShowranksCompatible
   });
-}
-
-export function commitShowranksCompatibleState({ session, showranksCompatible, storage = null }) {
-  const saved = saveShowranksCompatibleState(storage, showranksCompatible === true);
-  const nextSession = reducePresetBuilderSession(session, { type: "SET_SHOWRANKS_COMPATIBLE", showranksCompatible: saved.ok ? showranksCompatible === true : session.showranksCompatible });
-  if (saved.ok) return nextSession;
+  const errors = [targetModeSaved.error, showranksSaved.error].filter(Boolean);
+  if (!errors.length) return nextSession;
   return reducePresetBuilderSession(nextSession, {
     type: "SET_FEEDBACK",
-    feedback: { type: "error", message: saved.error }
+    feedback: { type: "error", message: errors.join(" ") }
   });
 }
 

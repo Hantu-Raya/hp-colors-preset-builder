@@ -1,24 +1,60 @@
 (() => {
   "use strict";
 
-  const CYCLE_MS = 32000;
-  const RESTART_GRACE_MS = 250;
+  const SPEED_PX_PER_SECOND = 36;
+  const THANKS_HOLD_MS = 3000;
   const track = document.querySelector(".supporter-strip-track");
   if (!track) return;
 
-  let fallbackTimer = 0;
+  const cycle = track.querySelector(".supporter-strip-cycle");
+  if (!cycle) return;
+  const thanks = cycle.querySelector(".supporter-strip-thanks");
+  if (!thanks) return;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let animation = null;
+  let measuredWidth = 0;
+  let measuredViewport = 0;
+  let measuredReducedMotion = null;
 
-  function startCycle() {
-    window.clearTimeout(fallbackTimer);
-    track.classList.remove("supporter-strip-track-running");
-    void track.offsetWidth;
-    track.classList.add("supporter-strip-track-running");
-    fallbackTimer = window.setTimeout(startCycle, CYCLE_MS + RESTART_GRACE_MS);
+  function measure() {
+    const cycleBox = cycle.getBoundingClientRect();
+    const width = cycleBox.width;
+    const viewport = track.parentElement.clientWidth;
+    if (!width || !viewport) return;
+    if (width === measuredWidth && viewport === measuredViewport && reducedMotion.matches === measuredReducedMotion) return;
+    measuredWidth = width;
+    measuredViewport = viewport;
+    measuredReducedMotion = reducedMotion.matches;
+    const copies = Math.ceil(viewport / width) + 1;
+    while (track.children.length < copies) {
+      const duplicate = cycle.cloneNode(true);
+      duplicate.dataset.cycle = "duplicate";
+      track.appendChild(duplicate);
+    }
+    while (track.children.length > copies) track.lastElementChild.remove();
+    const thanksBox = thanks.getBoundingClientRect();
+    const holdDistance = thanksBox.left - cycleBox.left + (thanksBox.width - viewport) / 2;
+    const holdStart = holdDistance / SPEED_PX_PER_SECOND * 1000;
+    const duration = width / SPEED_PX_PER_SECOND * 1000 + THANKS_HOLD_MS;
+    if (animation) animation.cancel();
+    animation = null;
+    if (reducedMotion.matches) return;
+    const centered = `translate3d(${-holdDistance}px, 0, 0)`;
+    animation = track.animate([
+      { transform: "translate3d(0, 0, 0)", offset: 0 },
+      { transform: centered, offset: holdStart / duration },
+      { transform: centered, offset: (holdStart + THANKS_HOLD_MS) / duration },
+      { transform: `translate3d(${-width}px, 0, 0)`, offset: 1 }
+    ], { duration, iterations: Infinity, easing: "linear" });
   }
 
-  track.addEventListener("animationend", (event) => {
-    if (event.animationName === "supporter-strip-scroll") startCycle();
-  });
-
-  startCycle();
+  measure();
+  reducedMotion.addEventListener("change", measure);
+  if ("ResizeObserver" in window) {
+    const observer = new ResizeObserver(measure);
+    observer.observe(cycle);
+    observer.observe(track.parentElement);
+  } else {
+    window.addEventListener("resize", measure);
+  }
 })();
