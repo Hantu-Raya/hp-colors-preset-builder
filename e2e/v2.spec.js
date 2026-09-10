@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { createHpMenuGroups } from '../src/hpv2HpMenuNavigation.js';
 import { REWRITE_FIELD_CATALOG } from '../src/hpv2HpSchema.js';
 import { extractSource2Resource, SOURCE2_RESOURCE_CODECS } from '../src/source2ResourceCodec.js';
-import { encodeUtf16Hex, readRewritePresetCode, readRewriteShowranksPresetCode, readRewriteQollockPresetCode, REWRITE_PRESET_ARCHIVE_PATH, REWRITE_PRESET_TEMPLATE_PATH } from '../src/hpv2RewritePackageBuilder.js';
+import { encodeUtf16Hex, readRewritePresetCode, readRewriteShowranksPresetCode, readRewriteQollockPresetCode, REWRITE_PRESET_ARCHIVE_PATH, REWRITE_TOPBAR_ARCHIVE_PATH, REWRITE_PRESET_TEMPLATE_PATH } from '../src/hpv2RewritePackageBuilder.js';
 import { readVpkArchive } from '../src/vpkArchive.js';
 import { loadSupporters } from '../src/supportersData.js';
 
@@ -732,9 +732,9 @@ for (const width of [1460, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('hpv2/');
     const variants = [
-      { title: 'Rewritev2 + ShowRanks', read: readRewriteShowranksPresetCode, runtime: 'showrank_barebones' },
-      { title: 'Rewritev2', read: readRewritePresetCode, runtime: 'hp_colors_rewrite_v2' },
-      { title: 'Rewritev2 + QOLLOCK', read: readRewriteQollockPresetCode, runtime: 'QOLLOCK' }
+      { title: 'Rewritev2 + ShowRanks', read: readRewriteShowranksPresetCode, runtime: 'showrank_barebones', archivePaths: [REWRITE_TOPBAR_ARCHIVE_PATH, REWRITE_PRESET_ARCHIVE_PATH] },
+      { title: 'Rewritev2', read: readRewritePresetCode, runtime: 'hp_colors_rewrite_v2', archivePaths: [REWRITE_PRESET_ARCHIVE_PATH] },
+      { title: 'Rewritev2 + QOLLOCK', read: readRewriteQollockPresetCode, runtime: 'QOLLOCK', archivePaths: [REWRITE_TOPBAR_ARCHIVE_PATH, REWRITE_PRESET_ARCHIVE_PATH] }
     ];
     for (const [index, variant] of variants.entries()) {
       const picker = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });
@@ -777,8 +777,9 @@ for (const width of [1460, 390]) {
       const download = await downloaded;
       expect(download.suggestedFilename()).toBe('pak01_dir.vpk');
       const archive = readVpkArchive(new Uint8Array(await readFile(await download.path())));
-      expect(archive.files.map((file) => file.path)).toEqual([REWRITE_PRESET_ARCHIVE_PATH]);
-      const presetCode = variant.read(archive.files[0].bytes);
+      expect(archive.files.map((file) => file.path)).toEqual(variant.archivePaths);
+      const presetFile = archive.files.find((file) => file.path === REWRITE_PRESET_ARCHIVE_PATH);
+      const presetCode = variant.read(presetFile.bytes);
       expect(JSON.parse(presetCode.slice(6)).records.some((record) => record.name === 'Shiv 🚀')).toBe(true);
       await page.reload();
     }

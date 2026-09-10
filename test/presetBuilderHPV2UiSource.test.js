@@ -201,12 +201,10 @@ test("rewrite transfer and preset actions stay isolated to v2", async () => {
 
   assert.doesNotMatch(v1Island, /rewritePresetCodec|HPCRP1|Copy rewrite preset/);
   assert.match(v2Island, /decodeRewriteTransfer/);
-  assert.match(v2Island, /createRewriteSettingsCode/);
-  assert.match(v2Island, /createRewritePresetCode/);
-  assert.match(v2Island, /createRewritePresetBundle/);
   assert.match(v2Island, /runRewritePresetBuildWorkflow/);
   assert.match(v2Island, /createRewritePresetTemplateLoader/);
-  assert.match(v2Island, /Build VPK/);
+  assert.match(v2Island, /createRewriteShowranksTopbarTemplateLoader/);
+  assert.match(v2Island, /createRewriteQollockTopbarTemplateLoader/);
   assert.match(v2Island, />\s*Add preset\s*</);
   assert.match(v2Island, />\s*Remove selected\s*</);
   assert.match(v2Island, /Paste an HPCRP1 preset or bundle/);
@@ -263,11 +261,14 @@ test("Rewrite QOLLOCK is a separate selectable target with a composite template"
   assert.match(island, /isRewriteQollockTarget/);
   assert.match(island, /runRewriteQollockPresetBuildWorkflow/);
   assert.match(island, /createRewriteQollockPresetTemplateLoader/);
+  assert.match(island, /createRewriteQollockTopbarTemplateLoader/);
   assert.match(targetMode, /REWRITE_QOLLOCK/);
   assert.match(targetMode, /hpv2Title: "Rewritev2"/);
   assert.match(targetMode, /hpv2Title: "Rewritev2 \+ QOLLOCK"/);
+  assert.match(workflow, /REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH/);
   assert.match(workflow, /REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH/);
-  assert.match(workflow, /REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME/);
+  assert.match(workflow, /REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH/);
+  assert.match(workflow, /topbarTemplateText/);
   const qolIndex = template.indexOf('<Button id="ModSettingsBtn"');
   const hpIndex = template.indexOf('<Button id="HPColorsMenuButton"');
   assert.ok(qolIndex >= 0 && qolIndex < hpIndex);

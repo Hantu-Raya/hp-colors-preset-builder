@@ -1,6 +1,6 @@
 # HP Colors Preset Builder
 
-HP Colors Preset Builder is a browser-only tool for editing, importing, routing, and packaging HP Colors presets. Minimal and Full packages contain the Source 2 `base_hud.vxml_c` preset store. Rewrite packages contain the hidden preset store in `hud_escape_menu.vxml_c`; the Rewrite + QOLLOCK target uses the composite Escape-menu layout. Downloads use `pak96_dir.vpk` for Minimal and Full, and `pak01_dir.vpk` for every Rewrite target so the preset Escape menu overrides the runtime package. The builder does not install files into Deadlock.
+HP Colors Preset Builder is a browser-only tool for editing, importing, routing, and packaging HP Colors presets. Minimal and Full packages contain the Source 2 `base_hud.vxml_c` preset store. Rewrite packages contain the hidden preset store in `hud_escape_menu.vxml_c`; HPv2 Rewrite + ShowRanks and Rewrite + QOLLOCK packages also include their target-specific merged `citadel_hud_top_bar.vxml_c` layout. Downloads use `pak96_dir.vpk` for Minimal and Full, and `pak01_dir.vpk` for every Rewrite target so the preset Escape menu overrides the runtime package. The builder does not install files into Deadlock.
 
 ## Choose the matching target
 
@@ -34,8 +34,8 @@ The HPv2 build dialog shows the selected target, output, and install order. **Co
 4. Build the preset and place it in the same directory:
    - Minimal or Full: replace the selected base mod's `pak96_dir.vpk` and keep its matching `pak97_dir.vpk`.
    - Rewrite: install the generated `pak01_dir.vpk` beside the rewrite runtime's `pak02_dir.vpk`. The generated package overrides only `panorama/layout/hud_escape_menu.vxml_c`; do not install another mod that overrides that layout.
-   - Rewritev2 + ShowRanks: install the generated `pak01_dir.vpk` beside Rewritev2 `pak02_dir.vpk` and ShowRanks `pak03_dir.vpk`. The preset layout includes the ShowRanks Escape-menu hooks.
-   - Rewrite + QOLLOCK: install the generated `pak01_dir.vpk` beside `pak02_dir.vpk` and `pak03_dir.vpk`. It overrides only `panorama/layout/hud_escape_menu.vxml_c`.
+   - Rewritev2 + ShowRanks: install the generated `pak01_dir.vpk` beside Rewritev2 `pak02_dir.vpk` and ShowRanks `pak03_dir.vpk`. The preset package contains merged `panorama/layout/hud_escape_menu.vxml_c` and `panorama/layout/citadel_hud_top_bar.vxml_c` assets.
+   - Rewrite + QOLLOCK: install the generated `pak01_dir.vpk` beside `pak02_dir.vpk` and `pak03_dir.vpk`. The preset package contains merged `panorama/layout/hud_escape_menu.vxml_c` and `panorama/layout/citadel_hud_top_bar.vxml_c` assets.
 5. Restart Deadlock after replacing any VPK. A live Panorama context can retain the previous package.
 
 Keep only one HP Colors runtime and one matching preset package active at a time.
@@ -50,7 +50,7 @@ The builder's package contract is deliberately narrow and deterministic:
 - The current Minimal/Full runtime storage version is **99**. Builder output uses **v1** payloads, and the importer accepts legacy runtime **v97** (and **v25**) input.
 - Minimal/Full copied codes use the `[ANITA-v1-hp_colors]:` prefix. Rewrite settings use `HPCR2`; rewrite presets and bundles use `HPCRP1`.
 
-Values are normalized before serialization. A generated Minimal or Full package contains one validated `panorama/layout/base_hud.vxml_c` entry. A generated standalone Rewrite or Rewrite + QOLLOCK package contains one validated `panorama/layout/hud_escape_menu.vxml_c` entry with the hidden `HPCRP1` store. Neither package contains unrelated files.
+Values are normalized before serialization. A generated Minimal or Full package contains one validated `panorama/layout/base_hud.vxml_c` entry. A generated standalone Rewrite package contains one validated `panorama/layout/hud_escape_menu.vxml_c` entry; HPv2 Rewrite + ShowRanks and Rewrite + QOLLOCK packages contain that preset layout plus one validated `panorama/layout/citadel_hud_top_bar.vxml_c` entry. Each compatibility topbar is merged for its target. Neither package contains unrelated files.
 
 ## Profiles and routing
 
@@ -109,7 +109,7 @@ The build output is written to `dist/` and should not be committed.
 
 ### Shared HPv2 XML
 
-Edit `public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml` once for all three HPv2 categories. Normal uses it directly. ShowRanks adds its compatibility hooks during packaging. QOLLOCK's full template is generated from it by `scripts/sync-hpv2-templates.js`, which contains only QOLLOCK-specific additions.
+Edit `public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml` once for all three HPv2 categories. Normal uses it directly. ShowRanks adds its compatibility hooks during packaging and compiles its merged target topbar template. QOLLOCK's full template is generated from it by `scripts/sync-hpv2-templates.js`, and its merged target topbar template is compiled alongside it.
 
 `npm run dev`, `npm test`, and `npm run build` regenerate the QOLLOCK template first. Restart the dev command after XML edits. Do not edit the generated QOLLOCK XML. Commit it with the shared source; missing or duplicate insertion targets stop generation.
 

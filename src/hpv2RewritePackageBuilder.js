@@ -6,6 +6,9 @@ import { REWRITE_PRESET_VPK_FILE_NAME as REWRITE_PRESET_FILENAME } from "./hpv2P
 export const REWRITE_PRESET_ARCHIVE_PATH = "panorama/layout/hud_escape_menu.vxml_c";
 export const REWRITE_PRESET_VPK_FILE_NAME = REWRITE_PRESET_FILENAME;
 export const REWRITE_PRESET_TEMPLATE_PATH = "templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml";
+export const REWRITE_TOPBAR_ARCHIVE_PATH = "panorama/layout/citadel_hud_top_bar.vxml_c";
+export const REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH = "templates/hpv2_hp_colors_rewrite_showranks/panorama/layout/citadel_hud_top_bar.xml";
+export const REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH = "templates/hpv2_hp_colors_rewrite_qollock/panorama/layout/citadel_hud_top_bar.xml";
 export const REWRITE_PRESET_CONTRACT = "HPCRP1";
 export const REWRITE_PRESET_CONTRACT_VERSION = "1";
 export const REWRITE_PRESET_STORE_PANEL_ID = "HPColorsRewritePresetStore";
@@ -104,6 +107,53 @@ export const REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   "HPColorsStaminaWidthEntry",
   "HPColorsAllyPulseColorModeRow",
   "HPColorsSupporterTicker"
+]);
+const REWRITE_TOPBAR_SCRIPT_INCLUDES = Object.freeze([
+  "s2r://panorama/scripts/hp_colors_v2_contract.vjs_c",
+  "s2r://panorama/scripts/test_topbar_pickups.vjs_c"
+]);
+const REWRITE_SHOWRANKS_TOPBAR_STYLE_INCLUDES = Object.freeze([
+  "s2r://panorama/styles/citadel_base_styles.vcss_c",
+  "s2r://panorama/styles/hud_common.vcss_c",
+  "s2r://panorama/styles/citadel_hud_top_bar.vcss_c",
+  "s2r://panorama/styles/unit_status_icons.vcss_c",
+  "s2r://panorama/styles/citadel_hud_game_announcements.vcss_c",
+  "s2r://panorama/styles/showrank_barebones_topbar.vcss_c"
+]);
+const REWRITE_QOLLOCK_TOPBAR_STYLE_INCLUDES = Object.freeze([
+  "s2r://panorama/styles/citadel_base_styles.vcss_c",
+  "s2r://panorama/styles/hud_common.vcss_c",
+  "s2r://panorama/styles/citadel_hud_top_bar.vcss_c",
+  "s2r://panorama/styles/unit_status_icons.vcss_c"
+]);
+const REWRITE_SHOWRANKS_TOPBAR_REQUIRED_PANEL_IDS = Object.freeze([
+  "ShowRankBarebonesNotificationRoot",
+  "ShowRankBarebonesTeamAverageLayer",
+  "ShowRankBarebonesAverageFriendlyImage",
+  "ShowRankBarebonesAverageEnemyImage"
+]);
+const REWRITE_QOLLOCK_TOPBAR_REQUIRED_PANEL_IDS = Object.freeze([
+  "TeamSPMDisplay_friendly",
+  "TeamSPMDisplay_enemy",
+  "BuffHUD",
+  "RejuvHUD",
+  "RejuvBuff",
+  "Buff",
+  "Rejuv"
+]);
+const REWRITE_SHOWRANKS_TOPBAR_FORBIDDEN_MARKERS = Object.freeze([
+  "teamSPMDisplay",
+  'id="TeamSPMDisplay_friendly"',
+  'id="TeamSPMDisplay_enemy"',
+  'id="BuffHUD"',
+  'id="RejuvHUD"',
+  'id="RejuvBuff"',
+  'id="Buff"',
+  'id="Rejuv"'
+]);
+const REWRITE_QOLLOCK_TOPBAR_FORBIDDEN_MARKERS = Object.freeze([
+  "s2r://panorama/styles/showrank_barebones_topbar.vcss_c",
+  "ShowRankBarebones"
 ]);
 const REWRITE_MENU_ONCANCEL = "if (!$.HPColorsMenuCancel()) $.DispatchEvent('CitadelResumePlaying', $.GetContextPanel())";
 const REWRITE_MENU_ONCANCEL_XML = REWRITE_MENU_ONCANCEL.replaceAll("'", "&apos;");
@@ -400,6 +450,63 @@ export function inspectRewriteQollockPresetTemplate(templateText) {
 
 export const validateRewriteQollockPresetTemplate = inspectRewriteQollockPresetTemplate;
 
+function requireTopbarContract(root, { target, requiredPanelIds }) {
+  const topbars = directChildren(root, "CitadelHudTopBar");
+  if (topbars.length !== 1) throw new Error(`Rewrite ${target} topbar XML must contain exactly one CitadelHudTopBar`);
+  const topbar = topbars[0];
+  const classes = String(topbar.attrs.class || "").split(/\s+/).filter(Boolean);
+  if (!classes.includes("HPV2PickupTopBar") || topbar.attrs.hittest !== "false") {
+    throw new Error(`Rewrite ${target} topbar XML hook contract is stale or incompatible`);
+  }
+  const counts = new Map();
+  const walk = (node) => {
+    if (node?.attrs.id) counts.set(node.attrs.id, (counts.get(node.attrs.id) || 0) + 1);
+    node?.children.forEach(walk);
+  };
+  walk(topbar);
+  if (requiredPanelIds.some((id) => counts.get(id) !== 1)) {
+    throw new Error(`Rewrite ${target} topbar XML panel contract is stale or incompatible`);
+  }
+  return topbar;
+}
+
+function inspectRewriteTopbarXml(
+  source,
+  { target, styleIncludes, requiredPanelIds, forbiddenMarkers }
+) {
+  const text = asText(source);
+  const parsed = parseRewriteXml(text);
+  if (forbiddenMarkers.some((marker) => text.includes(marker))) {
+    throw new Error(`Rewrite ${target} topbar XML contains incompatible target markers`);
+  }
+  const styles = requireIncludes(parsed.root, "styles", styleIncludes, `${target} topbar style`);
+  const scripts = requireIncludes(parsed.root, "scripts", REWRITE_TOPBAR_SCRIPT_INCLUDES, `${target} topbar script`);
+  requireTopbarContract(parsed.root, { target, requiredPanelIds });
+  return { text, styleIncludes: styles, scriptIncludes: scripts };
+}
+
+export function inspectRewriteShowranksTopbarTemplate(templateText) {
+  return inspectRewriteTopbarXml(templateText, {
+    target: "showranks",
+    styleIncludes: REWRITE_SHOWRANKS_TOPBAR_STYLE_INCLUDES,
+    requiredPanelIds: REWRITE_SHOWRANKS_TOPBAR_REQUIRED_PANEL_IDS,
+    forbiddenMarkers: REWRITE_SHOWRANKS_TOPBAR_FORBIDDEN_MARKERS
+  });
+}
+
+export const validateRewriteShowranksTopbarTemplate = inspectRewriteShowranksTopbarTemplate;
+
+export function inspectRewriteQollockTopbarTemplate(templateText) {
+  return inspectRewriteTopbarXml(templateText, {
+    target: "QOLLOCK",
+    styleIncludes: REWRITE_QOLLOCK_TOPBAR_STYLE_INCLUDES,
+    requiredPanelIds: REWRITE_QOLLOCK_TOPBAR_REQUIRED_PANEL_IDS,
+    forbiddenMarkers: REWRITE_QOLLOCK_TOPBAR_FORBIDDEN_MARKERS
+  });
+}
+
+export const validateRewriteQollockTopbarTemplate = inspectRewriteQollockTopbarTemplate;
+
 function sourceTextFromResource(input) {
   if (typeof input === "string") return input;
   if (input instanceof Uint8Array || input instanceof ArrayBuffer || ArrayBuffer.isView(input)) {
@@ -474,6 +581,28 @@ function patchRewriteQollockPresetTemplate({ templateText, templateXml, template
     presetCode: normalizedCode,
     template: reread
   };
+}
+
+function readRewriteCompatibilityArchive(vpkBytes, target) {
+  const archive = readVpkArchive(vpkBytes);
+  if (archive.files.length !== 2) {
+    throw new Error(`Rewrite ${target} preset VPK must contain exactly two files: the escape-menu and topbar layouts`);
+  }
+  const expectedPaths = new Set([REWRITE_PRESET_ARCHIVE_PATH, REWRITE_TOPBAR_ARCHIVE_PATH]);
+  const files = new Map();
+  for (const file of archive.files) {
+    const path = normalizeVpkPath(file.path);
+    if (!expectedPaths.has(path)) throw new Error(`Rewrite ${target} preset VPK contains an unexpected file`);
+    if (files.has(path)) throw new Error(`Rewrite ${target} preset VPK contains a duplicate file`);
+    if (!(file.bytes instanceof Uint8Array)) throw new Error(`Rewrite ${target} preset VPK contains invalid bytes`);
+    files.set(path, file);
+  }
+  const escapeFile = files.get(REWRITE_PRESET_ARCHIVE_PATH);
+  const topbarFile = files.get(REWRITE_TOPBAR_ARCHIVE_PATH);
+  if (!escapeFile || !topbarFile) {
+    throw new Error(`Rewrite ${target} preset VPK must contain exactly the escape-menu and topbar layouts`);
+  }
+  return { archive, escapeFile, topbarFile };
 }
 
 export function validateRewritePresetVpk(vpkBytes) {
@@ -575,14 +704,12 @@ function patchRewriteShowranksPresetTemplate({ templateText, templateXml, templa
 }
 
 export function validateRewriteShowranksPresetVpk(vpkBytes) {
-  const archive = readVpkArchive(vpkBytes);
-  if (archive.files.length !== 1) throw new Error("Rewrite showranks preset VPK must contain exactly one file");
-  const [file] = archive.files;
-  if (normalizeVpkPath(file.path) !== REWRITE_PRESET_ARCHIVE_PATH) throw new Error("Rewrite showranks preset VPK contains an unexpected file");
-  if (!(file.bytes instanceof Uint8Array)) throw new Error("Rewrite showranks preset VPK contains invalid bytes");
-  const sourceText = extractSource2Resource({ bytes: file.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  const { archive, escapeFile, topbarFile } = readRewriteCompatibilityArchive(vpkBytes, "showranks");
+  const sourceText = extractSource2Resource({ bytes: escapeFile.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
   const inspected = inspectRewriteShowranksPresetTemplate(sourceText, { requireEmpty: false });
   if (!inspected.presetCode) throw new Error("Rewrite showranks preset VPK store is empty");
+  const topbarText = extractSource2Resource({ bytes: topbarFile.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  inspectRewriteShowranksTopbarTemplate(topbarText);
   return archive;
 }
 
@@ -592,13 +719,24 @@ export function buildRewriteShowranksPresetPackage(input, positionalTemplateText
     : (input || {});
   const presetCode = options.presetCode ?? options.code;
   const templateText = options.templateText ?? options.templateXml ?? options.template;
+  const topbarTemplateText = options.topbarTemplateText;
+  if (typeof topbarTemplateText !== "string") {
+    throw new Error("Rewrite showranks preset package requires topbarTemplateText");
+  }
+  const topbarTemplate = inspectRewriteShowranksTopbarTemplate(topbarTemplateText);
   const patched = patchRewriteShowranksPresetTemplate({ templateText, presetCode });
   const bytes = compileSource2Resource({ sourceText: patched.text, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
-  const archive = createVpkArchive([{ path: REWRITE_PRESET_ARCHIVE_PATH, bytes }]);
+  const topbarBytes = compileSource2Resource({ sourceText: topbarTemplate.text, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  const archive = createVpkArchive([
+    { path: REWRITE_PRESET_ARCHIVE_PATH, bytes },
+    { path: REWRITE_TOPBAR_ARCHIVE_PATH, bytes: topbarBytes }
+  ]);
   const vpkBytes = writeVpkArchive(archive);
   const rereadArchive = validateRewriteShowranksPresetVpk(vpkBytes);
-  const file = rereadArchive.files[0];
+  const file = rereadArchive.files.find((entry) => normalizeVpkPath(entry.path) === REWRITE_PRESET_ARCHIVE_PATH);
+  const rereadTopbarFile = rereadArchive.files.find((entry) => normalizeVpkPath(entry.path) === REWRITE_TOPBAR_ARCHIVE_PATH);
   const rereadText = extractSource2Resource({ bytes: file.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  const rereadTopbarText = extractSource2Resource({ bytes: rereadTopbarFile.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
   const rereadCode = readRewriteShowranksPresetCode(rereadText);
   if (rereadCode !== patched.code) throw new Error("Rewrite showranks preset VPK payload failed round-trip");
   return {
@@ -608,17 +746,17 @@ export function buildRewriteShowranksPresetPackage(input, positionalTemplateText
     xmlText: rereadText,
     presetCode: patched.code,
     template: inspectRewriteShowranksPresetTemplate(rereadText, { requireEmpty: false }),
+    topbarBytes: rereadTopbarFile.bytes,
+    topbarSourceText: rereadTopbarText,
+    topbarXmlText: rereadTopbarText,
+    topbarTemplate: inspectRewriteShowranksTopbarTemplate(rereadTopbarText),
     archive: rereadArchive
   };
 }
 
 export function validateRewriteQollockPresetVpk(vpkBytes) {
-  const archive = readVpkArchive(vpkBytes);
-  if (archive.files.length !== 1) throw new Error("Rewrite QOLLOCK preset VPK must contain exactly one file");
-  const [file] = archive.files;
-  if (normalizeVpkPath(file.path) !== REWRITE_PRESET_ARCHIVE_PATH) throw new Error("Rewrite QOLLOCK preset VPK contains an unexpected file");
-  if (!(file.bytes instanceof Uint8Array)) throw new Error("Rewrite QOLLOCK preset VPK contains invalid bytes");
-  const sourceText = extractSource2Resource({ bytes: file.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  const { archive, escapeFile, topbarFile } = readRewriteCompatibilityArchive(vpkBytes, "QOLLOCK");
+  const sourceText = extractSource2Resource({ bytes: escapeFile.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
   const inspected = inspectRewriteXml(sourceText, {
     requireEmpty: false,
     styleIncludes: REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES,
@@ -628,6 +766,8 @@ export function validateRewriteQollockPresetVpk(vpkBytes) {
     expectedOncancel: REWRITE_QOLLOCK_MENU_ONCANCEL
   });
   if (!inspected.presetCode) throw new Error("Rewrite QOLLOCK preset VPK store is empty");
+  const topbarText = extractSource2Resource({ bytes: topbarFile.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  inspectRewriteQollockTopbarTemplate(topbarText);
   return archive;
 }
 
@@ -637,13 +777,24 @@ export function buildRewriteQollockPresetPackage(input, positionalTemplateText =
     : (input || {});
   const presetCode = options.presetCode ?? options.code;
   const templateText = options.templateText ?? options.templateXml ?? options.template;
+  const topbarTemplateText = options.topbarTemplateText;
+  if (typeof topbarTemplateText !== "string") {
+    throw new Error("Rewrite QOLLOCK preset package requires topbarTemplateText");
+  }
+  const topbarTemplate = inspectRewriteQollockTopbarTemplate(topbarTemplateText);
   const patched = patchRewriteQollockPresetTemplate({ templateText, presetCode });
   const bytes = compileSource2Resource({ sourceText: patched.text, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
-  const archive = createVpkArchive([{ path: REWRITE_PRESET_ARCHIVE_PATH, bytes }]);
+  const topbarBytes = compileSource2Resource({ sourceText: topbarTemplate.text, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  const archive = createVpkArchive([
+    { path: REWRITE_PRESET_ARCHIVE_PATH, bytes },
+    { path: REWRITE_TOPBAR_ARCHIVE_PATH, bytes: topbarBytes }
+  ]);
   const vpkBytes = writeVpkArchive(archive);
   const rereadArchive = validateRewriteQollockPresetVpk(vpkBytes);
-  const file = rereadArchive.files[0];
+  const file = rereadArchive.files.find((entry) => normalizeVpkPath(entry.path) === REWRITE_PRESET_ARCHIVE_PATH);
+  const rereadTopbarFile = rereadArchive.files.find((entry) => normalizeVpkPath(entry.path) === REWRITE_TOPBAR_ARCHIVE_PATH);
   const rereadText = extractSource2Resource({ bytes: file.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  const rereadTopbarText = extractSource2Resource({ bytes: rereadTopbarFile.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
   const rereadCode = readRewriteQollockPresetCode(rereadText);
   if (rereadCode !== patched.code) throw new Error("Rewrite QOLLOCK preset VPK payload failed round-trip");
   return {
@@ -660,6 +811,10 @@ export function buildRewriteQollockPresetPackage(input, positionalTemplateText =
       expectedOnload: "$.HPColorsMenuBoot()",
       expectedOncancel: REWRITE_QOLLOCK_MENU_ONCANCEL
     }),
+    topbarBytes: rereadTopbarFile.bytes,
+    topbarSourceText: rereadTopbarText,
+    topbarXmlText: rereadTopbarText,
+    topbarTemplate: inspectRewriteQollockTopbarTemplate(rereadTopbarText),
     archive: rereadArchive
   };
 }

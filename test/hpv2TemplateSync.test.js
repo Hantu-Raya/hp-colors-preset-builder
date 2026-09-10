@@ -13,6 +13,8 @@ import {
 import { extractSource2Resource, SOURCE2_RESOURCE_CODECS } from "../src/source2ResourceCodec.js";
 
 const canonical = await readFile(new URL("../public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml", import.meta.url), "utf8");
+const showranksTopbar = await readFile(new URL("../public/templates/hpv2_hp_colors_rewrite_showranks/panorama/layout/citadel_hud_top_bar.xml", import.meta.url), "utf8");
+const qollockTopbar = await readFile(new URL("../public/templates/hpv2_hp_colors_rewrite_qollock/panorama/layout/citadel_hud_top_bar.xml", import.meta.url), "utf8");
 const presetCode = 'HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Shared layout","mode":"all","heroes":[],"values":[],"conditions":null}],"selectedPresetId":"user_0001"}';
 
 test("one canonical edit reaches all three compiled preset layouts without losing compatibility", () => {
@@ -22,11 +24,11 @@ test("one canonical edit reaches all three compiled preset layouts without losin
     .replace('text="#menu_changehero"', 'text="Shared stock update"');
   const variants = [
     [buildRewritePresetPackage, readRewritePresetCode, changed],
-    [buildRewriteShowranksPresetPackage, readRewriteShowranksPresetCode, changed],
-    [buildRewriteQollockPresetPackage, readRewriteQollockPresetCode, composeHpv2QollockTemplate(changed)]
+    [buildRewriteShowranksPresetPackage, readRewriteShowranksPresetCode, changed, showranksTopbar],
+    [buildRewriteQollockPresetPackage, readRewriteQollockPresetCode, composeHpv2QollockTemplate(changed), qollockTopbar]
   ];
-  for (const [build, read, templateText] of variants) {
-    const result = build({ templateText, presetCode });
+  for (const [build, read, templateText, topbarTemplateText] of variants) {
+    const result = build({ templateText, topbarTemplateText, presetCode });
     const xml = extractSource2Resource({ bytes: result.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
     assert.match(xml, /text="Shared menu update"/);
     assert.match(xml, /id="SharedLayoutAddition"/);

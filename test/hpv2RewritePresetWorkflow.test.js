@@ -11,17 +11,42 @@ import { TARGET_MODE_STORAGE_KEY, V2_TARGET_MODE_STORAGE_KEY } from "../src/targ
 import {
   commitPresetBuilderTargetMode,
   createRewritePresetTemplateLoader,
-  runRewritePresetBuildWorkflow
+  createRewriteShowranksTopbarTemplateLoader,
+  createRewriteQollockTopbarTemplateLoader,
+  runRewritePresetBuildWorkflow,
+  runRewriteQollockPresetBuildWorkflow
 } from "../src/hpv2PresetBuilderWorkflow.js";
 import {
+  extractSource2Resource,
+  SOURCE2_RESOURCE_CODECS
+} from "../src/source2ResourceCodec.js";
+import {
   readRewritePresetCode,
+  readRewriteShowranksPresetCode,
+  readRewriteQollockPresetCode,
   REWRITE_PRESET_ARCHIVE_PATH,
-  REWRITE_PRESET_TEMPLATE_PATH
+  REWRITE_TOPBAR_ARCHIVE_PATH,
+  REWRITE_PRESET_TEMPLATE_PATH,
+  REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH,
+  REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH
 } from "../src/hpv2RewritePackageBuilder.js";
 import { readVpkArchive } from "../src/vpkArchive.js";
 
 const TEMPLATE_PATH = new URL(
   "../public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml",
+  import.meta.url
+);
+
+const QOLLOCK_TEMPLATE_PATH = new URL(
+  "../public/templates/hpv2_hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml",
+  import.meta.url
+);
+const SHOWRANKS_TOPBAR_TEMPLATE_PATH = new URL(
+  "../public/templates/hpv2_hp_colors_rewrite_showranks/panorama/layout/citadel_hud_top_bar.xml",
+  import.meta.url
+);
+const QOLLOCK_TOPBAR_TEMPLATE_PATH = new URL(
+  "../public/templates/hpv2_hp_colors_rewrite_qollock/panorama/layout/citadel_hud_top_bar.xml",
   import.meta.url
 );
 
@@ -150,16 +175,43 @@ test("rewrite template loader caches successful XML text and retries failed fetc
   assert.equal(await failingLoader(), template);
 });
 
+test("rewrite compatibility topbar loaders use and cache target-specific XML paths", async () => {
+  const cases = [
+    [createRewriteShowranksTopbarTemplateLoader, REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH, "showranks topbar"],
+    [createRewriteQollockTopbarTemplateLoader, REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH, "qollock topbar"]
+  ];
+  for (const [createLoader, templatePath, template] of cases) {
+    let calls = 0;
+    const loader = createLoader({
+      baseUrl: "/builder/",
+      fetchImpl: async (url) => {
+        calls += 1;
+        assert.equal(url, `/builder/${templatePath}`);
+        return { ok: true, text: async () => template };
+      }
+    });
+    const [first, second] = await Promise.all([loader(), loader()]);
+    assert.equal(calls, 1);
+    assert.equal(first, template);
+    assert.equal(second, template);
+  }
+});
+
 test("rewrite build workflow creates and downloads XML-only pak01 with success hash/status", async () => {
   const template = makeTemplate();
   const profile = createInitialProfile(HP_FIELD_CATALOG.createDefaultState());
   profile.name = "Workflow \"preset\"";
   const dispatched = [];
   const downloads = [];
+  let topbarLoads = 0;
   const result = await runRewritePresetBuildWorkflow({
     profiles: [profile],
     activeProfileId: profile.id,
     loadRewritePresetTemplate: async () => template,
+    loadRewriteShowranksTopbarTemplate: async () => {
+      topbarLoads += 1;
+      throw new Error("normal Rewrite must not load a topbar template");
+    },
     download: async (filename, bytes) => downloads.push({ filename, bytes }),
     digest: async () => "rewrite-sha256",
     dispatch: (intent) => dispatched.push(intent)
@@ -167,10 +219,68 @@ test("rewrite build workflow creates and downloads XML-only pak01 with success h
   assert.equal(result.filename, "pak01_dir.vpk");
   assert.equal(result.targetLabel, "hp_colors_rewrite");
   assert.equal(result.sha256, "rewrite-sha256");
+  assert.equal(topbarLoads, 0);
   assert.equal(downloads.length, 1);
   assert.equal(downloads[0].filename, "pak01_dir.vpk");
   const archive = readVpkArchive(downloads[0].bytes);
   assert.deepEqual(archive.files.map((file) => file.path), [REWRITE_PRESET_ARCHIVE_PATH]);
   assert.ok(readRewritePresetCode(archive.files[0].bytes).startsWith("HPCRP1"));
   assert.match(dispatched.at(-1).status, /^Built pak01_dir\.vpk for hp_colors_rewrite/);
+});
+
+test("ShowRanks rewrite build includes the merged topbar resource", async () => {
+  const template = makeTemplate();
+  const topbarTemplate = readFileSync(SHOWRANKS_TOPBAR_TEMPLATE_PATH, "utf8");
+  const profile = createInitialProfile(HP_FIELD_CATALOG.createDefaultState());
+  const downloads = [];
+  const result = await runRewritePresetBuildWorkflow({
+    profiles: [profile],
+    activeProfileId: profile.id,
+    loadRewritePresetTemplate: async () => template,
+    loadRewriteShowranksTopbarTemplate: async () => topbarTemplate,
+    showranksCompatible: true,
+    download: async (filename, bytes) => downloads.push({ filename, bytes }),
+    digest: async () => "showranks-sha256"
+  });
+  assert.equal(result.showranksCompatible, true);
+  const archive = readVpkArchive(downloads[0].bytes);
+  assert.deepEqual(
+    archive.files.map((file) => file.path),
+    [REWRITE_TOPBAR_ARCHIVE_PATH, REWRITE_PRESET_ARCHIVE_PATH]
+  );
+  const presetFile = archive.files.find((file) => file.path === REWRITE_PRESET_ARCHIVE_PATH);
+  const topbarFile = archive.files.find((file) => file.path === REWRITE_TOPBAR_ARCHIVE_PATH);
+  assert.ok(readRewriteShowranksPresetCode(presetFile.bytes).startsWith("HPCRP1"));
+  assert.equal(
+    extractSource2Resource({ bytes: topbarFile.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT }),
+    topbarTemplate
+  );
+});
+
+test("QOLLOCK rewrite build includes its merged topbar resource", async () => {
+  const template = readFileSync(QOLLOCK_TEMPLATE_PATH, "utf8");
+  const topbarTemplate = readFileSync(QOLLOCK_TOPBAR_TEMPLATE_PATH, "utf8");
+  const profile = createInitialProfile(HP_FIELD_CATALOG.createDefaultState());
+  const downloads = [];
+  const result = await runRewriteQollockPresetBuildWorkflow({
+    profiles: [profile],
+    activeProfileId: profile.id,
+    loadRewriteQollockPresetTemplate: async () => template,
+    loadRewriteQollockTopbarTemplate: async () => topbarTemplate,
+    download: async (filename, bytes) => downloads.push({ filename, bytes }),
+    digest: async () => "qollock-sha256"
+  });
+  assert.equal(result.target, "hp_colors_rewrite_qollock");
+  const archive = readVpkArchive(downloads[0].bytes);
+  assert.deepEqual(
+    archive.files.map((file) => file.path),
+    [REWRITE_TOPBAR_ARCHIVE_PATH, REWRITE_PRESET_ARCHIVE_PATH]
+  );
+  const presetFile = archive.files.find((file) => file.path === REWRITE_PRESET_ARCHIVE_PATH);
+  const topbarFile = archive.files.find((file) => file.path === REWRITE_TOPBAR_ARCHIVE_PATH);
+  assert.ok(readRewriteQollockPresetCode(presetFile.bytes).startsWith("HPCRP1"));
+  assert.equal(
+    extractSource2Resource({ bytes: topbarFile.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT }),
+    topbarTemplate
+  );
 });

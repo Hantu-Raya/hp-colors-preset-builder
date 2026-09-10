@@ -10,6 +10,9 @@ import {
   readRewritePresetCode,
   readRewriteShowranksPresetCode,
   REWRITE_PRESET_ARCHIVE_PATH,
+  REWRITE_TOPBAR_ARCHIVE_PATH,
+  REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH,
+  REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH,
   REWRITE_PRESET_CONTRACT,
   REWRITE_PRESET_CONTRACT_VERSION,
   REWRITE_PRESET_STORE_LABEL_CLASS,
@@ -19,13 +22,18 @@ import {
   validateRewritePresetVpk,
   validateRewriteShowranksPresetVpk
 } from "../src/hpv2RewritePackageBuilder.js";
+import { extractSource2Resource, compileSource2Resource, SOURCE2_RESOURCE_CODECS } from "../src/source2ResourceCodec.js";
 import { createVpkArchive, readVpkArchive, writeVpkArchive } from "../src/vpkArchive.js";
 
 const TEMPLATE_PATH = new URL("../public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml", import.meta.url);
+const SHOWRANKS_TOPBAR_PATH = new URL(`../public/${REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH}`, import.meta.url);
+const QOLLOCK_TOPBAR_PATH = new URL(`../public/${REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH}`, import.meta.url);
 const PRESET_CODE = `HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Unicode ${String.fromCodePoint(0x1f680)} / \\"safe\\"","mode":"all","heroes":[],"values":[],"conditions":null}],"selectedPresetId":"user_0001"}`;
 const ESCAPE_FALLBACK_XML = "if (!$.HPColorsMenuCancel()) $.DispatchEvent(&apos;CitadelResumePlaying&apos;, $.GetContextPanel())";
 
 const templateText = await readFile(TEMPLATE_PATH, "utf8");
+const showranksTopbarTemplateText = await readFile(SHOWRANKS_TOPBAR_PATH, "utf8");
+const qollockTopbarTemplateText = await readFile(QOLLOCK_TOPBAR_PATH, "utf8");
 
 test("XML template has the stable rewrite layout contract and one empty hidden store label", () => {
   const inspected = validateRewritePresetTemplate(templateText);
@@ -142,8 +150,20 @@ test("rewrite VPK rejects any asset besides the XML layout", () => {
   assert.throws(() => validateRewritePresetVpk(wrong), /unexpected file/);
 });
 
-test("showranks package merges the ShowRank escape-menu hooks and round-trips HPCRP1", () => {
-  const built = buildRewriteShowranksPresetPackage({ templateText, presetCode: PRESET_CODE });
+test("showranks package compiles both layouts and round-trips HPCRP1", () => {
+  const built = buildRewriteShowranksPresetPackage({
+    templateText,
+    topbarTemplateText: showranksTopbarTemplateText,
+    presetCode: PRESET_CODE
+  });
+  const archive = readVpkArchive(built.vpkBytes);
+  assert.deepEqual(archive.files.map((file) => file.path), [REWRITE_TOPBAR_ARCHIVE_PATH, REWRITE_PRESET_ARCHIVE_PATH]);
+  const escapeFile = archive.files.find((file) => file.path === REWRITE_PRESET_ARCHIVE_PATH);
+  const topbarFile = archive.files.find((file) => file.path === REWRITE_TOPBAR_ARCHIVE_PATH);
+  assert.equal(readRewriteShowranksPresetCode(escapeFile.bytes), PRESET_CODE);
+  const topbarText = extractSource2Resource({ bytes: topbarFile.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  assert.equal(topbarText, showranksTopbarTemplateText);
+  assert.equal(built.topbarSourceText, showranksTopbarTemplateText);
   assert.match(built.sourceText, /<include src="s2r:\/\/panorama\/scripts\/showrank_barebones\.vjs_c" \/>/);
   assert.ok(
     built.sourceText.includes(
@@ -155,6 +175,10 @@ test("showranks package merges the ShowRank escape-menu hooks and round-trips HP
   for (const id of ["PlayersTab", "PlayersTabContents", "PlayersList"]) {
     assert.match(built.sourceText, new RegExp(`id="${id}"`), id);
   }
+  assert.match(topbarText, /id="ShowRankBarebonesNotificationRoot"/);
+  assert.match(topbarText, /id="ShowRankBarebonesTeamAverageLayer"/);
+  assert.match(topbarText, /showrank_barebones_topbar\.vcss_c/);
+  assert.doesNotMatch(topbarText, /TeamSPMDisplay_friendly|id="BuffHUD"/);
   const inspected = inspectRewriteShowranksPresetTemplate(built.sourceText, { requireEmpty: false });
   assert.deepEqual(inspected.scriptIncludes, [
     "s2r://panorama/scripts/hp_colors_v2_contract.vjs_c",
@@ -163,7 +187,7 @@ test("showranks package merges the ShowRank escape-menu hooks and round-trips HP
     "s2r://panorama/scripts/showrank_barebones.vjs_c"
   ]);
   assert.equal(readRewriteShowranksPresetCode(built.bytes), PRESET_CODE);
-  assert.equal(validateRewriteShowranksPresetVpk(built.vpkBytes).files.length, 1);
+  assert.equal(validateRewriteShowranksPresetVpk(built.vpkBytes).files.length, 2);
   for (const id of ["PlayersTab", "PlayersTabContents", "PlayersList"]) {
     assert.throws(
       () => inspectRewriteShowranksPresetTemplate(
@@ -175,18 +199,52 @@ test("showranks package merges the ShowRank escape-menu hooks and round-trips HP
   }
 });
 
+test("showranks package requires and validates its target topbar layout", () => {
+  assert.throws(
+    () => buildRewriteShowranksPresetPackage({ templateText, presetCode: PRESET_CODE }),
+    /requires topbarTemplateText/
+  );
+  const built = buildRewriteShowranksPresetPackage({
+    templateText,
+    topbarTemplateText: showranksTopbarTemplateText,
+    presetCode: PRESET_CODE
+  });
+  const missing = writeVpkArchive(createVpkArchive([{ path: REWRITE_PRESET_ARCHIVE_PATH, bytes: built.bytes }]));
+  assert.throws(() => validateRewriteShowranksPresetVpk(missing), /exactly two files/);
+  const wrongPath = writeVpkArchive(createVpkArchive([
+    { path: REWRITE_PRESET_ARCHIVE_PATH, bytes: built.bytes },
+    { path: "panorama/layout/base_hud.vxml_c", bytes: built.topbarBytes }
+  ]));
+  assert.throws(() => validateRewriteShowranksPresetVpk(wrongPath), /unexpected file/);
+  const qollockTopbarBytes = compileSource2Resource({
+    sourceText: qollockTopbarTemplateText,
+    codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT
+  });
+  const contaminated = writeVpkArchive(createVpkArchive([
+    { path: REWRITE_PRESET_ARCHIVE_PATH, bytes: built.bytes },
+    { path: REWRITE_TOPBAR_ARCHIVE_PATH, bytes: qollockTopbarBytes }
+  ]));
+  assert.throws(() => validateRewriteShowranksPresetVpk(contaminated), /incompatible target markers/);
+});
+
 test("canonical rewrite contract rejects the showranks layout and vice versa", () => {
-  const built = buildRewriteShowranksPresetPackage({ templateText, presetCode: PRESET_CODE });
-  assert.throws(() => validateRewritePresetVpk(built.vpkBytes), /stale or incompatible/);
+  const built = buildRewriteShowranksPresetPackage({
+    templateText,
+    topbarTemplateText: showranksTopbarTemplateText,
+    presetCode: PRESET_CODE
+  });
+  assert.throws(() => validateRewritePresetVpk(built.vpkBytes), /stale or incompatible|exactly one file/);
   assert.throws(() => validateRewritePresetTemplate(built.sourceText), /stale or incompatible/);
   const plain = buildRewritePresetPackage({ templateText, presetCode: PRESET_CODE });
-  assert.throws(() => validateRewriteShowranksPresetVpk(plain.vpkBytes), /stale or incompatible/);
+  assert.throws(() => validateRewriteShowranksPresetVpk(plain.vpkBytes), /exactly two files/);
 });
+
 
 test("showranks merge rejects templates whose canonical anchors drifted", () => {
   assert.throws(
     () => buildRewriteShowranksPresetPackage({
       templateText: templateText.replace('onload="$.HPColorsMenuBoot()"', 'onload="$.OtherBoot()"'),
+      topbarTemplateText: showranksTopbarTemplateText,
       presetCode: PRESET_CODE
     }),
     /lifecycle contract is stale or incompatible/
@@ -194,6 +252,7 @@ test("showranks merge rejects templates whose canonical anchors drifted", () => 
   assert.throws(
     () => buildRewriteShowranksPresetPackage({
       templateText: templateText.replace("hp_colors_v2_menu.vjs_c", "hp_colors_other.vjs_c"),
+      topbarTemplateText: showranksTopbarTemplateText,
       presetCode: PRESET_CODE
     }),
     /stale or incompatible/

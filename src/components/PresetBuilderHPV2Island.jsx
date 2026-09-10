@@ -66,6 +66,8 @@ import {
   createBaseHudXmlLoader,
   createRewritePresetTemplateLoader,
   createRewriteQollockPresetTemplateLoader,
+  createRewriteShowranksTopbarTemplateLoader,
+  createRewriteQollockTopbarTemplateLoader,
   runPresetBuildWorkflow,
   runPresetConvertWorkflow,
   runPresetImportWorkflow,
@@ -444,6 +446,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
     () => createRewriteQollockPresetTemplateLoader({ baseUrl: import.meta.env.BASE_URL }),
     []
   );
+  const loadRewriteShowranksTopbarTemplate = useMemo(
+    () => createRewriteShowranksTopbarTemplateLoader({ baseUrl: import.meta.env.BASE_URL }),
+    []
+  );
+  const loadRewriteQollockTopbarTemplate = useMemo(
+    () => createRewriteQollockTopbarTemplateLoader({ baseUrl: import.meta.env.BASE_URL }),
+    []
+  );
 
   const dispatchSessionIntent = useCallback((intent, context = {}) => {
     setSession((prev) => reducePresetBuilderSession(prev, intent, {
@@ -692,6 +702,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
           profiles,
           activeProfileId,
           loadRewriteQollockPresetTemplate,
+          loadRewriteQollockTopbarTemplate,
           dispatch: dispatchSessionIntent
         });
       } else {
@@ -699,6 +710,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
           profiles,
           activeProfileId,
           loadRewritePresetTemplate,
+          loadRewriteShowranksTopbarTemplate,
           showranksCompatible: session.showranksCompatible,
           dispatch: dispatchSessionIntent
         });
@@ -706,7 +718,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
     } finally {
       operationLockRef.current = false;
     }
-  }, [activeProfileId, busy, dispatchSessionIntent, loadRewritePresetTemplate, loadRewriteQollockPresetTemplate, profiles, session.showranksCompatible]);
+  }, [activeProfileId, busy, dispatchSessionIntent, loadRewritePresetTemplate, loadRewriteQollockPresetTemplate, loadRewriteQollockTopbarTemplate, loadRewriteShowranksTopbarTemplate, profiles, session.showranksCompatible]);
 
 
   const performConvert = useCallback(async (targetModVariant) => {

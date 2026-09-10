@@ -10,7 +10,9 @@ import {
   REWRITE_PRESET_TEMPLATE_PATH,
   REWRITE_PRESET_VPK_FILE_NAME,
   REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME,
-  REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH
+  REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH,
+  REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH,
+  REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH
 } from "./hpv2RewritePackageBuilder.js";
 import { reducePresetBuilderSession } from "./hpv2PresetBuilderSession.js";
 import { getTargetModeDetails, normalizeTargetMode, saveTargetModeState } from "./targetModeStore.js";
@@ -69,6 +71,43 @@ export function createRewriteQollockPresetTemplateLoader({ baseUrl = "/", fetchI
     return promise;
   };
 }
+
+export function createRewriteShowranksTopbarTemplateLoader({ baseUrl = "/", fetchImpl = globalThis.fetch } = {}) {
+  let promise = null;
+  return function loadRewriteShowranksTopbarTemplate() {
+    if (!promise) {
+      promise = Promise.resolve(fetchImpl(`${baseUrl}${REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH}`))
+        .then((response) => {
+          if (!response.ok) throw new Error(`Failed to load rewrite ShowRanks topbar template (${response.status})`);
+          return response.text();
+        })
+        .catch((error) => {
+          promise = null;
+          throw error;
+        });
+    }
+    return promise;
+  };
+}
+
+export function createRewriteQollockTopbarTemplateLoader({ baseUrl = "/", fetchImpl = globalThis.fetch } = {}) {
+  let promise = null;
+  return function loadRewriteQollockTopbarTemplate() {
+    if (!promise) {
+      promise = Promise.resolve(fetchImpl(`${baseUrl}${REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH}`))
+        .then((response) => {
+          if (!response.ok) throw new Error(`Failed to load rewrite QOLLOCK topbar template (${response.status})`);
+          return response.text();
+        })
+        .catch((error) => {
+          promise = null;
+          throw error;
+        });
+    }
+    return promise;
+  };
+}
+
 
 export function commitPresetBuilderTargetMode({
   session,
@@ -161,6 +200,7 @@ export async function runRewritePresetBuildWorkflow({
   profiles,
   activeProfileId = null,
   loadRewritePresetTemplate,
+  loadRewriteShowranksTopbarTemplate,
   showranksCompatible = false,
   download = downloadBytes,
   dispatch,
@@ -183,7 +223,11 @@ export async function runRewritePresetBuildWorkflow({
     const presetCode = createRewritePresetBundle(buildProfiles, activeProfileId);
     const templateText = await loadRewritePresetTemplate();
     const built = showranksCompatible
-      ? buildRewriteShowranksPresetPackage({ presetCode, templateText })
+      ? buildRewriteShowranksPresetPackage({
+        presetCode,
+        templateText,
+        topbarTemplateText: await loadRewriteShowranksTopbarTemplate()
+      })
       : buildRewritePresetPackage({ presetCode, templateText });
     await download(vpkFileName, built.vpkBytes);
     const result = {
@@ -209,10 +253,13 @@ export async function runRewritePresetBuildWorkflow({
   }
 }
 
+
+
 export async function runRewriteQollockPresetBuildWorkflow({
   profiles,
   activeProfileId = null,
   loadRewriteQollockPresetTemplate,
+  loadRewriteQollockTopbarTemplate,
   download = downloadBytes,
   dispatch,
   digest = null,
@@ -230,8 +277,11 @@ export async function runRewriteQollockPresetBuildWorkflow({
   dispatchStatus(dispatch, "SET_STATUS", `Building ${REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME} for hp_colors_rewrite_qollock...`);
   try {
     const presetCode = createRewritePresetBundle(buildProfiles, activeProfileId);
-    const templateText = await loadRewriteQollockPresetTemplate();
-    const built = buildRewriteQollockPresetPackage({ presetCode, templateText });
+    const [templateText, topbarTemplateText] = await Promise.all([
+      loadRewriteQollockPresetTemplate(),
+      loadRewriteQollockTopbarTemplate()
+    ]);
+    const built = buildRewriteQollockPresetPackage({ presetCode, templateText, topbarTemplateText });
     await download(REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME, built.vpkBytes);
     const result = {
       filename: REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME,
@@ -254,9 +304,6 @@ export async function runRewriteQollockPresetBuildWorkflow({
     rewriteBuildInFlight = false;
   }
 }
-
-
-
 export async function runPresetConvertWorkflow({ convertFile, targetModVariant, loadBaseHudXml, download = downloadBytes, dispatch, digest = null, installDirectory = PRESET_INSTALL_DIRECTORY }) {
   if (!convertFile) {
     dispatchStatus(dispatch, "SET_CONVERT_STATUS", "Select a generated HP Colors preset VPK first.");

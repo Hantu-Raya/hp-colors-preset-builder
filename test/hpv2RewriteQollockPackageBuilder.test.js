@@ -6,20 +6,28 @@ import {
   buildRewriteQollockPresetPackage,
   encodeUtf16Hex,
   inspectRewriteQollockPresetTemplate,
+  readRewriteQollockPresetCode,
   REWRITE_PRESET_ARCHIVE_PATH,
+  REWRITE_TOPBAR_ARCHIVE_PATH,
+  REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH,
+  REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH,
   REWRITE_PRESET_CONTRACT,
   REWRITE_PRESET_CONTRACT_VERSION,
   REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS,
   REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES,
   REWRITE_QOLLOCK_PRESET_STYLE_INCLUDES,
-  readRewriteQollockPresetCode,
   validateRewriteQollockPresetTemplate,
   validateRewriteQollockPresetVpk,
   REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME
 } from "../src/hpv2RewritePackageBuilder.js";
+import { compileSource2Resource, extractSource2Resource, SOURCE2_RESOURCE_CODECS } from "../src/source2ResourceCodec.js";
 import { readVpkArchive, writeVpkArchive, createVpkArchive } from "../src/vpkArchive.js";
+const TOPBAR_PATH = new URL(`../public/${REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH}`, import.meta.url);
+const SHOWRANKS_TOPBAR_PATH = new URL(`../public/${REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH}`, import.meta.url);
 
 const TEMPLATE_PATH = new URL("../public/templates/hpv2_hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml", import.meta.url);
+const topbarTemplateText = await readFile(TOPBAR_PATH, "utf8");
+const showranksTopbarTemplateText = await readFile(SHOWRANKS_TOPBAR_PATH, "utf8");
 const PRESET_CODE = `HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"QOLLOCK composite","mode":"all","heroes":[],"values":[],"conditions":null}],"selectedPresetId":"user_0001"}`;
 const templateText = await readFile(TEMPLATE_PATH, "utf8");
 
@@ -68,25 +76,60 @@ test("Rewrite QOLLOCK template mirrors the composite include and panel contract"
   );
 });
 
-test("Rewrite QOLLOCK package emits one composite layout and round-trips HPCRP1", () => {
-  const built = buildRewriteQollockPresetPackage({ templateText, presetCode: PRESET_CODE });
+test("Rewrite QOLLOCK package compiles both layouts and round-trips HPCRP1", () => {
+  const built = buildRewriteQollockPresetPackage({
+    templateText,
+    topbarTemplateText,
+    presetCode: PRESET_CODE
+  });
   const archive = readVpkArchive(built.vpkBytes);
   assert.equal(REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME, "pak01_dir.vpk");
-  assert.deepEqual(archive.files.map((file) => file.path), [REWRITE_PRESET_ARCHIVE_PATH]);
-  assert.equal(readRewriteQollockPresetCode(archive.files[0].bytes), PRESET_CODE);
-  assert.equal(built.presetCode, PRESET_CODE);
+  assert.deepEqual(archive.files.map((file) => file.path), [REWRITE_TOPBAR_ARCHIVE_PATH, REWRITE_PRESET_ARCHIVE_PATH]);
+  const escapeFile = archive.files.find((file) => file.path === REWRITE_PRESET_ARCHIVE_PATH);
+  const topbarFile = archive.files.find((file) => file.path === REWRITE_TOPBAR_ARCHIVE_PATH);
+  assert.equal(readRewriteQollockPresetCode(escapeFile.bytes), PRESET_CODE);
+  const topbarText = extractSource2Resource({ bytes: topbarFile.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
+  assert.equal(topbarText, topbarTemplateText);
+  assert.equal(built.topbarSourceText, topbarTemplateText);
   assert.match(built.sourceText, new RegExp(`text="${encodeUtf16Hex(PRESET_CODE)}"`));
   assert.match(built.sourceText, /id="HPColorsAllyTeamHighToggle"/);
-  assert.equal(validateRewriteQollockPresetVpk(built.vpkBytes).files.length, 1);
+  for (const id of ["TeamSPMDisplay_friendly", "TeamSPMDisplay_enemy", "BuffHUD", "RejuvHUD", "RejuvBuff", "Buff", "Rejuv"]) {
+    assert.match(topbarText, new RegExp(`id="${id}"`), id);
+  }
+  assert.doesNotMatch(topbarText, /ShowRankBarebonesNotificationRoot|showrank_barebones_topbar\.vcss_c/);
+  assert.equal(validateRewriteQollockPresetVpk(built.vpkBytes).files.length, 2);
 });
 
-test("Rewrite QOLLOCK VPK rejects runtime assets and stale composite layouts", () => {
-  const built = buildRewriteQollockPresetPackage({ templateText, presetCode: PRESET_CODE });
+test("Rewrite QOLLOCK package requires and validates its target topbar layout", () => {
+  assert.throws(
+    () => buildRewriteQollockPresetPackage({ templateText, presetCode: PRESET_CODE }),
+    /requires topbarTemplateText/
+  );
+  const built = buildRewriteQollockPresetPackage({
+    templateText,
+    topbarTemplateText,
+    presetCode: PRESET_CODE
+  });
   const extra = writeVpkArchive(createVpkArchive([
     { path: REWRITE_PRESET_ARCHIVE_PATH, bytes: built.bytes },
+    { path: REWRITE_TOPBAR_ARCHIVE_PATH, bytes: built.topbarBytes },
     { path: "panorama/scripts/qollock_hp_colors_bridge.vjs_c", bytes: new Uint8Array([1]) }
   ]));
-  assert.throws(() => validateRewriteQollockPresetVpk(extra), /exactly one file/);
+  assert.throws(() => validateRewriteQollockPresetVpk(extra), /exactly two files/);
+  const wrongPath = writeVpkArchive(createVpkArchive([
+    { path: REWRITE_PRESET_ARCHIVE_PATH, bytes: built.bytes },
+    { path: "panorama/layout/base_hud.vxml_c", bytes: built.topbarBytes }
+  ]));
+  assert.throws(() => validateRewriteQollockPresetVpk(wrongPath), /unexpected file/);
+  const showranksTopbarBytes = compileSource2Resource({
+    sourceText: showranksTopbarTemplateText,
+    codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT
+  });
+  const contaminated = writeVpkArchive(createVpkArchive([
+    { path: REWRITE_PRESET_ARCHIVE_PATH, bytes: built.bytes },
+    { path: REWRITE_TOPBAR_ARCHIVE_PATH, bytes: showranksTopbarBytes }
+  ]));
+  assert.throws(() => validateRewriteQollockPresetVpk(contaminated), /incompatible target markers/);
   assert.throws(
     () => validateRewriteQollockPresetTemplate(templateText.replace("qollock_hp_colors_bridge.vjs_c", "hp_colors_menu.vjs_c")),
     /stale or incompatible/
