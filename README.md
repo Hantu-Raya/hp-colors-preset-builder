@@ -10,10 +10,11 @@ Select the target that matches the runtime you installed:
 - **Full** — the full HP Colors runtime. It provides the Anita in-game menu, multiple profiles, and hero-targeted profiles.
 - **Rewrite** — V2 selects this target when profiles contain rewrite data. Its package stores the complete `HPCRP1` bundle, including rewrite-only settings and ability-tier conditions, inside the rewrite Escape-menu XML.
 - **Rewrite + QOLLOCK** — an explicit target for the composite runtime. It builds `pak01_dir.vpk` with only `panorama/layout/hud_escape_menu.vxml_c`, and expects the support runtime in `pak02_dir.vpk` plus the pinned QOLLOCK package in `pak03_dir.vpk`.
+- **Rewritev2 + Third Eye** — an HPV2-only target for the compatibility runtime. It builds `pak01_dir.vpk` with only the merged Escape-menu layout and expects the compatibility runtime in `pak02_dir.vpk` plus the unchanged Third Eye package in `pak47` or another lower-priority `pak03+` slot. The builder does not distribute a Third Eye download.
 
-Do not mix Minimal or Full packages with the other base runtime, or install standalone Rewrite beside Rewrite + QOLLOCK. The selected target is saved in browser storage; V2 still switches to standalone Rewrite automatically when loaded profiles contain rewrite data.
+Do not mix Minimal or Full packages with the other base runtime, or install standalone Rewrite beside Rewrite + QOLLOCK or Rewritev2 + Third Eye. The selected target is saved in browser storage; V2 still switches to standalone Rewrite automatically when loaded profiles contain rewrite data.
 
-On **HPv2**, choose **Rewritev2**, **Rewritev2 + ShowRanks**, or **Rewritev2 + QOLLOCK** from the Target menu. ShowRanks is a target choice, not a separate top-bar toggle. Existing saved ShowRanks selections are preserved; choosing normal Rewritev2 or QOLLOCK clears that compatibility option without changing your presets.
+On **HPv2**, choose **Rewritev2**, **Rewritev2 + ShowRanks**, **Rewritev2 + QOLLOCK**, or **Rewritev2 + Third Eye** from the Target menu. ShowRanks is a target choice, not a separate top-bar toggle. Existing saved ShowRanks selections are preserved; choosing normal Rewritev2, QOLLOCK, or Third Eye clears that compatibility option without changing your presets.
 
 The HPv2 build dialog shows the selected target, output, and install order. **Confirm build** downloads the preset without an extra installation acknowledgement. The browser cannot inspect your Deadlock installation; follow the displayed package order and restart the game after replacing files.
 
@@ -25,6 +26,7 @@ The HPv2 build dialog shows the selected target, output, and install order. **Co
    - Rewrite: install the current `hp_colors_rewrite_v2` runtime as `pak02_dir.vpk`.
    - Rewritev2 + ShowRanks: install Rewritev2 as `pak02_dir.vpk` and `showrank_barebones` as `pak03_dir.vpk`.
    - Rewrite + QOLLOCK: install the support runtime as `pak02_dir.vpk`, then the pinned QOLLOCK package as `pak03_dir.vpk`.
+   - Rewritev2 + Third Eye: install the compatibility runtime as `pak02_dir.vpk`, then keep your unchanged Third Eye package in `pak47` or another lower-priority `pak03+` slot. The builder does not distribute or rename that package.
 3. Use this exact add-on directory (replace `<SteamLibrary>` with the drive that contains Steam):
 
    ```text
@@ -36,6 +38,7 @@ The HPv2 build dialog shows the selected target, output, and install order. **Co
    - Rewrite: install the generated `pak01_dir.vpk` beside the rewrite runtime's `pak02_dir.vpk`. The generated package overrides only `panorama/layout/hud_escape_menu.vxml_c`; do not install another mod that overrides that layout.
    - Rewritev2 + ShowRanks: install the generated `pak01_dir.vpk` beside Rewritev2 `pak02_dir.vpk` and ShowRanks `pak03_dir.vpk`. The preset package contains merged `panorama/layout/hud_escape_menu.vxml_c` and `panorama/layout/citadel_hud_top_bar.vxml_c` assets.
    - Rewrite + QOLLOCK: install the generated `pak01_dir.vpk` beside `pak02_dir.vpk` and `pak03_dir.vpk`. The preset package contains merged `panorama/layout/hud_escape_menu.vxml_c` and `panorama/layout/citadel_hud_top_bar.vxml_c` assets.
+   - Rewritev2 + Third Eye: install the generated `pak01_dir.vpk` beside compatibility runtime `pak02_dir.vpk` and your unchanged Third Eye package in `pak47` or another lower-priority `pak03+` slot. The preset package contains only merged `panorama/layout/hud_escape_menu.vxml_c`.
 5. Restart Deadlock after replacing any VPK. A live Panorama context can retain the previous package.
 
 Keep only one HP Colors runtime and one matching preset package active at a time.
@@ -50,7 +53,7 @@ The builder's package contract is deliberately narrow and deterministic:
 - The current Minimal/Full runtime storage version is **99**. Builder output uses **v1** payloads, and the importer accepts legacy runtime **v97** (and **v25**) input.
 - Minimal/Full copied codes use the `[ANITA-v1-hp_colors]:` prefix. Rewrite settings use `HPCR2`; rewrite presets and bundles use `HPCRP1`.
 
-Values are normalized before serialization. A generated Minimal or Full package contains one validated `panorama/layout/base_hud.vxml_c` entry. A generated standalone Rewrite package contains one validated `panorama/layout/hud_escape_menu.vxml_c` entry; HPv2 Rewrite + ShowRanks and Rewrite + QOLLOCK packages contain that preset layout plus one validated `panorama/layout/citadel_hud_top_bar.vxml_c` entry. Each compatibility topbar is merged for its target. Neither package contains unrelated files.
+Values are normalized before serialization. A generated Minimal or Full package contains one validated `panorama/layout/base_hud.vxml_c` entry. A generated standalone Rewrite package contains one validated `panorama/layout/hud_escape_menu.vxml_c` entry; HPv2 Rewrite + ShowRanks and Rewrite + QOLLOCK packages contain that preset layout plus one validated `panorama/layout/citadel_hud_top_bar.vxml_c` entry. HPv2 Rewrite + Third Eye contains only the validated merged Escape-menu layout. Each compatibility layout is merged for its target. Neither package contains unrelated files.
 
 ## Profiles and routing
 
@@ -71,7 +74,7 @@ Use the profile controls to reorder profiles, and the hero selector to maintain 
 
 ## Rebuilds and game updates
 
-When Deadlock or a runtime changes, install the matching updated packages and rebuild before testing. Treat an old generated package as stale after a template or runtime update. Re-run the target build, replace only its generated VPK, and retain the runtime packages: `pak97_dir.vpk` for Minimal/Full, `pak02_dir.vpk` for standalone Rewrite, or `pak02_dir.vpk` and `pak03_dir.vpk` for Rewrite + QOLLOCK. Never hand-edit a generated VPK.
+When Deadlock or a runtime changes, install the matching updated packages and rebuild before testing. Treat an old generated package as stale after a template or runtime update. Re-run the target build, replace only its generated VPK, and retain the runtime packages: `pak97_dir.vpk` for Minimal/Full, `pak02_dir.vpk` for standalone Rewrite, `pak02_dir.vpk` and `pak03_dir.vpk` for Rewrite + QOLLOCK, or compatibility `pak02_dir.vpk` plus the unchanged Third Eye package in `pak47`/another lower-priority `pak03+` slot for Rewritev2 + Third Eye. Never hand-edit a generated VPK.
 
 ## Supported browsers
 
@@ -109,7 +112,7 @@ The build output is written to `dist/` and should not be committed.
 
 ### Shared HPv2 XML
 
-Edit `public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml` once for all three HPv2 categories. Normal uses it directly. ShowRanks adds its compatibility hooks during packaging and compiles its merged target topbar template. QOLLOCK's full template is generated from it by `scripts/sync-hpv2-templates.js`, and its merged target topbar template is compiled alongside it.
+Edit `public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml` for normal Rewritev2, ShowRanks, and QOLLOCK. Normal uses it directly. ShowRanks adds its compatibility hooks during packaging and compiles its merged target topbar template. QOLLOCK's full template is generated from it by `scripts/sync-hpv2-templates.js`, and its merged target topbar template is compiled alongside it.
 
 `npm run dev`, `npm test`, and `npm run build` regenerate the QOLLOCK template first. Restart the dev command after XML edits. Do not edit the generated QOLLOCK XML. Commit it with the shared source; missing or duplicate insertion targets stop generation.
 
@@ -128,9 +131,13 @@ npm run build
 
 Without that variable, the checked-in shared XML is the source, including in CI. `npm run verify:hpv2-templates` checks synchronization without writing files. This affects HPv2 only, not legacy V2, Minimal, or Full.
 
+Third Eye uses a separately composed snapshot at `public/templates/hpv2_hp_colors_rewrite_thirdeye/panorama/layout/hud_escape_menu.xml`. After canonical HPv2 layout changes, run `build_hp_colors_rewrite_v2_thirdeye.ps1 -SkipDeploy` in the mods repository and copy its generated `hp_colors_rewrite_v2_thirdeye/panorama/layout/hud_escape_menu.xml` into that template path. Keep the template matched to its compatibility pak02; `sync:hpv2` does not regenerate Third Eye. Its package tests verify the merged includes, lifecycle hooks, panels, and preset round-trip.
+
 ## Code health checks
 
 `npm run lint` runs Oxlint with the repository-local anti-slop plugin in `tools/oxlint/anti-slop/`. `npx fallow dead-code` checks the application graph for unused files, exports, dependencies, and import cycles. Both tools exclude `tmp/` and the vendored anti-slop source from application cleanup.
+
+The anti-slop `no-runtime-typeof` rule is intentionally scoped to TypeScript (`*.ts`, `*.tsx`, `*.mts`, and `*.cts`) in `.oxlintrc.json`, where typed predicates can express safe narrowing. JavaScript keeps its `typeof` guards for essential runtime boundary and platform validation; those guards are intentional behavior, not implementation bugs to remove.
 
 Run focused tests after a cleanup, then run `npm test`, `npm run test:e2e`, and `npm run build` before release.
 

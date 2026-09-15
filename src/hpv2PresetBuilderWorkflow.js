@@ -7,15 +7,17 @@ import {
   buildRewritePresetPackage,
   buildRewriteQollockPresetPackage,
   buildRewriteShowranksPresetPackage,
+  buildRewriteThirdEyePresetPackage,
   REWRITE_PRESET_TEMPLATE_PATH,
   REWRITE_PRESET_VPK_FILE_NAME,
   REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME,
   REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH,
   REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH,
-  REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH
+  REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH,
+  REWRITE_THIRDEYE_PRESET_TEMPLATE_PATH
 } from "./hpv2RewritePackageBuilder.js";
 import { reducePresetBuilderSession } from "./hpv2PresetBuilderSession.js";
-import { getTargetModeDetails, normalizeTargetMode, saveTargetModeState } from "./targetModeStore.js";
+import { getTargetModeDetails, isHpv2OnlyTarget, normalizeTargetMode, saveTargetModeState } from "./targetModeStore.js";
 import { saveShowranksCompatibleState } from "./showranksCompatibleStore.js";
 
 export const BASE_HUD_TEMPLATE_PATH = "templates/hp_colors/panorama/layout/base_hud.xml";
@@ -25,24 +27,13 @@ let buildInFlight = false;
 let rewriteBuildInFlight = false;
 let convertInFlight = false;
 
-export function createBaseHudXmlLoader({ baseUrl = "/", fetchImpl = globalThis.fetch } = {}) {
+function createCachedTextLoader({ baseUrl, fetchImpl, path, errorLabel }) {
   let promise = null;
-  return function loadBaseHudXml() {
+  return function loadText() {
     if (!promise) {
-      promise = Promise.resolve(fetchImpl(`${baseUrl}${BASE_HUD_TEMPLATE_PATH}`))
-        .then((response) => { if (!response.ok) throw new Error(`Failed to load base_hud.xml (${response.status})`); return response.text(); })
-        .catch((error) => { promise = null; throw error; });
-    }
-    return promise;
-  };
-}
-export function createRewritePresetTemplateLoader({ baseUrl = "/", fetchImpl = globalThis.fetch } = {}) {
-  let promise = null;
-  return function loadRewritePresetTemplate() {
-    if (!promise) {
-      promise = Promise.resolve(fetchImpl(`${baseUrl}${REWRITE_PRESET_TEMPLATE_PATH}`))
+      promise = Promise.resolve(fetchImpl(`${baseUrl}${path}`))
         .then((response) => {
-          if (!response.ok) throw new Error(`Failed to load rewrite preset template (${response.status})`);
+          if (!response.ok) throw new Error(`Failed to load ${errorLabel} (${response.status})`);
           return response.text();
         })
         .catch((error) => {
@@ -52,60 +43,60 @@ export function createRewritePresetTemplateLoader({ baseUrl = "/", fetchImpl = g
     }
     return promise;
   };
+}
+
+export function createBaseHudXmlLoader({ baseUrl = "/", fetchImpl = globalThis.fetch } = {}) {
+  return createCachedTextLoader({
+    baseUrl,
+    fetchImpl,
+    path: BASE_HUD_TEMPLATE_PATH,
+    errorLabel: "base_hud.xml"
+  });
+}
+
+export function createRewritePresetTemplateLoader({ baseUrl = "/", fetchImpl = globalThis.fetch } = {}) {
+  return createCachedTextLoader({
+    baseUrl,
+    fetchImpl,
+    path: REWRITE_PRESET_TEMPLATE_PATH,
+    errorLabel: "rewrite preset template"
+  });
 }
 
 export function createRewriteQollockPresetTemplateLoader({ baseUrl = "/", fetchImpl = globalThis.fetch } = {}) {
-  let promise = null;
-  return function loadRewriteQollockPresetTemplate() {
-    if (!promise) {
-      promise = Promise.resolve(fetchImpl(`${baseUrl}${REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH}`))
-        .then((response) => {
-          if (!response.ok) throw new Error(`Failed to load rewrite QOLLOCK preset template (${response.status})`);
-          return response.text();
-        })
-        .catch((error) => {
-          promise = null;
-          throw error;
-        });
-    }
-    return promise;
-  };
+  return createCachedTextLoader({
+    baseUrl,
+    fetchImpl,
+    path: REWRITE_QOLLOCK_PRESET_TEMPLATE_PATH,
+    errorLabel: "rewrite QOLLOCK preset template"
+  });
+}
+
+export function createRewriteThirdEyePresetTemplateLoader({ baseUrl = "/", fetchImpl = globalThis.fetch } = {}) {
+  return createCachedTextLoader({
+    baseUrl,
+    fetchImpl,
+    path: REWRITE_THIRDEYE_PRESET_TEMPLATE_PATH,
+    errorLabel: "rewrite Third Eye preset template"
+  });
 }
 
 export function createRewriteShowranksTopbarTemplateLoader({ baseUrl = "/", fetchImpl = globalThis.fetch } = {}) {
-  let promise = null;
-  return function loadRewriteShowranksTopbarTemplate() {
-    if (!promise) {
-      promise = Promise.resolve(fetchImpl(`${baseUrl}${REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH}`))
-        .then((response) => {
-          if (!response.ok) throw new Error(`Failed to load rewrite ShowRanks topbar template (${response.status})`);
-          return response.text();
-        })
-        .catch((error) => {
-          promise = null;
-          throw error;
-        });
-    }
-    return promise;
-  };
+  return createCachedTextLoader({
+    baseUrl,
+    fetchImpl,
+    path: REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH,
+    errorLabel: "rewrite ShowRanks topbar template"
+  });
 }
 
 export function createRewriteQollockTopbarTemplateLoader({ baseUrl = "/", fetchImpl = globalThis.fetch } = {}) {
-  let promise = null;
-  return function loadRewriteQollockTopbarTemplate() {
-    if (!promise) {
-      promise = Promise.resolve(fetchImpl(`${baseUrl}${REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH}`))
-        .then((response) => {
-          if (!response.ok) throw new Error(`Failed to load rewrite QOLLOCK topbar template (${response.status})`);
-          return response.text();
-        })
-        .catch((error) => {
-          promise = null;
-          throw error;
-        });
-    }
-    return promise;
-  };
+  return createCachedTextLoader({
+    baseUrl,
+    fetchImpl,
+    path: REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH,
+    errorLabel: "rewrite QOLLOCK topbar template"
+  });
 }
 
 
@@ -114,17 +105,22 @@ export function commitPresetBuilderTargetMode({
   targetMode,
   showranksCompatible = false,
   storage = null,
-  targetModeStorageKey
+  targetModeStorageKey,
+  allowHpv2OnlyTargets = false
 }) {
   const normalizedTargetMode = normalizeTargetMode(targetMode);
-  const nextShowranksCompatible = normalizedTargetMode === HP_COLORS_MOD_VARIANTS.FULL && showranksCompatible === true;
-  const targetModeSaved = saveTargetModeState(storage, normalizedTargetMode, {
-    storageKey: targetModeStorageKey
+  const committedTargetMode = !allowHpv2OnlyTargets && isHpv2OnlyTarget(normalizedTargetMode)
+    ? DEFAULT_HP_COLORS_MOD_VARIANT
+    : normalizedTargetMode;
+  const nextShowranksCompatible = committedTargetMode === HP_COLORS_MOD_VARIANTS.FULL && showranksCompatible === true;
+  const targetModeSaved = saveTargetModeState(storage, committedTargetMode, {
+    storageKey: targetModeStorageKey,
+    allowHpv2OnlyTargets
   });
   const showranksSaved = saveShowranksCompatibleState(storage, nextShowranksCompatible);
   const nextSession = reducePresetBuilderSession(session, {
     type: "COMMIT_TARGET_MODE",
-    targetMode: normalizedTargetMode,
+    targetMode: committedTargetMode,
     showranksCompatible: nextShowranksCompatible
   });
   const errors = [targetModeSaved.error, showranksSaved.error].filter(Boolean);
@@ -294,6 +290,51 @@ export async function runRewriteQollockPresetBuildWorkflow({
     };
     dispatch?.({ type: "BUILD_SUCCEEDED", result });
     dispatchStatus(dispatch, "SET_STATUS", `Built ${REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME} for hp_colors_rewrite_qollock (${built.vpkBytes.byteLength.toLocaleString()} bytes, ${buildProfiles.length} profile${buildProfiles.length === 1 ? "" : "s"}).`);
+    return result;
+  } catch (error) {
+    const message = error?.message || String(error);
+    dispatch?.({ type: "BUILD_FAILED", message });
+    dispatchStatus(dispatch, "SET_STATUS", message);
+    return null;
+  } finally {
+    rewriteBuildInFlight = false;
+  }
+}
+export async function runRewriteThirdEyePresetBuildWorkflow({
+  profiles,
+  activeProfileId = null,
+  loadRewriteThirdEyePresetTemplate,
+  download = downloadBytes,
+  dispatch,
+  digest = null,
+  installDirectory = PRESET_INSTALL_DIRECTORY
+}) {
+  if (rewriteBuildInFlight) {
+    const message = "A rewrite preset build is already in progress.";
+    dispatch?.({ type: "BUILD_FAILED", message });
+    dispatchStatus(dispatch, "SET_STATUS", message);
+    return null;
+  }
+  rewriteBuildInFlight = true;
+  const buildProfiles = Array.isArray(profiles) ? profiles : [];
+  dispatch?.({ type: "BUILD_STARTED" });
+  dispatchStatus(dispatch, "SET_STATUS", `Building ${REWRITE_PRESET_VPK_FILE_NAME} for hp_colors_rewrite_v2_thirdeye...`);
+  try {
+    const presetCode = createRewritePresetBundle(buildProfiles, activeProfileId);
+    const templateText = await loadRewriteThirdEyePresetTemplate();
+    const built = buildRewriteThirdEyePresetPackage({ presetCode, templateText });
+    await download(REWRITE_PRESET_VPK_FILE_NAME, built.vpkBytes);
+    const result = {
+      filename: REWRITE_PRESET_VPK_FILE_NAME,
+      byteLength: built.vpkBytes.byteLength,
+      sha256: await sha256Hex(built.vpkBytes, digest),
+      profileCount: buildProfiles.length,
+      target: "hp_colors_rewrite_v2_thirdeye",
+      targetLabel: "hp_colors_rewrite_v2_thirdeye",
+      installDirectory
+    };
+    dispatch?.({ type: "BUILD_SUCCEEDED", result });
+    dispatchStatus(dispatch, "SET_STATUS", `Built ${REWRITE_PRESET_VPK_FILE_NAME} for hp_colors_rewrite_v2_thirdeye (${built.vpkBytes.byteLength.toLocaleString()} bytes, ${buildProfiles.length} profile${buildProfiles.length === 1 ? "" : "s"}).`);
     return result;
   } catch (error) {
     const message = error?.message || String(error);

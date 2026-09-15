@@ -51,25 +51,52 @@ export const TARGET_MODE_CHOICES = Object.freeze([
     hpv2Summary: "Preset VPK for HP Colors Rewritev2 + QOLLOCK.",
     hpv2Description: "Use this with the fixed pak01/pak02/pak03 Rewritev2 + QOLLOCK install order.",
     unavailableInV2: false
+  }),
+  Object.freeze({
+    id: HP_COLORS_MOD_VARIANTS.REWRITE_THIRDEYE,
+    title: "Rewritev2 + Third Eye",
+    label: "Rewritev2 + Third Eye",
+    summary: "Preset VPK for HP Colors Rewritev2 + Third Eye.",
+    description: "Use this with the Rewritev2 + Third Eye setup.",
+    hpv2Title: "Rewritev2 + Third Eye",
+    hpv2Summary: "Preset VPK for HP Colors Rewritev2 + Third Eye.",
+    hpv2Description: "Use this with the Rewritev2 + Third Eye setup.",
+    localInstallLabel: "Use your existing Third Eye package",
+    localInstallFlag: "Installed separately",
+    hpv2Only: true
   })
 ]);
 
+export const LEGACY_TARGET_MODE_CHOICES = Object.freeze(
+  TARGET_MODE_CHOICES.filter((choice) => choice.hpv2Only !== true)
+);
+
 const TARGET_MODE_BY_ID = new Map(TARGET_MODE_CHOICES.map((choice) => [choice.id, choice]));
-function isKnownTargetMode(targetMode) {
-  return TARGET_MODE_BY_ID.has(targetMode);
+function isKnownTargetMode(targetMode, { allowHpv2OnlyTargets = true } = {}) {
+  const choice = TARGET_MODE_BY_ID.get(targetMode);
+  return Boolean(choice && (allowHpv2OnlyTargets || choice.hpv2Only !== true));
 }
 
+export function isHpv2OnlyTarget(targetMode) {
+  return TARGET_MODE_BY_ID.get(targetMode)?.hpv2Only === true;
+}
 
 export function normalizeTargetMode(targetMode) {
   if (targetMode === HP_COLORS_MOD_VARIANTS.FULL) return HP_COLORS_MOD_VARIANTS.FULL;
   if (targetMode === HP_COLORS_MOD_VARIANTS.MINIMAL) return HP_COLORS_MOD_VARIANTS.MINIMAL;
   if (targetMode === HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK) return HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK;
+  if (targetMode === HP_COLORS_MOD_VARIANTS.REWRITE_THIRDEYE) return HP_COLORS_MOD_VARIANTS.REWRITE_THIRDEYE;
   return DEFAULT_HP_COLORS_MOD_VARIANT;
 }
 
 export function isRewriteQollockTarget(targetMode) {
   return normalizeTargetMode(targetMode) === HP_COLORS_MOD_VARIANTS.REWRITE_QOLLOCK;
 }
+
+export function isRewriteThirdEyeTarget(targetMode) {
+  return normalizeTargetMode(targetMode) === HP_COLORS_MOD_VARIANTS.REWRITE_THIRDEYE;
+}
+
 function readSavedTargetMode(storage, storageKey) {
   const raw = storage?.getItem?.(storageKey);
   if (!raw) return null;
@@ -84,11 +111,12 @@ function readSavedTargetMode(storage, storageKey) {
 
 export function loadTargetModeState(storage, {
   profileStorageKey = null,
-  storageKey = TARGET_MODE_STORAGE_KEY
+  storageKey = TARGET_MODE_STORAGE_KEY,
+  allowHpv2OnlyTargets = false
 } = {}) {
   try {
     const saved = readSavedTargetMode(storage, storageKey);
-    if (isKnownTargetMode(saved)) {
+    if (isKnownTargetMode(saved, { allowHpv2OnlyTargets })) {
       return {
         targetMode: saved,
         shouldShowPicker: false,
@@ -114,11 +142,15 @@ export function loadTargetModeState(storage, {
 export function saveTargetModeState(
   storage,
   targetMode,
-  { storageKey = TARGET_MODE_STORAGE_KEY } = {}
+  { storageKey = TARGET_MODE_STORAGE_KEY, allowHpv2OnlyTargets = false } = {}
 ) {
   if (!storage?.setItem) return { ok: true, error: null };
   try {
-    storage.setItem(storageKey, normalizeTargetMode(targetMode));
+    const normalizedTargetMode = normalizeTargetMode(targetMode);
+    const persistedTargetMode = !allowHpv2OnlyTargets && isHpv2OnlyTarget(normalizedTargetMode)
+      ? DEFAULT_HP_COLORS_MOD_VARIANT
+      : normalizedTargetMode;
+    storage.setItem(storageKey, persistedTargetMode);
     return { ok: true, error: null };
   } catch (error) {
     return {

@@ -263,7 +263,7 @@ export function createRewriteProfileMetadata(profile, { valuesAreRewrite = false
   const hasMetadata = Boolean(profile?.rewrite);
   const editorValues = valuesAreRewrite ? REWRITE_FIELD_CATALOG.sanitizeState(profile?.values || {}) : null;
   const canonical = valuesAreRewrite
-    ? applyWebToRewrite(DEFAULTS, { ...profile, rewrite: { ...(profile.rewrite || {}), webValues: editorValues } }, true)
+    ? applyWebToRewrite(DEFAULTS, { ...profile, rewrite: { ...profile.rewrite, webValues: editorValues } }, true)
     : hasMetadata && profile.rewrite.values !== undefined
       ? canonicalValuesFromMetadata(profile.rewrite.values, DEFAULTS)
       : applyWebToRewrite(DEFAULTS, profile, true);

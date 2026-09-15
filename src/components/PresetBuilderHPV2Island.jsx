@@ -35,7 +35,8 @@ import {
   TARGET_MODE_CHOICES,
   V2_TARGET_MODE_STORAGE_KEY,
   isFullTargetMode,
-  isRewriteQollockTarget
+  isRewriteQollockTarget,
+  isRewriteThirdEyeTarget
 } from '../targetModeStore.js';
 import { copyText, downloadText } from '../download.js';
 import {
@@ -66,13 +67,15 @@ import {
   createBaseHudXmlLoader,
   createRewritePresetTemplateLoader,
   createRewriteQollockPresetTemplateLoader,
+  createRewriteThirdEyePresetTemplateLoader,
   createRewriteShowranksTopbarTemplateLoader,
   createRewriteQollockTopbarTemplateLoader,
   runPresetBuildWorkflow,
   runPresetConvertWorkflow,
   runPresetImportWorkflow,
   runRewritePresetBuildWorkflow,
-  runRewriteQollockPresetBuildWorkflow
+  runRewriteQollockPresetBuildWorkflow,
+  runRewriteThirdEyePresetBuildWorkflow
 } from '../hpv2PresetBuilderWorkflow.js';
 import { SchemaField } from './schema-field.jsx';
 import { SchemaTabs, SchemaTree } from './schema-tree-v2.jsx';
@@ -99,7 +102,8 @@ const PRECISE_PIPS_FIELD = Object.freeze({
 const HPV2_INSTALL_GUIDANCE = Object.freeze({
   rewrite: 'Install this generated pak01 preset with Rewritev2 (hp_colors_rewrite_v2) pak02. Restart Deadlock after changing addon files.',
   showranks: 'Install this generated pak01 preset with Rewritev2 pak02, then add showrank_barebones pak03. Restart Deadlock after changing addon files.',
-  qollock: 'Install this generated pak01 preset with hp_colors_rewrite_qollock support pak02 and pinned QOLLOCK pak03. Restart Deadlock after changing addon files.'
+  qollock: 'Install this generated pak01 preset with hp_colors_rewrite_qollock support pak02 and pinned QOLLOCK pak03. Restart Deadlock after changing addon files.',
+  thirdeye: 'Install this generated pak01 preset with the Rewritev2 + Third Eye compatibility runtime in pak02. Keep your unchanged Third Eye package installed in pak47, or another lower-priority pak03+ slot; this builder does not distribute a Third Eye download. Restart Deadlock after changing addon files.'
 });
 
 const HPV2_TARGET_MODE_CHOICES = Object.freeze(
@@ -121,8 +125,15 @@ const HPV2_TARGET_MODE_CHOICES = Object.freeze(
     ]
     : [Object.freeze({ ...choice, renderKey: choice.id, showranksCompatible: false })])
 );
+function isSelectedHpv2TargetChoice(choice, targetMode, showranksCompatible) {
+  return choice.id === targetMode
+    && Boolean(choice.showranksCompatible) === Boolean(showranksCompatible);
+}
 
-
+function findHpv2TargetChoice(targetMode, showranksCompatible) {
+  return HPV2_TARGET_MODE_CHOICES.find((choice) => isSelectedHpv2TargetChoice(choice, targetMode, showranksCompatible))
+    || HPV2_TARGET_MODE_CHOICES.find((choice) => choice.id === targetMode);
+}
 
 function scheduleIdleWork(callback) {
   if (typeof window === 'undefined') return () => {};
@@ -142,7 +153,7 @@ function useDialogA11y(open, onClose) {
     previousFocusRef.current = document.activeElement;
     const panel = panelRef.current;
     const focusable = () => Array.from(panel?.querySelectorAll(
-      'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])'
+      'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     ) || []);
     focusable()[0]?.focus();
     const handleKeyDown = (event) => {
@@ -341,7 +352,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
   const latestProfileSnapshot = useRef(createProfilePersistenceSnapshot(session));
   const containsRewriteProfiles = (session.profiles || []).some((profile) => Boolean(profile?.rewrite));
   const rewriteQollockTarget = isRewriteQollockTarget(session.targetMode);
-  const rewriteBuildTarget = isFullTargetMode(session.targetMode) || rewriteQollockTarget || containsRewriteProfiles;
+  const rewriteThirdEyeTarget = isRewriteThirdEyeTarget(session.targetMode);
+  const rewriteBuildTarget = isFullTargetMode(session.targetMode) || rewriteQollockTarget || rewriteThirdEyeTarget || containsRewriteProfiles;
   const activeCatalog = rewriteBuildTarget ? REWRITE_FIELD_CATALOG : HP_FIELD_CATALOG;
   const activeDefaultState = rewriteBuildTarget ? rewriteDefaultState : defaultState;
   const groups = useMemo(
@@ -414,13 +426,17 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
     modePickerUpgrade,
     conditionalFieldId
   } = session;
-  const selectedTargetChoice = HPV2_TARGET_MODE_CHOICES.find((choice) => (
-    choice.id === targetMode && Boolean(choice.showranksCompatible) === Boolean(session.showranksCompatible)
-  )) || HPV2_TARGET_MODE_CHOICES.find((choice) => choice.id === targetMode);
+  const selectedTargetChoice = findHpv2TargetChoice(targetMode, session.showranksCompatible);
   const selectedTargetLabel = selectedTargetChoice?.hpv2Title
-    || selectedTargetChoice?.v2Title
     || selectedTargetChoice?.title
     || targetModeDetails.label;
+  const rewriteGuidanceKey = rewriteThirdEyeTarget
+    ? 'thirdeye'
+    : rewriteQollockTarget
+      ? 'qollock'
+      : session.showranksCompatible
+        ? 'showranks'
+        : 'rewrite';
   const conditionalField = conditionalFieldId
     ? { id: conditionalFieldId, ...activeCatalog.schema[conditionalFieldId] }
     : null;
@@ -448,6 +464,10 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
   );
   const loadRewriteShowranksTopbarTemplate = useMemo(
     () => createRewriteShowranksTopbarTemplateLoader({ baseUrl: import.meta.env.BASE_URL }),
+    []
+  );
+  const loadRewriteThirdEyePresetTemplate = useMemo(
+    () => createRewriteThirdEyePresetTemplateLoader({ baseUrl: import.meta.env.BASE_URL }),
     []
   );
   const loadRewriteQollockTopbarTemplate = useMemo(
@@ -516,7 +536,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
       targetMode: nextMode,
       showranksCompatible,
       storage,
-      targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY
+      targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY,
+      allowHpv2OnlyTargets: true
     }));
   }
 
@@ -533,7 +554,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
     const migration = migrateLegacyV2ProfileState(storage, defaultState);
     const loaded = loadPresetBuilderSession(storage, defaultState, {
       profileStorageKey: V2_STORAGE_KEY,
-      targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY
+      targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY,
+      allowHpv2OnlyTargets: true
     });
     if (migration.error) loaded.feedback = { type: 'error', message: migration.error };
     setSession(loaded);
@@ -693,11 +715,18 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
       operationLockRef.current = false;
     }
   }, [busy, dispatchSessionIntent, loadBaseHudXml, selectedSession, targetMode]);
-  const performRewriteBuild = useCallback(async (qollock = false) => {
+  const performRewriteBuild = useCallback(async (qollock = false, thirdEye = false) => {
     if (busy || operationLockRef.current) return;
     operationLockRef.current = true;
     try {
-      if (qollock) {
+      if (thirdEye) {
+        await runRewriteThirdEyePresetBuildWorkflow({
+          profiles,
+          activeProfileId,
+          loadRewriteThirdEyePresetTemplate,
+          dispatch: dispatchSessionIntent
+        });
+      } else if (qollock) {
         await runRewriteQollockPresetBuildWorkflow({
           profiles,
           activeProfileId,
@@ -718,7 +747,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
     } finally {
       operationLockRef.current = false;
     }
-  }, [activeProfileId, busy, dispatchSessionIntent, loadRewritePresetTemplate, loadRewriteQollockPresetTemplate, loadRewriteQollockTopbarTemplate, loadRewriteShowranksTopbarTemplate, profiles, session.showranksCompatible]);
+  }, [activeProfileId, busy, dispatchSessionIntent, loadRewritePresetTemplate, loadRewriteQollockPresetTemplate, loadRewriteQollockTopbarTemplate, loadRewriteShowranksTopbarTemplate, loadRewriteThirdEyePresetTemplate, profiles, session.showranksCompatible]);
 
 
   const performConvert = useCallback(async (targetModVariant) => {
@@ -820,7 +849,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
               className="build-action"
               onClick={openBuildWarning}
               disabled={busy}
-              title={rewriteBuildTarget ? `Build ${presetVpkFileName} for ${rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}.` : undefined}
+              title={rewriteBuildTarget ? `Build ${presetVpkFileName} for ${rewriteThirdEyeTarget ? 'hp_colors_rewrite_v2_thirdeye' : rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}.` : undefined}
             >
               <Download aria-hidden="true" />
               <span>{busyOperation === 'build' ? 'Building…' : 'Build VPK'}</span>
@@ -1032,7 +1061,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                     <strong>{rewriteBuildTarget ? selectedTargetLabel : targetModeDetails.title}</strong>
                     <p>
                       {rewriteBuildTarget
-                        ? `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will build ${presetVpkFileName} for ${selectedTargetLabel}. ${HPV2_INSTALL_GUIDANCE[rewriteQollockTarget ? 'qollock' : session.showranksCompatible ? 'showranks' : 'rewrite']}`
+                        ? `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will build ${presetVpkFileName} for ${selectedTargetLabel}. ${HPV2_INSTALL_GUIDANCE[rewriteGuidanceKey]}`
                         : `${profiles.length} profile${profiles.length === 1 ? '' : 's'} will be packaged as ${presetVpkFileName}.`}
                     </p>
                   </article>
@@ -1232,11 +1261,13 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                 <div><dt>SHA-256</dt><dd><code>{buildResult.sha256}</code></dd></div>
               </dl>
               <p>Move the file into <code>{buildResult.installDirectory || installDirectory}</code>.</p>
-              <p>{buildResult.targetLabel === 'hp_colors_rewrite_qollock'
-                ? HPV2_INSTALL_GUIDANCE.qollock
-                : buildResult.targetLabel === 'hp_colors_rewrite'
-                  ? HPV2_INSTALL_GUIDANCE[buildResult.showranksCompatible ? 'showranks' : 'rewrite']
-                  : `Keep the selected ${targetModeDetails.title.toLowerCase()} installed as the base runtime.`}</p>
+              <p>{buildResult.targetLabel === 'hp_colors_rewrite_v2_thirdeye'
+                ? HPV2_INSTALL_GUIDANCE.thirdeye
+                : buildResult.targetLabel === 'hp_colors_rewrite_qollock'
+                  ? HPV2_INSTALL_GUIDANCE.qollock
+                  : buildResult.targetLabel === 'hp_colors_rewrite'
+                    ? HPV2_INSTALL_GUIDANCE[buildResult.showranksCompatible ? 'showranks' : 'rewrite']
+                    : `Keep the selected ${targetModeDetails.title.toLowerCase()} installed as the base runtime.`}</p>
             </div>
           ) : null}
           <div className="status-card" role="status">
@@ -1280,9 +1311,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
             </p>
             <div className="target-mode-choice-grid" role="group" aria-label="HP Colors target mod">
               {HPV2_TARGET_MODE_CHOICES.map((choice) => {
-                const selected = targetMode === choice.id
-                  && Boolean(session.showranksCompatible) === Boolean(choice.showranksCompatible);
+                const selected = isSelectedHpv2TargetChoice(choice, targetMode, session.showranksCompatible);
                 const unavailable = choice.unavailableInV2 === true;
+                const downloadHref = 'downloadHrefV2' in choice ? choice.downloadHrefV2 : choice.downloadHref;
                 const choiceClassName = [
                   'target-mode-choice',
                   selected ? 'is-selected' : '',
@@ -1299,11 +1330,11 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                     >
                       <span className="target-mode-choice-title">
                         <Layers3 aria-hidden="true" />
-                        <strong>{choice.hpv2Title || choice.v2Title || choice.title}</strong>
+                        <strong>{choice.hpv2Title || choice.title}</strong>
                         {selected && !unavailable ? <Check aria-hidden="true" /> : null}
                       </span>
-                      <span className="target-mode-choice-summary">{choice.hpv2Summary || choice.v2Summary || choice.summary}</span>
-                      <span className="target-mode-choice-description">{choice.hpv2Description || choice.v2Description || choice.description}</span>
+                      <span className="target-mode-choice-summary">{choice.hpv2Summary || choice.summary}</span>
+                      <span className="target-mode-choice-description">{choice.hpv2Description || choice.description}</span>
                     </button>
                     {unavailable ? (
                       <button type="button" className="target-mode-choice-download is-disabled" disabled>
@@ -1311,11 +1342,19 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                         <span>Download this mod</span>
                         <span className="target-mode-choice-download-flag">Unavailable in V2</span>
                       </button>
-                    ) : (
-                      <a className="target-mode-choice-download" href={'downloadHrefV2' in choice ? choice.downloadHrefV2 : choice.downloadHref} target="_blank" rel="noreferrer">
+                    ) : downloadHref ? (
+                      <a className="target-mode-choice-download" href={downloadHref} target="_blank" rel="noreferrer">
                         <Download aria-hidden="true" />
                         <span>{choice.showranksCompatible ? 'Download Rewritev2' : 'Download this mod'}</span>
                       </a>
+                    ) : (
+                      <div className="target-mode-choice-download is-local-install">
+                        <Download aria-hidden="true" />
+                        <span>{choice.localInstallLabel || 'Use your existing package'}</span>
+                        {choice.localInstallFlag ? (
+                          <span className="target-mode-choice-download-flag">{choice.localInstallFlag}</span>
+                        ) : null}
+                      </div>
                     )}
                   </div>
                 );
@@ -1369,8 +1408,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
               {rewriteBuildTarget ? (
                 <div>
                   <span className="target-mode-summary-label">{selectedTargetLabel} runtime</span>
-                  <strong>{rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}</strong>
-                  <p>{HPV2_INSTALL_GUIDANCE[rewriteQollockTarget ? 'qollock' : session.showranksCompatible ? 'showranks' : 'rewrite']}</p>
+                  <strong>{rewriteThirdEyeTarget ? 'hp_colors_rewrite_v2_thirdeye' : rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}</strong>
+                  <p>{HPV2_INSTALL_GUIDANCE[rewriteGuidanceKey]}</p>
                   <div className="target-mode-summary-actions">
                     <button type="button" className="secondary-action" onClick={() => {
                       closeBuildWarning();
@@ -1385,8 +1424,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                 <>
                   <div>
                     <span className="target-mode-summary-label">Selected base mod</span>
-                    <strong>{targetModeDetails.hpv2Title || targetModeDetails.v2Title || targetModeDetails.title}</strong>
-                    <p>{targetModeDetails.hpv2Summary || targetModeDetails.v2Summary || targetModeDetails.summary}</p>
+                    <strong>{targetModeDetails.hpv2Title || targetModeDetails.title}</strong>
+                    <p>{targetModeDetails.hpv2Summary || targetModeDetails.summary}</p>
                     {targetModeDetails.unavailableInV2 ? (
                       <span className="target-mode-summary-download-link is-disabled" aria-disabled="true">
                         This target is unavailable in V2.
@@ -1427,7 +1466,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                 onClick={() => {
                   if (busy || !canConfirmBuildVariant) return;
                   if (rewriteBuildTarget) {
-                    performRewriteBuild(rewriteQollockTarget);
+                    performRewriteBuild(rewriteQollockTarget, rewriteThirdEyeTarget);
                   } else {
                     performBuild(targetMode);
                   }

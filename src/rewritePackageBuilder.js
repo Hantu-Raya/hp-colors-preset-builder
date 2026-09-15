@@ -102,6 +102,7 @@ const REWRITE_QOLLOCK_MENU_ONCANCEL = "if ($.HPColorsMenuCancel && $.HPColorsMen
 const XML_TOKEN = /<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<![\s\S]*?>|<[^>]*>|[^<]+/g;
 const XML_NAME = /^[A-Za-z_:][A-Za-z0-9_.:-]*$/;
 const HEX = /^[0-9A-F]+$/;
+// oxlint-disable-next-line no-control-regex -- XML boundary validation must reject disallowed control bytes.
 const CONTROL_TEXT = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
 const XML_ENTITIES = Object.freeze({ amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" });
 

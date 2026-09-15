@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { createHpMenuGroups } from '../src/hpv2HpMenuNavigation.js';
 import { REWRITE_FIELD_CATALOG } from '../src/hpv2HpSchema.js';
 import { extractSource2Resource, SOURCE2_RESOURCE_CODECS } from '../src/source2ResourceCodec.js';
-import { encodeUtf16Hex, readRewritePresetCode, readRewriteShowranksPresetCode, readRewriteQollockPresetCode, REWRITE_PRESET_ARCHIVE_PATH, REWRITE_TOPBAR_ARCHIVE_PATH, REWRITE_PRESET_TEMPLATE_PATH } from '../src/hpv2RewritePackageBuilder.js';
+import { encodeUtf16Hex, readRewritePresetCode, readRewriteShowranksPresetCode, readRewriteQollockPresetCode, readRewriteThirdEyePresetCode, REWRITE_PRESET_ARCHIVE_PATH, REWRITE_TOPBAR_ARCHIVE_PATH, REWRITE_PRESET_TEMPLATE_PATH } from '../src/hpv2RewritePackageBuilder.js';
 import { readVpkArchive } from '../src/vpkArchive.js';
 import { loadSupporters } from '../src/supportersData.js';
 
@@ -31,13 +31,6 @@ async function openV2Presets(page) {
   const presetsTab = page.getByRole('tab', { name: 'PRESETS' });
   await presetsTab.focus();
   await presetsTab.press('Enter');
-}
-
-async function chooseMinimalTarget(page) {
-  const dialog = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });
-  await expect(dialog).toBeVisible();
-  await dialog.locator('.target-mode-choice-select').filter({ hasText: 'Minimal mod' }).click();
-  await expect(dialog).toBeHidden();
 }
 
 async function chooseRewriteTarget(page) {
@@ -726,6 +719,40 @@ test('v2 rewrite profiles build a priority-safe pak01 and retain code-copy contr
   expect(readRewritePresetCode(archive.files[0].bytes)).toBe(copied);
   await expect(page.locator('.status-card')).toContainText(/Built pak01_dir\.vpk for hp_colors_rewrite/);
 });
+test('HPv2 Third Eye target builds one merged Escape-menu preset and gives local install guidance', async ({ page }) => {
+  await page.goto('hpv2/');
+  const picker = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });
+  await expect(picker.getByRole('button', { name: 'Rewritev2 + Third Eye' })).toBeVisible();
+  const thirdEyeChoice = picker.locator('.target-mode-choice').filter({ hasText: 'Rewritev2 + Third Eye' });
+  await expect(thirdEyeChoice).toContainText('Preset VPK for HP Colors Rewritev2 + Third Eye.');
+  await expect(thirdEyeChoice).toContainText('Use this with the Rewritev2 + Third Eye setup.');
+  await expect(thirdEyeChoice).not.toContainText(/compatibility runtime|pak\d|does not distribute|sha-?256/i);
+  await expect(thirdEyeChoice).toContainText('Use your existing Third Eye package');
+  await expect(thirdEyeChoice.getByRole('link')).toHaveCount(0);
+  await picker.getByRole('button', { name: 'Rewritev2 + Third Eye' }).click();
+  await expect(page.locator('.target-mode-trigger')).toContainText('Rewritev2 + Third Eye');
+  await openV2Presets(page);
+  await page.getByRole('button', { name: 'Import game preset codes' }).click();
+  await page.locator('#importText').fill(REWRITE_PRESET);
+  await page.getByRole('button', { name: 'Import codes' }).click();
+  await page.getByRole('button', { name: 'Build VPK' }).click();
+  const warning = page.getByRole('dialog', { name: /^Confirm .* preset VPK$/ });
+  await expect(warning).toContainText('hp_colors_rewrite_v2_thirdeye');
+  await expect(warning).toContainText(/pak47|pak03\+/);
+  await expect(warning.getByRole('link')).toHaveCount(0);
+  const downloadPromise = page.waitForEvent('download');
+  await warning.getByRole('button', { name: 'Confirm build' }).click();
+  const download = await downloadPromise;
+  const archive = readVpkArchive(new Uint8Array(await readFile(await download.path())));
+  expect(archive.files.map((file) => file.path)).toEqual([REWRITE_PRESET_ARCHIVE_PATH]);
+  const payload = JSON.parse(readRewriteThirdEyePresetCode(archive.files[0].bytes).slice(6));
+  const expected = JSON.parse(REWRITE_PRESET.slice(6));
+  expected.records[0].values = expected.records[0].values.filter(([slot]) => slot !== 12 && slot !== 13);
+  expected.hiddenBakedPresetIds = [];
+  expect(payload).toEqual(expected);
+  await expect(page.locator('.status-card')).toContainText(/Built pak01_dir\.vpk for hp_colors_rewrite_v2_thirdeye/);
+});
+
 
 for (const width of [1460, 390]) {
   test(`HPv2 target choices persist and build the matching package without install acknowledgement at ${width}px`, async ({ page }) => {

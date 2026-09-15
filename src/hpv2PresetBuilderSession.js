@@ -23,7 +23,7 @@ import {
   STORAGE_KEY as PROFILE_STORAGE_KEY
 } from "./profileStore.js";
 import { createRewriteProfileMetadata, getRewriteEditorState } from "./hpv2RewritePresetCodec.js";
-import { getTargetModeDetails, isFullTargetMode, isRewriteQollockTarget, loadTargetModeState } from "./targetModeStore.js";
+import { getTargetModeDetails, isFullTargetMode, isRewriteQollockTarget, isRewriteThirdEyeTarget, loadTargetModeState } from "./targetModeStore.js";
 import { PRESET_VPK_FILE_NAME, REWRITE_PRESET_VPK_FILE_NAME, REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME, REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME } from "./hpv2PresetVpkFileName.js";
 import { loadShowranksCompatibleState } from "./showranksCompatibleStore.js";
 
@@ -165,12 +165,14 @@ export function createPresetBuilderSession(defaultState) {
 
 export function loadPresetBuilderSession(storage, defaultState, {
   profileStorageKey = PROFILE_STORAGE_KEY,
-  targetModeStorageKey
+  targetModeStorageKey,
+  allowHpv2OnlyTargets = false
 } = {}) {
   const profileState = loadProfileState(storage, defaultState, profileStorageKey);
   const targetModeState = loadTargetModeState(storage, {
     profileStorageKey,
-    storageKey: targetModeStorageKey
+    storageKey: targetModeStorageKey,
+    allowHpv2OnlyTargets
   });
   const showranksState = loadShowranksCompatibleState(storage);
   const hasRewriteProfiles = profileState.profiles.some((profile) => Boolean(profile?.rewrite));
@@ -197,6 +199,7 @@ export function loadPresetBuilderSession(storage, defaultState, {
 }
 
 function resolvePresetVpkFileName(session) {
+  if (isRewriteThirdEyeTarget(session.targetMode)) return REWRITE_PRESET_VPK_FILE_NAME;
   if (isRewriteQollockTarget(session.targetMode)) return REWRITE_QOLLOCK_PRESET_VPK_FILE_NAME;
   const containsRewriteProfiles = (Array.isArray(session.profiles) ? session.profiles : []).some((profile) => Boolean(profile?.rewrite));
   if (containsRewriteProfiles && isFullTargetMode(session.targetMode) && session.showranksCompatible) return REWRITE_SHOWRANKS_PRESET_VPK_FILE_NAME;

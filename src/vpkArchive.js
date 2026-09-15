@@ -43,6 +43,7 @@ export function normalizeVpkPath(path) {
   if (!value || value.includes("\\") || value.startsWith("/") || /^[A-Za-z]:/.test(value)) {
     throw new Error(`Invalid VPK path: ${value}`);
   }
+  // oxlint-disable-next-line no-control-regex -- VPK paths must reject disallowed control bytes.
   if (/[\u0000-\u001f\u007f]/.test(value) || value.includes("//")) {
     throw new Error(`Invalid VPK path: ${value}`);
   }

@@ -30,7 +30,7 @@ import {
 } from '../hpHeroData.js';
 import { HP_COLORS_MOD_VARIANTS } from '../hpModVariants.js';
 import { buildGitCommitInfoRequestUrl, isGitCommitInfoPayload } from '../gitCommitInfoRefresh.js';
-import { TARGET_MODE_CHOICES } from '../targetModeStore.js';
+import { LEGACY_TARGET_MODE_CHOICES } from '../targetModeStore.js';
 import { copyText, downloadText } from '../download.js';
 import { cleanProfileName, createProfilePersistenceSnapshot, saveProfileState } from '../profileStore.js';
 import {
@@ -92,7 +92,7 @@ function useDialogA11y(open, onClose) {
     previousFocusRef.current = document.activeElement;
     const panel = panelRef.current;
     const focusable = () => Array.from(panel?.querySelectorAll(
-      'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])'
+      'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     ) || []);
     focusable()[0]?.focus();
     const handleKeyDown = (event) => {
@@ -1007,7 +1007,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null }) {
                 : 'Pick the base mod that will read the preset VPK. You can change this later from the top bar.'}
             </p>
             <div className="target-mode-choice-grid" role="group" aria-label="HP Colors target mod">
-              {TARGET_MODE_CHOICES.map((choice) => {
+              {LEGACY_TARGET_MODE_CHOICES.map((choice) => {
                 const selected = targetMode === choice.id;
                 return (
                   <div key={choice.id} className={selected ? 'target-mode-choice is-selected' : 'target-mode-choice'}>

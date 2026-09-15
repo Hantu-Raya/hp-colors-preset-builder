@@ -34,7 +34,7 @@ function decodeBase64UrlText(encoded) {
 function readXmlAttributes(tag) {
   const attrs = {};
   const body = String(tag).replace(/^<[^\s>]+\s*|\/?\s*>$/g, "");
-  const re = /([A-Za-z_:][A-Za-z0-9_:.\-]*)\s*=\s*"([^"<>]*)"/g;
+  const re = /([A-Za-z_:][A-Za-z0-9_:.-]*)\s*=\s*"([^"<>]*)"/g;
   let consumed = "";
   let match;
   while ((match = re.exec(body))) {
@@ -47,6 +47,7 @@ function readXmlAttributes(tag) {
   return attrs;
 }
 
+// oxlint-disable-next-line no-control-regex -- XML boundary validation must reject disallowed control bytes.
 function isControlText(value) { return /[\u0000-\u001f\u007f]/.test(value); }
 function hasPresetEntryClass(className) { return String(className || "").split(/\s+/).includes(PRESET_STORE_LABEL_CLASS); }
 function isPlainObject(value) { return value && typeof value === "object" && !Array.isArray(value); }
@@ -119,13 +120,13 @@ function parseXml(baseHudXml) {
       if (stack.length === 0 && token.trim()) throw new Error("XML text outside root");
       continue;
     }
-    if (/^<\//.test(token)) {
-      const name = token.match(/^<\/\s*([A-Za-z_:][A-Za-z0-9_:.\-]*)\s*>$/)?.[1];
+    if (token.startsWith("</")) {
+      const name = token.match(/^<\/\s*([A-Za-z_:][A-Za-z0-9_:.-]*)\s*>$/)?.[1];
       if (!name || stack.pop() !== name) throw new Error("Malformed XML nesting");
       if (name === PRESET_STORE_PANEL_ID) storeDepth = -1;
       continue;
     }
-    const start = token.match(/^<\s*([A-Za-z_:][A-Za-z0-9_:.\-]*)([\s\S]*?)\s*(\/?)>$/);
+    const start = token.match(/^<\s*([A-Za-z_:][A-Za-z0-9_:.-]*)([\s\S]*?)\s*(\/?)>$/);
     if (!start) throw new Error("Malformed XML tag");
     const [, name, , selfClosing] = start;
     const attrs = readXmlAttributes(token);

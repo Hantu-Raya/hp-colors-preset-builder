@@ -1,11 +1,17 @@
 import { compileSource2Resource, extractSource2Resource, SOURCE2_RESOURCE_CODECS } from "./source2ResourceCodec.js";
 import { decodeRewriteTransfer } from "./hpv2RewritePresetCodec.js";
 import { createVpkArchive, normalizeVpkPath, readVpkArchive, writeVpkArchive } from "./vpkArchive.js";
-import { REWRITE_PRESET_VPK_FILE_NAME as REWRITE_PRESET_FILENAME } from "./hpv2PresetVpkFileName.js";
+import {
+  REWRITE_PRESET_VPK_FILE_NAME as REWRITE_PRESET_FILENAME,
+  REWRITE_THIRDEYE_PRESET_VPK_FILE_NAME as REWRITE_THIRDEYE_PRESET_FILENAME
+} from "./hpv2PresetVpkFileName.js";
 
 export const REWRITE_PRESET_ARCHIVE_PATH = "panorama/layout/hud_escape_menu.vxml_c";
 export const REWRITE_PRESET_VPK_FILE_NAME = REWRITE_PRESET_FILENAME;
+export const REWRITE_THIRDEYE_PRESET_VPK_FILE_NAME = REWRITE_THIRDEYE_PRESET_FILENAME;
 export const REWRITE_PRESET_TEMPLATE_PATH = "templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml";
+export const REWRITE_THIRDEYE_PRESET_TEMPLATE_PATH = "templates/hpv2_hp_colors_rewrite_thirdeye/panorama/layout/hud_escape_menu.xml";
+
 export const REWRITE_TOPBAR_ARCHIVE_PATH = "panorama/layout/citadel_hud_top_bar.vxml_c";
 export const REWRITE_SHOWRANKS_TOPBAR_TEMPLATE_PATH = "templates/hpv2_hp_colors_rewrite_showranks/panorama/layout/citadel_hud_top_bar.xml";
 export const REWRITE_QOLLOCK_TOPBAR_TEMPLATE_PATH = "templates/hpv2_hp_colors_rewrite_qollock/panorama/layout/citadel_hud_top_bar.xml";
@@ -96,6 +102,81 @@ export const REWRITE_QOLLOCK_PRESET_SCRIPT_INCLUDES = Object.freeze([
   "s2r://panorama/scripts/hp_colors_v2_menu.vjs_c",
   "s2r://panorama/scripts/qollock_hp_colors_bridge.vjs_c"
 ]);
+export const REWRITE_THIRDEYE_PRESET_STYLE_INCLUDES = Object.freeze([
+  ...REWRITE_PRESET_STYLE_INCLUDES,
+  "s2r://panorama/styles/popups/settings_toggle.vcss_c",
+  "s2r://panorama/styles/popups/settings_slider.vcss_c",
+  "s2r://panorama/styles/popups/settings_enum.vcss_c",
+  "s2r://panorama/styles/thirdeye/tokens.vcss_c",
+  "s2r://panorama/styles/thirdeye/ui/settings_window.vcss_c",
+  "s2r://panorama/styles/thirdeye/ui/escape_menu_nav_buttons.vcss_c",
+  "s2r://panorama/styles/thirdeye/ui/import_modal.vcss_c"
+]);
+export const REWRITE_THIRDEYE_PRESET_SCRIPT_INCLUDES = Object.freeze([
+  ...REWRITE_PRESET_SCRIPT_INCLUDES,
+  "s2r://panorama/scripts/hp_colors_thirdeye_bridge.vjs_c",
+  "s2r://panorama/scripts/core/namespace.vjs_c",
+  "s2r://panorama/scripts/core/logger.vjs_c",
+  "s2r://panorama/scripts/core/debug.vjs_c",
+  "s2r://panorama/scripts/core/registry.vjs_c",
+  "s2r://panorama/scripts/core/panel.vjs_c",
+  "s2r://panorama/scripts/core/hud.vjs_c",
+  "s2r://panorama/scripts/core/time.vjs_c",
+  "s2r://panorama/scripts/core/codec.vjs_c",
+  "s2r://panorama/scripts/core/persistence.vjs_c",
+  "s2r://panorama/scripts/core/position.vjs_c",
+  "s2r://panorama/scripts/core/perf.vjs_c",
+  "s2r://panorama/scripts/core/cache.vjs_c",
+  "s2r://panorama/scripts/features/healthbar_style/manifest.vjs_c",
+  "s2r://panorama/scripts/features/healthbar_position/manifest.vjs_c",
+  "s2r://panorama/scripts/features/healthbar_combat_indicator/manifest.vjs_c",
+  "s2r://panorama/scripts/features/topbar_ult_cooldown/manifest.vjs_c",
+  "s2r://panorama/scripts/features/topbar_bridge_buff_timer/manifest.vjs_c",
+  "s2r://panorama/scripts/features/topbar_midboss_timer/manifest.vjs_c",
+  "s2r://panorama/scripts/features/topbar_rejuv_buff_timer/manifest.vjs_c",
+  "s2r://panorama/scripts/features/topbar_soul_diff/manifest.vjs_c",
+  "s2r://panorama/scripts/features/topbar_rift_timer/manifest.vjs_c",
+  "s2r://panorama/scripts/features/topbar_position/manifest.vjs_c",
+  "s2r://panorama/scripts/features/abilities_position/manifest.vjs_c",
+  "s2r://panorama/scripts/features/minimap_position/manifest.vjs_c",
+  "s2r://panorama/scripts/features/minimap_breakables/manifest.vjs_c",
+  "s2r://panorama/scripts/features/minimap_zoom/manifest.vjs_c",
+  "s2r://panorama/scripts/features/minimal_minimap/manifest.vjs_c",
+  "s2r://panorama/scripts/features/rem_tunnels/manifest.vjs_c",
+  "s2r://panorama/scripts/features/topbar_nicknames/manifest.vjs_c",
+  "s2r://panorama/scripts/features/topbar_obj_damage/manifest.vjs_c",
+  "s2r://panorama/scripts/features/topbar_missing_hero/manifest.vjs_c",
+  "s2r://panorama/scripts/features/clean_stacks/manifest.vjs_c",
+  "s2r://panorama/scripts/features/passive_ability_icons/manifest.vjs_c",
+  "s2r://panorama/scripts/features/perf_profiler/manifest.vjs_c",
+  "s2r://panorama/scripts/features/recent_purchases/manifest.vjs_c",
+  "s2r://panorama/scripts/features/purchase_popups/manifest.vjs_c",
+  "s2r://panorama/scripts/features/minimal_build_icons/manifest.vjs_c",
+  "s2r://panorama/scripts/features/debug_output/manifest.vjs_c",
+  "s2r://panorama/scripts/features/keyboard_overlay/manifest.vjs_c",
+  "s2r://panorama/scripts/ui/layout.vjs_c",
+  "s2r://panorama/scripts/ui/breadcrumb.vjs_c",
+  "s2r://panorama/scripts/ui/modal.vjs_c",
+  "s2r://panorama/scripts/ui/tooltip.vjs_c",
+  "s2r://panorama/scripts/ui/renderer.vjs_c",
+  "s2r://panorama/scripts/ui/search.vjs_c",
+  "s2r://panorama/scripts/hp_colors_thirdeye_window.vjs_c"
+]);
+export const REWRITE_THIRDEYE_REQUIRED_PANEL_IDS = Object.freeze([
+  ...REWRITE_PRESET_REQUIRED_PANEL_IDS,
+  "ThirdEyeWindow",
+  "ThirdEyeWindowHeader",
+  "ThirdEyeWindowTitle",
+  "ThirdEyeWindowClose",
+  "ThirdEyeWindowBody",
+  "ThirdEyeWindowTabs",
+  "ThirdEyeWindowContent",
+  "ThirdEyeSettingsBtn",
+  "te_PlayButton",
+  "te_WatchButton",
+  "EscapeBackground",
+  "EscapeButton"
+]);
 export const REWRITE_QOLLOCK_PRESET_REQUIRED_PANEL_IDS = Object.freeze([
   "SettingsWindow",
   "SettingsList",
@@ -162,6 +243,7 @@ const REWRITE_QOLLOCK_MENU_ONCANCEL = "if ($.HPColorsMenuCancel && $.HPColorsMen
 const XML_TOKEN = /<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<![\s\S]*?>|<[^>]*>|[^<]+/g;
 const XML_NAME = /^[A-Za-z_:][A-Za-z0-9_.:-]*$/;
 const HEX = /^[0-9A-F]+$/;
+// oxlint-disable-next-line no-control-regex -- XML boundary validation must reject disallowed control bytes.
 const CONTROL_TEXT = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
 const XML_ENTITIES = Object.freeze({ amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" });
 
@@ -319,6 +401,30 @@ function requireMenuContract(
   }
   return escapeMenus[0];
 }
+function requireThirdEyeMenuContract(menu) {
+  const nodesById = new Map();
+  const walk = (node) => {
+    if (!node) return;
+    if (node.attrs.id) {
+      const entries = nodesById.get(node.attrs.id) || [];
+      entries.push(node);
+      nodesById.set(node.attrs.id, entries);
+    }
+    node.children.forEach(walk);
+  };
+  walk(menu);
+  for (const id of REWRITE_THIRDEYE_REQUIRED_PANEL_IDS.filter((entry) => entry.startsWith("ThirdEye"))) {
+    if (nodesById.get(id)?.length !== 1) {
+      throw new Error("Rewrite Third Eye XML menu panel contract is stale or incompatible");
+    }
+  }
+  for (const id of ["EscapeBackground", "EscapeButton"]) {
+    const node = nodesById.get(id)?.[0];
+    if (!node || node.attrs.onactivate !== REWRITE_MENU_ONCANCEL) {
+      throw new Error("Rewrite Third Eye XML lifecycle contract is stale or incompatible");
+    }
+  }
+}
 
 
 function requireStoreLabel(root, { requireEmpty = true } = {}) {
@@ -361,7 +467,8 @@ function inspectRewriteXml(
     requiredPanelIds = REWRITE_PRESET_REQUIRED_PANEL_IDS,
     expectedOnload = "$.HPColorsMenuBoot()",
     expectedOncancel = REWRITE_MENU_ONCANCEL,
-    expectedMenuAttributes = null
+    expectedMenuAttributes = null,
+    menuValidator = null
   } = {}
 ) {
   const text = asText(source);
@@ -370,7 +477,8 @@ function inspectRewriteXml(
   const styles = requireIncludes(parsed.root, "styles", styleIncludes, "style");
   const scripts = requireIncludes(parsed.root, "scripts", scriptIncludes, "script");
   const store = requireStoreLabel(parsed.root, { requireEmpty });
-  requireMenuContract(parsed.root, { expectedOnload, expectedOncancel, expectedMenuAttributes, requiredPanelIds });
+  const menu = requireMenuContract(parsed.root, { expectedOnload, expectedOncancel, expectedMenuAttributes, requiredPanelIds });
+  menuValidator?.(menu);
   let code = "";
   if (store.label.attrs.text) {
     code = decodeUtf16Hex(store.label.attrs.text);
@@ -436,6 +544,22 @@ function inspectRewritePresetTemplate(templateText) {
 export function validateRewritePresetTemplate(templateText) {
   return inspectRewritePresetTemplate(templateText);
 }
+function inspectRewriteThirdEyeXml(source, { requireEmpty = true } = {}) {
+  return inspectRewriteXml(source, {
+    requireEmpty,
+    styleIncludes: REWRITE_THIRDEYE_PRESET_STYLE_INCLUDES,
+    scriptIncludes: REWRITE_THIRDEYE_PRESET_SCRIPT_INCLUDES,
+    requiredPanelIds: REWRITE_THIRDEYE_REQUIRED_PANEL_IDS,
+    menuValidator: requireThirdEyeMenuContract
+  });
+}
+
+export function inspectRewriteThirdEyePresetTemplate(templateText) {
+  return inspectRewriteThirdEyeXml(templateText, { requireEmpty: true });
+}
+
+export const validateRewriteThirdEyePresetTemplate = inspectRewriteThirdEyePresetTemplate;
+
 
 export function inspectRewriteQollockPresetTemplate(templateText) {
   return inspectRewriteXml(templateText, {
@@ -515,23 +639,41 @@ function sourceTextFromResource(input) {
   throw new Error("Invalid rewrite XML resource bytes");
 }
 
-export function readRewritePresetCode(input) {
+function readRewriteCode(input, inspect, emptyMessage) {
   const source = sourceTextFromResource(input);
-  const inspected = inspectRewriteXml(source, { requireEmpty: false });
-  if (!inspected.presetCode) throw new Error("Rewrite XML store is empty");
+  const inspected = inspect(source, { requireEmpty: false });
+  if (!inspected.presetCode) throw new Error(emptyMessage);
   return validatePresetCode(inspected.presetCode);
 }
 
-function patchRewritePresetTemplate({ templateText, templateXml, template, presetCode, code = presetCode } = {}) {
+export function readRewritePresetCode(input) {
+  return readRewriteCode(input, inspectRewriteXml, "Rewrite XML store is empty");
+}
+
+export function readRewriteThirdEyePresetCode(input) {
+  return readRewriteCode(input, inspectRewriteThirdEyeXml, "Rewrite Third Eye XML store is empty");
+}
+
+function patchRewriteTemplate({
+  templateText,
+  templateXml,
+  template,
+  presetCode,
+  code = presetCode,
+  inspectTemplate,
+  inspectPatched,
+  roundTripMessage,
+  outsideLabelMessage
+} = {}) {
   const source = templateText ?? templateXml ?? template;
   const normalizedCode = validatePresetCode(code);
-  const inspected = inspectRewritePresetTemplate(source);
+  const inspected = inspectTemplate(source);
   const encoded = encodeUtf16Hex(normalizedCode);
   const patchedText = inspected.text.slice(0, inspected.labelTextStart) + encoded + inspected.text.slice(inspected.labelTextEnd);
-  const reread = inspectRewriteXml(patchedText, { requireEmpty: false });
-  if (reread.presetCode !== normalizedCode) throw new Error("Rewrite XML store patch failed payload round-trip");
+  const reread = inspectPatched(patchedText, { requireEmpty: false });
+  if (reread.presetCode !== normalizedCode) throw new Error(roundTripMessage);
   if (inspected.text.slice(0, inspected.labelTextStart) !== patchedText.slice(0, inspected.labelTextStart) || inspected.text.slice(inspected.labelTextEnd) !== patchedText.slice(inspected.labelTextStart + encoded.length)) {
-    throw new Error("Rewrite XML patch changed bytes outside the store label");
+    throw new Error(outsideLabelMessage);
   }
   return {
     text: patchedText,
@@ -540,6 +682,26 @@ function patchRewritePresetTemplate({ templateText, templateXml, template, prese
     presetCode: normalizedCode,
     template: reread
   };
+}
+
+function patchRewriteThirdEyePresetTemplate(options = {}) {
+  return patchRewriteTemplate({
+    ...options,
+    inspectTemplate: inspectRewriteThirdEyePresetTemplate,
+    inspectPatched: inspectRewriteThirdEyeXml,
+    roundTripMessage: "Rewrite Third Eye XML store patch failed payload round-trip",
+    outsideLabelMessage: "Rewrite Third Eye XML patch changed bytes outside the store label"
+  });
+}
+
+function patchRewritePresetTemplate(options = {}) {
+  return patchRewriteTemplate({
+    ...options,
+    inspectTemplate: inspectRewritePresetTemplate,
+    inspectPatched: inspectRewriteXml,
+    roundTripMessage: "Rewrite XML store patch failed payload round-trip",
+    outsideLabelMessage: "Rewrite XML patch changed bytes outside the store label"
+  });
 }
 
 export function readRewriteQollockPresetCode(input) {
@@ -605,42 +767,86 @@ function readRewriteCompatibilityArchive(vpkBytes, target) {
   return { archive, escapeFile, topbarFile };
 }
 
-export function validateRewritePresetVpk(vpkBytes) {
+function validateRewriteOneFileVpk(vpkBytes, { targetLabel, inspectXml, emptyMessage }) {
   const archive = readVpkArchive(vpkBytes);
-  if (archive.files.length !== 1) throw new Error("Rewrite preset VPK must contain exactly one file");
+  if (archive.files.length !== 1) throw new Error(`${targetLabel} preset VPK must contain exactly one file`);
   const [file] = archive.files;
-  if (normalizeVpkPath(file.path) !== REWRITE_PRESET_ARCHIVE_PATH) throw new Error("Rewrite preset VPK contains an unexpected file");
-  if (!(file.bytes instanceof Uint8Array)) throw new Error("Rewrite preset VPK contains invalid bytes");
+  if (normalizeVpkPath(file.path) !== REWRITE_PRESET_ARCHIVE_PATH) {
+    throw new Error(`${targetLabel} preset VPK contains an unexpected file`);
+  }
+  if (!(file.bytes instanceof Uint8Array)) {
+    throw new Error(`${targetLabel} preset VPK contains invalid bytes`);
+  }
   const sourceText = extractSource2Resource({ bytes: file.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
-  const inspected = inspectRewriteXml(sourceText, { requireEmpty: false });
-  if (!inspected.presetCode) throw new Error("Rewrite preset VPK store is empty");
+  const inspected = inspectXml(sourceText, { requireEmpty: false });
+  if (!inspected.presetCode) throw new Error(emptyMessage);
   return archive;
 }
 
-export function buildRewritePresetPackage(input, positionalTemplateText = null) {
+function buildRewriteOneFilePackage(
+  input,
+  positionalTemplateText,
+  { patchTemplate, validateVpk, readCode, inspectXml, roundTripMessage }
+) {
   const options = typeof input === "string"
     ? { presetCode: input, templateText: positionalTemplateText }
     : (input || {});
   const presetCode = options.presetCode ?? options.code;
   const templateText = options.templateText ?? options.templateXml ?? options.template;
-  const patched = patchRewritePresetTemplate({ templateText, presetCode });
+  const patched = patchTemplate({ templateText, presetCode });
   const bytes = compileSource2Resource({ sourceText: patched.text, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
   const archive = createVpkArchive([{ path: REWRITE_PRESET_ARCHIVE_PATH, bytes }]);
   const vpkBytes = writeVpkArchive(archive);
-  const rereadArchive = validateRewritePresetVpk(vpkBytes);
+  const rereadArchive = validateVpk(vpkBytes);
   const file = rereadArchive.files[0];
   const rereadText = extractSource2Resource({ bytes: file.bytes, codec: SOURCE2_RESOURCE_CODECS.PANORAMA_LAYOUT });
-  const rereadCode = readRewritePresetCode(rereadText);
-  if (rereadCode !== patched.code) throw new Error("Rewrite preset VPK payload failed round-trip");
+  const rereadCode = readCode(rereadText);
+  if (rereadCode !== patched.code) throw new Error(roundTripMessage);
   return {
     vpkBytes,
     bytes: file.bytes,
     sourceText: rereadText,
     xmlText: rereadText,
     presetCode: patched.code,
-    template: inspectRewriteXml(rereadText, { requireEmpty: false }),
+    template: inspectXml(rereadText, { requireEmpty: false }),
     archive: rereadArchive
   };
+}
+
+export function validateRewritePresetVpk(vpkBytes) {
+  return validateRewriteOneFileVpk(vpkBytes, {
+    targetLabel: "Rewrite",
+    inspectXml: inspectRewriteXml,
+    emptyMessage: "Rewrite preset VPK store is empty"
+  });
+}
+
+export function buildRewritePresetPackage(input, positionalTemplateText = null) {
+  return buildRewriteOneFilePackage(input, positionalTemplateText, {
+    patchTemplate: patchRewritePresetTemplate,
+    validateVpk: validateRewritePresetVpk,
+    readCode: readRewritePresetCode,
+    inspectXml: inspectRewriteXml,
+    roundTripMessage: "Rewrite preset VPK payload failed round-trip"
+  });
+}
+
+export function validateRewriteThirdEyePresetVpk(vpkBytes) {
+  return validateRewriteOneFileVpk(vpkBytes, {
+    targetLabel: "Rewrite Third Eye",
+    inspectXml: inspectRewriteThirdEyeXml,
+    emptyMessage: "Rewrite Third Eye preset VPK store is empty"
+  });
+}
+
+export function buildRewriteThirdEyePresetPackage(input, positionalTemplateText = null) {
+  return buildRewriteOneFilePackage(input, positionalTemplateText, {
+    patchTemplate: patchRewriteThirdEyePresetTemplate,
+    validateVpk: validateRewriteThirdEyePresetVpk,
+    readCode: readRewriteThirdEyePresetCode,
+    inspectXml: inspectRewriteThirdEyeXml,
+    roundTripMessage: "Rewrite Third Eye preset VPK payload failed round-trip"
+  });
 }
 
 function mergeRewriteShowranksTemplate(templateText) {

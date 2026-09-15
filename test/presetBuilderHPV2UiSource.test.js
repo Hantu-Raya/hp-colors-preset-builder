@@ -8,7 +8,6 @@ const healthbarPreviewPath = new URL("../src/components/HealthbarHPV2Preview.jsx
 const v2StylesPath = new URL("../src/styles/hpv2.css", import.meta.url);
 const v2TreePath = new URL("../src/components/schema-tree-v2.jsx", import.meta.url);
 const v2PagePath = new URL("../src/pages/hpv2.astro", import.meta.url);
-const converterPagePath = new URL("../src/pages/hpv2.astro", import.meta.url);
 const rewriteTemplatePath = new URL("../public/templates/hpv2_hp_colors_rewrite/panorama/layout/hud_escape_menu.xml", import.meta.url);
 const rewriteQollockTemplatePath = new URL("../public/templates/hpv2_hp_colors_rewrite_qollock/panorama/layout/hud_escape_menu.xml", import.meta.url);
 const oldRewriteScriptPath = new URL("../public/templates/hpv2_hp_colors_rewrite/panorama/scripts/hp_colors_builder_presets.js", import.meta.url);
@@ -47,6 +46,12 @@ test("v2 disables Minimal and uses Rewrite download links without changing v1", 
   assert.match(targetMode, /unavailableInV2: true/);
   assert.match(targetMode, /FileInfo_1792071/);
   assert.match(targetMode, /FileInfo_1792072/);
+  assert.match(targetMode, /export const LEGACY_TARGET_MODE_CHOICES = Object\.freeze\([\s\S]*?choice\.hpv2Only !== true/);
+  const thirdEye = targetMode.match(/id: HP_COLORS_MOD_VARIANTS\.REWRITE_THIRDEYE,[\s\S]*?hpv2Only: true/);
+  assert.ok(thirdEye);
+  assert.doesNotMatch(thirdEye[0], /compatibility runtime|pak47|pak03\+|does not distribute/i);
+  assert.match(v2Island, /isSelectedHpv2TargetChoice\(choice, targetMode, session\.showranksCompatible\)/);
+  assert.match(v2Island, /choice\.localInstallLabel/);
 });
 
 test("v2 owns the in-game menu navigation without changing v1", async () => {
@@ -243,7 +248,7 @@ test("HPv2 Rewrite targets select Rewrite catalog/defaults and hydrate profiles"
   const island = await readFile(v2IslandPath, "utf8");
   assert.match(island, /isFullTargetMode\(session\.targetMode\) \|\| rewriteQollockTarget/);
   assert.match(island, /isRewriteQollockTarget\(session\.targetMode\)/);
-  assert.match(island, /const rewriteBuildTarget = isFullTargetMode\(session\.targetMode\) \|\| rewriteQollockTarget \|\| containsRewriteProfiles;/);
+  assert.match(island, /const rewriteBuildTarget = isFullTargetMode\(session\.targetMode\) \|\| rewriteQollockTarget \|\| rewriteThirdEyeTarget \|\| containsRewriteProfiles;/);
   assert.match(island, /const activeCatalog = rewriteBuildTarget \? REWRITE_FIELD_CATALOG : HP_FIELD_CATALOG;/);
   assert.match(island, /const activeDefaultState = rewriteBuildTarget \? rewriteDefaultState : defaultState;/);
   assert.match(island, /loadPresetBuilderSession\(storage, defaultState, \{[\s\S]*?targetModeStorageKey: V2_TARGET_MODE_STORAGE_KEY[\s\S]*?\}\)/);
