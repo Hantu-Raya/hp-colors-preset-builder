@@ -9,7 +9,7 @@ Select the target that matches the runtime you installed:
 - **Minimal** — the lightweight runtime. It reads the shared preset store and supports static hero-targeted routing without the full Anita in-game menu.
 - **Full** — the full HP Colors runtime. It provides the Anita in-game menu, multiple profiles, and hero-targeted profiles.
 - **Rewrite** — V2 selects this target when profiles contain rewrite data. Its package stores the complete `HPCRP1` bundle, including rewrite-only settings and ability-tier conditions, inside the rewrite Escape-menu XML.
-- **Rewrite + QOLLOCK** — an explicit target for the composite runtime. It builds `pak01_dir.vpk` with only `panorama/layout/hud_escape_menu.vxml_c`, and expects the support runtime in `pak02_dir.vpk` plus the pinned QOLLOCK package in `pak03_dir.vpk`.
+- **Rewrite + QOLLOCK** — an explicit target for the composite runtime. It builds `pak01_dir.vpk` with the merged Escape-menu layout, and expects the support runtime in `pak02_dir.vpk` plus QOLLOCK: QOLLOCK 4.0 as `pak60_dir.vpk` for **Rewritev2 + QOLLOCK** on HPv2, or the older pinned package as `pak03_dir.vpk` for V2 Rewrite + QOLLOCK.
 - **Rewritev2 + Third Eye** — an HPV2-only target for the compatibility runtime. It builds `pak01_dir.vpk` with only the merged Escape-menu layout and expects the compatibility runtime in `pak02_dir.vpk` plus the unchanged Third Eye package in `pak47` or another lower-priority `pak03+` slot. The builder does not distribute a Third Eye download.
 
 Do not mix Minimal or Full packages with the other base runtime, or install standalone Rewrite beside Rewrite + QOLLOCK or Rewritev2 + Third Eye. The selected target is saved in browser storage; V2 still switches to standalone Rewrite automatically when loaded profiles contain rewrite data.
@@ -25,7 +25,7 @@ The HPv2 build dialog shows the selected target, output, and install order. **Co
    - Minimal or Full: install its matching `pak96_dir.vpk` and `pak97_dir.vpk` pair.
    - Rewrite: install the current `hp_colors_rewrite_v2` runtime as `pak02_dir.vpk`.
    - Rewritev2 + ShowRanks: install Rewritev2 as `pak02_dir.vpk` and `showrank_barebones` as `pak03_dir.vpk`.
-   - Rewrite + QOLLOCK: install the support runtime as `pak02_dir.vpk`, then the pinned QOLLOCK package as `pak03_dir.vpk`.
+   - Rewrite + QOLLOCK: install the support runtime as `pak02_dir.vpk`, then QOLLOCK (`pak60_dir.vpk` for QOLLOCK 4.0 on HPv2; `pak03_dir.vpk` for the V2 legacy target).
    - Rewritev2 + Third Eye: install the compatibility runtime as `pak02_dir.vpk`, then keep your unchanged Third Eye package in `pak47` or another lower-priority `pak03+` slot. The builder does not distribute or rename that package.
 3. Use this exact add-on directory (replace `<SteamLibrary>` with the drive that contains Steam):
 
@@ -37,7 +37,7 @@ The HPv2 build dialog shows the selected target, output, and install order. **Co
    - Minimal or Full: replace the selected base mod's `pak96_dir.vpk` and keep its matching `pak97_dir.vpk`.
    - Rewrite: install the generated `pak01_dir.vpk` beside the rewrite runtime's `pak02_dir.vpk`. The generated package overrides only `panorama/layout/hud_escape_menu.vxml_c`; do not install another mod that overrides that layout.
    - Rewritev2 + ShowRanks: install the generated `pak01_dir.vpk` beside Rewritev2 `pak02_dir.vpk` and ShowRanks `pak03_dir.vpk`. The preset package contains merged `panorama/layout/hud_escape_menu.vxml_c` and `panorama/layout/citadel_hud_top_bar.vxml_c` assets.
-   - Rewrite + QOLLOCK: install the generated `pak01_dir.vpk` beside `pak02_dir.vpk` and `pak03_dir.vpk`. The preset package contains merged `panorama/layout/hud_escape_menu.vxml_c` and `panorama/layout/citadel_hud_top_bar.vxml_c` assets.
+   - Rewrite + QOLLOCK: install the generated `pak01_dir.vpk` beside `pak02_dir.vpk` and QOLLOCK (`pak60_dir.vpk` on HPv2). The preset package contains merged `panorama/layout/hud_escape_menu.vxml_c` and `panorama/layout/citadel_hud_top_bar.vxml_c` assets.
    - Rewritev2 + Third Eye: install the generated `pak01_dir.vpk` beside compatibility runtime `pak02_dir.vpk` and your unchanged Third Eye package in `pak47` or another lower-priority `pak03+` slot. The preset package contains only merged `panorama/layout/hud_escape_menu.vxml_c`.
 5. Restart Deadlock after replacing any VPK. A live Panorama context can retain the previous package.
 

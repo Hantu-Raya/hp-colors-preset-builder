@@ -48,6 +48,11 @@ test("Rewrite QOLLOCK template mirrors the composite include and panel contract"
   assert.match(templateText, /hp_colors_v2_state\.vjs_c/);
   assert.match(templateText, /hp_colors_v2_menu\.vjs_c/);
   assert.doesNotMatch(templateText, /(?:styles|scripts)\/hp_colors_(?:menu|contract|state)\.v(?:css|js)_c/);
+  // QOLLOCK 4.0 (pak60) defines $.ToggleSettingsWindow in ui/window; the bridge must load after it.
+  const windowIndex = inspected.scriptIncludes.indexOf("s2r://panorama/scripts/ui/window.vjs_c");
+  const bridgeIndex = inspected.scriptIncludes.indexOf("s2r://panorama/scripts/qollock_hp_colors_bridge.vjs_c");
+  assert.ok(windowIndex >= 0 && windowIndex < bridgeIndex);
+  assert.ok(inspected.scriptIncludes.includes("s2r://panorama/scripts/core/ql_namespace.vjs_c"));
 
   const qolIndex = templateText.indexOf('<Button id="ModSettingsBtn"');
   const hpIndex = templateText.indexOf('<Button id="HPColorsMenuButton"');

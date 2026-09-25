@@ -105,7 +105,7 @@ const PRECISE_PIPS_FIELD = Object.freeze({
 const HPV2_INSTALL_GUIDANCE = Object.freeze({
   rewrite: 'Install this generated pak01 preset with Rewritev2 (hp_colors_rewrite_v2) pak02. Restart Deadlock after changing addon files.',
   showranks: 'Install this generated pak01 preset with Rewritev2 pak02, then add showrank_barebones pak03. Restart Deadlock after changing addon files.',
-  qollock: 'Install this generated pak01 preset with hp_colors_rewrite_qollock support pak02 and pinned QOLLOCK pak03. Restart Deadlock after changing addon files.',
+  qollock: 'Install this generated pak01 preset with the Rewritev2 QOLLOCK support pak02 and QOLLOCK 4.0 (pak60_dir.vpk). Restart Deadlock after changing addon files.',
   thirdeye: 'Install this generated pak01 preset with the Rewritev2 + Third Eye compatibility runtime in pak02. Keep your unchanged Third Eye package installed in pak47, or another lower-priority pak03+ slot; this builder does not distribute a Third Eye download. Restart Deadlock after changing addon files.'
 });
 

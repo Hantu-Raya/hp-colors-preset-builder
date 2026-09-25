@@ -49,7 +49,7 @@ export const TARGET_MODE_CHOICES = Object.freeze([
     downloadHrefV2: "https://gamebanana.com/mods/download/603113#FileInfo_1792072",
     hpv2Title: "Rewritev2 + QOLLOCK",
     hpv2Summary: "Preset VPK for HP Colors Rewritev2 + QOLLOCK.",
-    hpv2Description: "Use this with the fixed pak01/pak02/pak03 Rewritev2 + QOLLOCK install order.",
+    hpv2Description: "Use this with the pak01 preset, Rewritev2 QOLLOCK pak02, and QOLLOCK 4.0 pak60 install order.",
     unavailableInV2: false
   }),
   Object.freeze({
