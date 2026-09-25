@@ -172,6 +172,28 @@ const MENU_DEFINITION = Object.freeze([
           "allyPulseColor",
           "allyPulseColorMode"
         ]
+      },
+      {
+        name: "HP TEXT",
+        title: "ALLY HP TEXT",
+        description: "Show ally HP as current and maximum, percentage, or current only, then style and place it.",
+        pageId: "ally-health-text",
+        rewriteOnly: true,
+        fieldIds: [],
+        rewriteKeys: [
+          "allyReadoutVisible",
+          "allyReadoutFormat",
+          "allyReadoutSize",
+          "allyReadoutFont",
+          "allyReadoutColorMode",
+          "allyReadoutMode",
+          "allyReadoutLow",
+          "allyReadoutMid",
+          "allyReadoutHigh",
+          "allyReadoutMaxTeamColor",
+          "allyReadoutOffsetX",
+          "allyReadoutOffsetY"
+        ]
       }
     ]
   },

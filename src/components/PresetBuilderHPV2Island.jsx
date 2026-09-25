@@ -17,9 +17,11 @@ import {
   Library,
   Plus,
   RotateCcw,
+  Sparkles,
   Star,
   Trash2,
-  Upload
+  Upload,
+  X
 } from 'lucide-preact';
 import { HP_FIELD_CATALOG, REWRITE_FIELD_CATALOG } from '../hpv2HpSchema.js';
 import { createHpMenuGroups } from '../hpv2HpMenuNavigation.js';
@@ -81,6 +83,7 @@ import { SchemaField } from './schema-field.jsx';
 import { SchemaTabs, SchemaTree } from './schema-tree-v2.jsx';
 import HealthbarPreview from './HealthbarHPV2Preview.jsx';
 import KofiLeaderboardTicker from './KofiLeaderboardTicker.jsx';
+import { WHATS_NEW, acknowledgeWhatsNew, isWhatsNewAcknowledged } from '../whatsNew.js';
 
 const PRECISE_PIPS_COMMAND = [
   '"citadel_unit_status_health_per_minor_pip" "10"',
@@ -561,6 +564,23 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
     setSession(loaded);
   }, [defaultState]);
 
+  // Hidden until mounted so returning users who already dismissed it never see a flash.
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
+  useEffect(() => {
+    setWhatsNewOpen(!isWhatsNewAcknowledged(typeof window !== 'undefined' ? window.localStorage : null));
+  }, []);
+  const dismissWhatsNew = useCallback(() => {
+    acknowledgeWhatsNew(typeof window !== 'undefined' ? window.localStorage : null);
+    setWhatsNewOpen(false);
+  }, []);
+  const whatsNewPageAvailable = rewriteBuildTarget &&
+    groups.some((group) => group.children.some((page) => activeCatalog.getCategoryKey(page) === WHATS_NEW.categoryKey));
+  const openWhatsNewPage = useCallback(() => {
+    setActiveKey(WHATS_NEW.categoryKey);
+    dismissWhatsNew();
+    document.getElementById('builderSettings')?.scrollIntoView({ block: 'start' });
+  }, [dismissWhatsNew]);
+
   useEffect(() => {
     if (!profilesLoaded) return undefined;
     return scheduleIdleWork(() => {
@@ -1011,6 +1031,24 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
             </div>
           </div>
         </header>
+        {whatsNewOpen ? (
+          <section className="whats-new-banner" aria-label="New settings">
+            <Sparkles size={16} aria-hidden="true" className="whats-new-icon" />
+            <p className="whats-new-copy">
+              <strong>New: Ally HP text.</strong>{' '}
+              Show HP on ally healthbars with its own format, font, colors, and position under Ally → HP Text.
+              Update the Rewritev2 pak02, then rebuild your preset VPK.
+            </p>
+            <div className="whats-new-actions">
+              {whatsNewPageAvailable ? (
+                <button type="button" className="whats-new-open" onClick={openWhatsNewPage}>Open settings</button>
+              ) : null}
+              <button type="button" className="whats-new-dismiss" onClick={dismissWhatsNew} aria-label="Dismiss new settings notice" title="Dismiss">
+                <X size={16} aria-hidden="true" />
+              </button>
+            </div>
+          </section>
+        ) : null}
         <nav className="mobile-workspace-nav" aria-label="Mobile builder navigation">
           <a href="#builderCategories">Sections</a>
           <a href="#builderSettings">Current page</a>
@@ -1240,6 +1278,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
               conversionRequired={previewConversionRequired}
               profileName={presetName}
               onConvert={handlePreviewConvert}
+              focusRelation={String(currentGroup?.path?.[0] || '').toLowerCase()}
             />
           </aside>
           ) : null}

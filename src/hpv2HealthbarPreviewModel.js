@@ -45,6 +45,38 @@ const FONT_FAMILIES = Object.freeze({
   pulp: "VALVEPulp, Noto Sans, sans-serif"
 });
 
+// HP text web field ids per relation; allies own an independent copy.
+const READOUT_FIELDS = Object.freeze({
+  enemy: Object.freeze({
+    visible: "hp_counter_visible",
+    format: "hp_counter_format",
+    size: "hp_counter_size",
+    font: "hp_readout_font",
+    offsetX: "hp_readout_offset_x",
+    offsetY: "hp_readout_offset_y",
+    colorMode: "hp_text_color_mode",
+    mode: "hp_readout_mode",
+    low: "hp_text_color_low",
+    mid: "hp_text_color_mid",
+    high: "hp_text_color_high",
+    maxTeam: "hp_readout_max_team_color"
+  }),
+  ally: Object.freeze({
+    visible: "hpv2_friend_readout_visible",
+    format: "hpv2_friend_readout_format",
+    size: "hpv2_friend_readout_size",
+    font: "hpv2_friend_readout_font",
+    offsetX: "hpv2_friend_readout_offset_x",
+    offsetY: "hpv2_friend_readout_offset_y",
+    colorMode: "hpv2_friend_readout_color_mode",
+    mode: "hpv2_friend_readout_mode",
+    low: "hpv2_friend_readout_color_low",
+    mid: "hpv2_friend_readout_color_mid",
+    high: "hpv2_friend_readout_color_high",
+    maxTeam: "hpv2_friend_readout_max_team_color"
+  })
+});
+
 const RELATIONS = new Set(["enemy", "ally", "neutral", "other"]);
 const TEAMS = new Set(["team1", "team2", "enemy", "ally", "neutral", ""]);
 const UNIT_KINDS = new Set(["hero", "player", "trooper", "building", "boss", "sentry", "ghoul", "creature", "vertical", "other"]);
@@ -268,8 +300,11 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
     ? 0
     : Math.max(0, Math.min(readoutMaximum, ratio >= 0.97 ? readoutMaximum : Math.round(readoutMaximum * ratio)));
 
-  const readoutFormat = enumValue(state, "hp_counter_format", ["hp", "percent", "current"], "hp");
-  const readoutEnabled = !stock && globalEnabled && enemyRole && !!state.hp_counter_visible;
+  const readoutFields = READOUT_FIELDS[relation] || null;
+  const readoutFormat = readoutFields
+    ? enumValue(state, readoutFields.format, ["hp", "percent", "current"], "hp")
+    : "hp";
+  const readoutEnabled = !stock && globalEnabled && !!readoutFields && !!state[readoutFields.visible];
   const readoutHasMaximum = readoutEnabled && readoutFormat === "hp" && readoutMaximum > 0;
   const readoutText = readoutEnabled
     ? readoutFormat === "percent"
@@ -281,28 +316,31 @@ function createHealthbarPreviewModel(profileState, scenario, options = {}) {
           : `${readoutCurrent} / `
     : "";
   const readoutMaxText = readoutHasMaximum ? String(readoutMaximum) : "";
-  const readoutColorMode = enumValue(state, "hp_text_color_mode", ["bar", "custom"], "bar");
-  const readoutMode = readoutColorMode === "custom"
-    ? enumValue(state, "hp_readout_mode", ["fixed", "gradient"], "fixed")
+  const readoutCustom = readoutEnabled &&
+    enumValue(state, readoutFields.colorMode, ["bar", "custom"], "bar") === "custom";
+  const readoutMode = readoutCustom
+    ? enumValue(state, readoutFields.mode, ["fixed", "gradient"], "fixed")
     : mode;
-  const readoutLow = readoutColorMode === "custom" ? state.hp_text_color_low : low;
-  const readoutMid = readoutColorMode === "custom" ? state.hp_text_color_mid : mid;
-  const readoutHigh = readoutColorMode === "custom" ? state.hp_text_color_high : high;
+  const readoutLow = readoutCustom ? state[readoutFields.low] : low;
+  const readoutMid = readoutCustom ? state[readoutFields.mid] : mid;
+  const readoutHigh = readoutCustom ? state[readoutFields.high] : high;
   const readoutColor = readoutEnabled && readoutText
     ? thresholdColor(sampledPercent, readoutLow, readoutMid, readoutHigh, readoutMode, lowThreshold, highThreshold)
     : "";
-  const readoutMaxColor = readoutMaxText && !!state.hp_readout_max_team_color
+  const readoutMaxColor = readoutMaxText && !!state[readoutFields.maxTeam]
     ? team === "team1"
       ? STOCK.team1
       : team === "team2"
         ? STOCK.team2
         : readoutColor
     : readoutColor;
-  const readoutFont = enumValue(state, "hp_readout_font", ["default", "oracle", "pulp"], "default");
+  const readoutFont = readoutFields
+    ? enumValue(state, readoutFields.font, ["default", "oracle", "pulp"], "default")
+    : "default";
   const readoutModifiers = pulseActive && enemyRole && !!state.hp_pulse_readout_modifiers && readoutEnabled;
-  const readoutSize = readoutModifiers ? state.hp_pulse_text_scale : state.hp_counter_size;
-  const readoutOffsetX = readoutModifiers ? state.hp_pulse_readout_offset_x : state.hp_readout_offset_x;
-  const readoutOffsetY = readoutModifiers ? state.hp_pulse_readout_offset_y : state.hp_readout_offset_y;
+  const readoutSize = readoutModifiers ? state.hp_pulse_text_scale : state[readoutFields?.size];
+  const readoutOffsetX = readoutModifiers ? state.hp_pulse_readout_offset_x : state[readoutFields?.offsetX];
+  const readoutOffsetY = readoutModifiers ? state.hp_pulse_readout_offset_y : state[readoutFields?.offsetY];
 
   const customGeometry = !stock && globalEnabled && roleOwned;
   const dimensions = customGeometry ? rewriteDimensions(unitKind) : stockDimensions(unitKind);

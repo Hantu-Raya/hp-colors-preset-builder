@@ -373,6 +373,18 @@ const REWRITE_BINDING_DATA = [
   ["ultimateTimerColorMode", "hpv2_ultimate_timer_color_mode", "cycler", "Ultimate timer color mode", "HEALTH INFO|ULTIMATE", "follow", null, ["follow", "fixed", "gradient"]],
   ["ultimateTimerUnavailableColor", "hpv2_ultimate_timer_unavailable_color", "colorpicker", "Ultimate progress unavailable color", "HEALTH INFO|ULTIMATE", "#E16161"],
   ["ultimateTimerAvailableColor", "hpv2_ultimate_timer_available_color", "colorpicker", "Ultimate progress ready color", "HEALTH INFO|ULTIMATE", "#7BBA1D"],
+  ["allyReadoutVisible", "hpv2_friend_readout_visible", "toggle", "Show ally HP number", "ALLY|HP TEXT", false],
+  ["allyReadoutFormat", "hpv2_friend_readout_format", "cycler", "Ally HP number format", "ALLY|HP TEXT", "hp", null, ["hp", "percent", "current"]],
+  ["allyReadoutSize", "hpv2_friend_readout_size", "slider", "Ally HP number size", "ALLY|HP TEXT", 145, { min: 72, max: 320, step: 1 }],
+  ["allyReadoutFont", "hpv2_friend_readout_font", "cycler", "Ally HP number font", "ALLY|HP TEXT", "default", null, ["default", "oracle", "pulp"]],
+  ["allyReadoutOffsetX", "hpv2_friend_readout_offset_x", "slider", "Ally HP number horizontal offset", "ALLY|HP TEXT", -30, { min: -405, max: 405, step: 1 }],
+  ["allyReadoutOffsetY", "hpv2_friend_readout_offset_y", "slider", "Ally HP number vertical offset", "ALLY|HP TEXT", 434, { min: -35, max: 840, step: 1 }],
+  ["allyReadoutColorMode", "hpv2_friend_readout_color_mode", "cycler", "Ally HP number color source", "ALLY|HP TEXT", "bar", null, ["bar", "custom"]],
+  ["allyReadoutMode", "hpv2_friend_readout_mode", "cycler", "Ally HP number color behavior", "ALLY|HP TEXT", "fixed", null, ["fixed", "gradient"]],
+  ["allyReadoutLow", "hpv2_friend_readout_color_low", "colorpicker", "Ally low HP number color", "ALLY|HP TEXT", "#E16161"],
+  ["allyReadoutMid", "hpv2_friend_readout_color_mid", "colorpicker", "Ally mid HP number color", "ALLY|HP TEXT", "#FF7B00"],
+  ["allyReadoutHigh", "hpv2_friend_readout_color_high", "colorpicker", "Ally high HP number color", "ALLY|HP TEXT", "#FFFFFF"],
+  ["allyReadoutMaxTeamColor", "hpv2_friend_readout_max_team_color", "toggle", "Ally team color max HP", "ALLY|HP TEXT", false],
 ];
 
 function freezeRewriteBinding(data) {
@@ -516,7 +528,19 @@ const HPV2_EXTENSION_KEYS = Object.freeze([
   "ultimateTimerDarkness",
   "ultimateTimerColorMode",
   "ultimateTimerUnavailableColor",
-  "ultimateTimerAvailableColor"
+  "ultimateTimerAvailableColor",
+  "allyReadoutVisible",
+  "allyReadoutFormat",
+  "allyReadoutSize",
+  "allyReadoutFont",
+  "allyReadoutOffsetX",
+  "allyReadoutOffsetY",
+  "allyReadoutColorMode",
+  "allyReadoutMode",
+  "allyReadoutLow",
+  "allyReadoutMid",
+  "allyReadoutHigh",
+  "allyReadoutMaxTeamColor"
 ]);
 function retiredRewriteBinding(key) {
   return Object.freeze({
@@ -549,6 +573,30 @@ function bindingsForWireKeys(keys) {
 }
 export const REWRITE_CODEC_FIELD_BINDINGS = bindingsForWireKeys(REWRITE_CODEC_KEYS);
 export const HPV2_EXTENSION_FIELD_BINDINGS = bindingsForWireKeys(HPV2_EXTENSION_KEYS);
+// Controls that only matter when another control enables them, mirroring the
+// in-game editor's collapsed rows: canonical key -> [web field id, value].
+const REWRITE_VISIBLE_WHEN = Object.freeze({
+  enemyStaminaColor: ["hpv2_enemy_stamina_color_enabled", true],
+  ghoulOpacity: ["hp_ghoul_opacity_enabled", true],
+  enemyPulseColorMode: ["hp_pulse_color_enabled", true],
+  enemyPulseColor: ["hp_pulse_color_enabled", true],
+  enemyPulseReadoutSize: ["hp_pulse_readout_modifiers", true],
+  enemyPulseReadoutOffsetX: ["hp_pulse_readout_modifiers", true],
+  enemyPulseReadoutOffsetY: ["hp_pulse_readout_modifiers", true],
+  enemyKillMarkerThreshold: ["hp_kill_zone_enabled", true],
+  enemyKillMarkerWidth: ["hp_kill_zone_enabled", true],
+  enemyKillMarkerColor: ["hp_kill_zone_enabled", true],
+  allyPulseColorMode: ["hp_friend_pulse_color_enabled", true],
+  allyPulseColor: ["hp_friend_pulse_color_enabled", true],
+  readoutMode: ["hp_text_color_mode", 1],
+  readoutLow: ["hp_text_color_mode", 1],
+  readoutMid: ["hp_text_color_mode", 1],
+  readoutHigh: ["hp_text_color_mode", 1],
+  allyReadoutMode: ["hpv2_friend_readout_color_mode", 1],
+  allyReadoutLow: ["hpv2_friend_readout_color_mode", 1],
+  allyReadoutMid: ["hpv2_friend_readout_color_mode", 1],
+  allyReadoutHigh: ["hpv2_friend_readout_color_mode", 1]
+});
 const REWRITE_SCHEMA = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS.map((binding) => {
   const schemaEntry = {
     type: binding.webType,
@@ -560,18 +608,8 @@ const REWRITE_SCHEMA = Object.freeze(Object.fromEntries(REWRITE_FIELD_BINDINGS.m
     conditionEligible: binding.conditionEligible
   };
   if (binding.bounds) schemaEntry.bounds = binding.bounds;
-  if (binding.canonicalKey === "enemyStaminaColor") {
-    schemaEntry.visibleWhen = {
-      id: "hpv2_enemy_stamina_color_enabled",
-      equals: true
-    };
-  }
-  if (binding.canonicalKey === "allyPulseColorMode") {
-    schemaEntry.visibleWhen = {
-      id: "hp_friend_pulse_color_enabled",
-      equals: true
-    };
-  }
+  const visibleWhen = REWRITE_VISIBLE_WHEN[binding.canonicalKey];
+  if (visibleWhen) schemaEntry.visibleWhen = { id: visibleWhen[0], equals: visibleWhen[1] };
   if (binding.canonicalOptions.length && binding.canonicalType === "enum") {
     schemaEntry.options = binding.canonicalOptions.map((option) => (
       option === "percent"

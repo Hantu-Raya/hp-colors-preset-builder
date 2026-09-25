@@ -26,6 +26,20 @@ test("web navigation mirrors the in-game HP Colors menu", () => {
   assert.deepEqual(assignedFieldIds.sort(), Object.keys(HP_FIELD_CATALOG.schema).sort());
 });
 
+test("Rewrite dependent controls reference real fields and hide until enabled", () => {
+  const schema = REWRITE_FIELD_CATALOG.schema;
+  for (const [id, spec] of Object.entries(schema)) {
+    if (spec.visibleWhen) assert.ok(schema[spec.visibleWhen.id], `${id} depends on ${spec.visibleWhen.id}`);
+  }
+  const defaults = REWRITE_FIELD_CATALOG.createDefaultState();
+  const visible = (id, state) => REWRITE_FIELD_CATALOG.isFieldVisible(schema[id], state);
+  assert.equal(visible("hpv2_friend_readout_color_low", defaults), false);
+  assert.equal(visible("hpv2_friend_readout_color_low", { ...defaults, hpv2_friend_readout_color_mode: 1 }), true);
+  assert.equal(visible("hp_text_color_low", { ...defaults, hp_text_color_mode: 1 }), true);
+  assert.equal(visible("hp_kill_zone_color", defaults), false);
+  assert.equal(visible("hpv2_friend_readout_visible", defaults), true);
+});
+
 test("Rewrite navigation exposes every canonical setting exactly once", () => {
   const groups = createHpMenuGroups(REWRITE_FIELD_CATALOG);
   const fields = groups.flatMap((group) => group.children).flatMap((page) => page.fields);
@@ -50,7 +64,7 @@ test("Rewrite navigation exposes every canonical setting exactly once", () => {
   assert.deepEqual(groups.map((group) => group.children.map((page) => page.name)), [
     ["MASTER", "LAYOUT", "PRESETS"],
     ["BAR", "HEAL & DAMAGE", "SHIELDS", "PULSE", "KILL MARKER"],
-    ["BAR", "HEAL & DAMAGE", "SHIELDS", "PULSE"],
+    ["BAR", "HEAL & DAMAGE", "SHIELDS", "PULSE", "HP TEXT"],
     ["HP TEXT", "TEXT POSITION", "PIPS & LEVEL", "PICKUPS", "ULTIMATE", "STAMINA"]
   ]);
   assert.equal(fields.some((field) => forbiddenIds.includes(field.id)), false);

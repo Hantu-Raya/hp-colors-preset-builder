@@ -226,6 +226,31 @@ test("ally bars use independent enablement, colors, and layers without HP readou
   assert.equal(model.level.visible, false);
 });
 
+test("ally HP text uses its own opt-in settings and never enemy text settings", () => {
+  const allyScenario = scenario({ relation: "ally", team: "ally", healthPercent: 50, maxHealth: 1000 });
+  const enemyTextOnly = createHealthbarPreviewModel(state({ hp_counter_visible: true }), allyScenario);
+  assert.equal(enemyTextOnly.readout.visible, false);
+
+  const model = createHealthbarPreviewModel(state({
+    hp_counter_visible: false,
+    hpv2_friend_readout_visible: true,
+    hpv2_friend_readout_format: 1,
+    hpv2_friend_readout_font: 2,
+    hpv2_friend_readout_size: 200,
+    hpv2_friend_readout_offset_x: 12,
+    hpv2_friend_readout_offset_y: 450,
+    hpv2_friend_readout_color_mode: 1,
+    hpv2_friend_readout_mode: 0,
+    hpv2_friend_readout_color_mid: "#445566",
+    hp_friend_pulse_enabled: false
+  }), allyScenario);
+  assert.equal(model.readout.text, "50%");
+  assert.equal(model.readout.color, "#445566");
+  assert.equal(model.readout.fontFamily, "VALVEPulp, Noto Sans, sans-serif");
+  assert.equal(model.readout.fontSize, 200);
+  assert.deepEqual({ x: model.readout.offsetX, y: model.readout.offsetY }, { x: 12, y: 450 });
+});
+
 test("stock mode preserves the scenario but restores stock colors and geometry", () => {
   const profile = state({
     hp_width_scale: 160,

@@ -509,6 +509,29 @@ test('settings and preset transfers retain every extension and condition', () =>
   malformed.hpv2.values.push([HPV2_EXTENSION_FIELD_BINDINGS.length, 1]);
   assert.throws(() => decodeRewriteTransfer(`HPCR2${JSON.stringify(malformed)}`), /INVALID HPV2 PRESET VALUE PAIR/);
 });
+test('ally HP text slots match the Rewrite v2 extension order and round-trip', () => {
+  assert.deepEqual(
+    HPV2_EXTENSION_FIELD_BINDINGS.slice(29).map((binding) => binding.canonicalKey),
+    [
+      'allyReadoutVisible', 'allyReadoutFormat', 'allyReadoutSize', 'allyReadoutFont',
+      'allyReadoutOffsetX', 'allyReadoutOffsetY', 'allyReadoutColorMode', 'allyReadoutMode',
+      'allyReadoutLow', 'allyReadoutMid', 'allyReadoutHigh', 'allyReadoutMaxTeamColor'
+    ]
+  );
+  const pairs = [[29, true], [30, 'percent'], [33, 12], [35, 'custom'], [37, '#112233'], [40, true]];
+  const imported = decodeRewriteTransfer(`HPCR2${JSON.stringify({
+    v: [], c: {}, hpv2: { v: 1, values: pairs, conditions: {} }
+  })}`).profiles[0];
+  assert.equal(imported.rewrite.webValues.hpv2_friend_readout_visible, true);
+  assert.equal(imported.rewrite.webValues.hpv2_friend_readout_format, 1);
+  assert.equal(imported.rewrite.webValues.hpv2_friend_readout_offset_x, 12);
+  assert.equal(imported.rewrite.webValues.hpv2_friend_readout_color_low, '#112233');
+  assert.deepEqual(payload(createRewriteSettingsCode(imported), 'HPCR2').hpv2.values, pairs);
+
+  const legacy = decodeRewriteTransfer(FIXTURE).profiles[0];
+  assert.equal(legacy.rewrite.webValues.hpv2_friend_readout_visible, false);
+  assert.equal(legacy.rewrite.webValues.hpv2_friend_readout_offset_y, 434);
+});
 test('editing exposed timer controls exports HPCR2 and HPCRP1 values and conditions', () => {
   const imported = decodeRewriteTransfer(`HPCR2${JSON.stringify({
     v: [],

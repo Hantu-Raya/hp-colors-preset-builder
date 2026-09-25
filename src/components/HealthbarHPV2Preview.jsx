@@ -181,7 +181,7 @@ function StockHoldButton({ active, onPress, onRelease }) {
   );
 }
 
-function HealthbarPreview({ profileState = null, conversionRequired = false, profileName = '', onConvert = null }) {
+function HealthbarPreview({ profileState = null, conversionRequired = false, profileName = '', onConvert = null, focusRelation = null }) {
   const [scenario, setScenario] = useState(DEFAULT_SCENARIO);
   const [zoom, setZoom] = useState(DEFAULT_PREVIEW_STATE.zoom);
   const [paused, setPaused] = useState(DEFAULT_PREVIEW_STATE.paused);
@@ -205,6 +205,12 @@ function HealthbarPreview({ profileState = null, conversionRequired = false, pro
     if (!storageReady) return;
     writePreviewState({ scenario, zoom, paused, mobileCollapsed });
   }, [mobileCollapsed, paused, scenario, storageReady, zoom]);
+
+  // Opening an Enemy or Ally page previews that relation; the toggle still overrides.
+  useEffect(() => {
+    if (!storageReady || (focusRelation !== 'enemy' && focusRelation !== 'ally')) return;
+    setScenario((current) => (current.relation === focusRelation ? current : { ...current, relation: focusRelation }));
+  }, [focusRelation, storageReady]);
 
   useEffect(() => {
     if (conversionRequired || !globalThis.window) return undefined;

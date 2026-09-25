@@ -599,18 +599,46 @@ test('v2 Rewrite target adds presets from the topbar and Presets tab', async ({ 
   }).click();
   await expect(page.locator('#hpv2_friend_pulse_color_mode-label')).toBeVisible();
 
+  const menuGroups = createHpMenuGroups(REWRITE_FIELD_CATALOG);
+  const pageByField = new Map();
   const renderedFieldIds = [];
-  for (const group of createHpMenuGroups(REWRITE_FIELD_CATALOG)) {
+  for (const group of menuGroups) {
     await page.getByRole('option', { name: new RegExp(group.name) }).click();
     for (const menuPage of group.children) {
       if (menuPage.fields.length === 0) continue;
+      for (const field of menuPage.fields) pageByField.set(field.id, [group.name, menuPage.name]);
       await page.getByRole('tab', { name: menuPage.name, exact: true }).click();
       renderedFieldIds.push(...await page.locator('.schema-field-label[id$="-label"]').evaluateAll(
         (labels) => labels.map((label) => label.id.replace(/-label$/, ''))
       ));
     }
   }
-  expect([...new Set(renderedFieldIds)].sort()).toEqual(
+
+  // Dependent controls stay collapsed until their controller is enabled in the UI.
+  const schema = REWRITE_FIELD_CATALOG.schema;
+  const rendered = new Set(renderedFieldIds);
+  for (const [id, spec] of Object.entries(schema)) {
+    if (rendered.has(id) || !spec.visibleWhen) continue;
+    const [groupName, pageName] = pageByField.get(id);
+    await page.getByRole('option', { name: new RegExp(groupName) }).click();
+    await page.getByRole('tab', { name: pageName, exact: true }).click();
+    const label = page.locator(`#${id}-label`);
+    await expect(label).toHaveCount(0);
+    const controller = schema[spec.visibleWhen.id];
+    if (controller.type === 'toggle') {
+      await page.getByRole('checkbox', { name: controller.label, exact: true }).click();
+    } else {
+      await page.getByRole('radiogroup', { name: controller.label })
+        .getByRole('radio', { name: controller.options[spec.visibleWhen.equals], exact: true })
+        .click();
+    }
+    for (const [dependentId, dependent] of Object.entries(schema)) {
+      if (dependent.visibleWhen?.id !== spec.visibleWhen.id) continue;
+      await expect(page.locator(`#${dependentId}-label`)).toBeVisible();
+      rendered.add(dependentId);
+    }
+  }
+  expect([...rendered].sort()).toEqual(
     REWRITE_FIELD_CATALOG.bindings.map((binding) => binding.webId).sort()
   );
 });
