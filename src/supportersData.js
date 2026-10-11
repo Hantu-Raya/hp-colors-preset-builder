@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 const SUPPORTERS_CSV_PATH = resolve(process.cwd(), 'public/data/supporters.csv');
 
 const EXPECTED_HEADER = ['display_name', 'total_usd'];
-const MAX_SUPPORTERS = 10;
+const MAX_SUPPORTERS = 20;
 const EMAIL_PATTERN = /\b[^\s@]+@[^\s@]+\.[^\s@]+\b/;
 const DISPLAY_NAME_COLLATOR = new Intl.Collator('en', { sensitivity: 'base' });
 

@@ -42,7 +42,7 @@ test('parseSupportersCsv rejects invalid schema and private labels', () => {
     [csv('civo,0'), /greater than zero/],
     [csv('civo,1.234'), /invalid total_usd/],
     [`${HEADER}\n"civo,10\n`, /unterminated quoted field/],
-    [csv(...Array.from({ length: 11 }, (_, index) => `supporter-${String(index + 1).padStart(2, '0')},${11 - index}`)), /at most 10 supporters/]
+    [csv(...Array.from({ length: 21 }, (_, index) => `supporter-${String(index + 1).padStart(2, '0')},${21 - index}`)), /at most 20 supporters/]
   ];
 
   for (const [source, expectedError] of cases) {
