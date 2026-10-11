@@ -77,6 +77,8 @@ import { SchemaField } from './schema-field.jsx';
 import { SchemaTabs, SchemaTree } from './schema-tree-v2.jsx';
 import HealthbarPreview from './HealthbarPreview.jsx';
 import KofiLeaderboardTicker from './KofiLeaderboardTicker.jsx';
+import ReadOnlyNotice from './ReadOnlyNotice.jsx';
+import { BUILDER_READ_ONLY } from '../builderReadOnly.js';
 
 const PRECISE_PIPS_COMMAND = [
   '"citadel_unit_status_health_per_minor_pip" "10"',
@@ -554,7 +556,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
       if (event.key === 'Escape' && !dialogOpen) {
         dispatchSessionIntent({ type: 'CLOSE_MENUS' });
       }
-      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !busy && !dialogOpen) {
+      if (!BUILDER_READ_ONLY && (event.ctrlKey || event.metaKey) && event.key === 'Enter' && !busy && !dialogOpen) {
         event.preventDefault();
         openBuildWarning();
       }
@@ -767,6 +769,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
               type="button"
               className="target-mode-trigger"
               onClick={openTargetModePicker}
+              disabled={BUILDER_READ_ONLY}
             >
               <Layers3 aria-hidden="true" />
               <span className="target-mode-text">
@@ -782,6 +785,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
               type="button"
               className={showPresetTools ? 'preset-shortcut is-active' : 'preset-shortcut'}
               onClick={openPresetLibrary}
+              disabled={BUILDER_READ_ONLY}
               aria-current={showPresetTools ? 'page' : undefined}
             >
               <Library aria-hidden="true" />
@@ -793,6 +797,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
                 aria-label={`Showranks compatible ${session.showranksCompatible ? 'on' : 'off'}`}
                 className={session.showranksCompatible ? 'showranks-toggle is-active' : 'showranks-toggle'}
                 onClick={() => commitShowranksCompatible(!session.showranksCompatible)}
+                disabled={BUILDER_READ_ONLY}
                 aria-pressed={session.showranksCompatible}
               >
                 <ShieldCheck aria-hidden="true" />
@@ -806,14 +811,14 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
               type="button"
               className="build-action"
               onClick={openBuildWarning}
-              disabled={busy}
+              disabled={BUILDER_READ_ONLY || busy}
               title={rewriteBuildTarget ? `Build ${presetVpkFileName} for ${rewriteQollockTarget ? 'hp_colors_rewrite_qollock' : 'hp_colors_rewrite'}.` : undefined}
             >
               <Download aria-hidden="true" />
               <span>{busyOperation === 'build' ? 'Building…' : 'Build VPK'}</span>
             </button>
             </div>
-            <div className="topbar-profile-workspace" aria-label="Profile workspace">
+            <div className="topbar-profile-workspace" aria-label="Profile workspace" inert={BUILDER_READ_ONLY}>
             <div className="topbar-profile-controls" aria-label="Preset profiles">
               <button type="button" className="profile-icon-action" onClick={handleAddProfile} disabled={profiles.length >= profileLimit} aria-label="Add preset">
                 <Plus aria-hidden="true" />
@@ -969,6 +974,8 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
             </div>
           </div>
         </header>
+        <div className="read-only-region">
+        <div className="read-only-content" inert={BUILDER_READ_ONLY}>
         <nav className="mobile-workspace-nav" aria-label="Mobile builder navigation">
           <a href="#builderCategories">Sections</a>
           <a href="#builderSettings">Current page</a>
@@ -1233,6 +1240,9 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
             <span>{status}</span>
           </div>
         </div>
+        </div>
+        {BUILDER_READ_ONLY ? <ReadOnlyNotice /> : null}
+        </div>
       </div>
 
       {conditionalField ? (
@@ -1256,7 +1266,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
       ) : null}
 
 
-      {modePickerOpen && targetModeLoaded ? (
+      {!BUILDER_READ_ONLY && modePickerOpen && targetModeLoaded ? (
         <div className="build-warning-modal target-mode-modal" role="dialog" aria-modal="true" aria-labelledby="targetModeTitle">
           <button type="button" className="build-warning-backdrop" onClick={closeTargetModePicker} aria-label="Cancel" />
           <div ref={targetDialogRef} className="build-warning-panel target-mode-panel" tabIndex={-1}>
@@ -1315,7 +1325,7 @@ export default function PresetBuilderIsland({ gitCommitInfo = null, supporters =
         </div>
       ) : null}
 
-      {warningOpen && (
+      {!BUILDER_READ_ONLY && warningOpen && (
         <div className="build-warning-modal" role="dialog" aria-modal="true" aria-labelledby="buildWarningTitle">
           <button type="button" className="build-warning-backdrop" onClick={closeBuildWarning} aria-label="Cancel" />
           <div ref={buildDialogRef} className="build-warning-panel" tabIndex={-1}>

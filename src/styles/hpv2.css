@@ -4008,3 +4008,82 @@
     min-height: 220px;
   }
 }
+
+/* Read-only builder: the editor stays visible but inert under the GameBanana notice. */
+.read-only-region {
+  position: relative;
+  min-width: 0;
+}
+
+.read-only-content {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.topbar-workflow-actions button:disabled,
+.topbar-profile-workspace[inert] {
+  opacity: 0.45;
+}
+
+.read-only-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 72px 16px 16px;
+  border-radius: 8px;
+  background: rgba(7, 9, 9, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.read-only-notice {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: min(100%, 520px);
+  padding: 24px 28px;
+  border: 1px solid color-mix(in srgb, var(--primary) 44%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 35%, var(--card));
+  box-shadow: 0 24px 60px -24px var(--page-shadow);
+  color: var(--foreground);
+  text-align: center;
+}
+
+.read-only-notice h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+.read-only-notice p {
+  margin: 0;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+
+.read-only-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.read-only-link:hover {
+  filter: brightness(1.08);
+}
+
+.read-only-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}

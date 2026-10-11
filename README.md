@@ -1,5 +1,7 @@
 # HP Colors Preset Builder
 
+> **Read-only:** HP Colors Rewritev2 now saves settings and presets locally in game, so this builder no longer edits or builds presets. Get the latest mod from the [GameBanana page](https://gamebanana.com/mods/603113).
+
 HP Colors Preset Builder is a browser-only tool for editing, importing, routing, and packaging HP Colors presets. Minimal and Full packages contain the Source 2 `base_hud.vxml_c` preset store. Rewrite packages contain the hidden preset store in `hud_escape_menu.vxml_c`; HPv2 Rewrite + ShowRanks and Rewrite + QOLLOCK packages also include their target-specific merged `citadel_hud_top_bar.vxml_c` layout. Downloads use `pak96_dir.vpk` for Minimal and Full, and `pak01_dir.vpk` for every Rewrite target so the preset Escape menu overrides the runtime package. The builder does not install files into Deadlock.
 
 ## Choose the matching target

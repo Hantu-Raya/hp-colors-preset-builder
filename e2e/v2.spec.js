@@ -6,6 +6,7 @@ import { extractSource2Resource, SOURCE2_RESOURCE_CODECS } from '../src/source2R
 import { encodeUtf16Hex, readRewritePresetCode, readRewriteShowranksPresetCode, readRewriteQollockPresetCode, readRewriteThirdEyePresetCode, REWRITE_PRESET_ARCHIVE_PATH, REWRITE_TOPBAR_ARCHIVE_PATH, REWRITE_PRESET_TEMPLATE_PATH } from '../src/hpv2RewritePackageBuilder.js';
 import { readVpkArchive } from '../src/vpkArchive.js';
 import { loadSupporters } from '../src/supportersData.js';
+import { BUILDER_READ_ONLY, GAMEBANANA_MOD_URL } from '../src/builderReadOnly.js';
 
 const REWRITE_PRESET = 'HPCRP1{"records":[{"id":"user_0001","kind":"user","name":"Shiv 🚀","mode":"selected","heroes":["hero_shiv"],"values":[[7,"fixed"],[11,true],[12,true],[13,true],[30,167],[31,"oracle"],[34,"custom"],[37,"#FFFFFF"],[42,18],[45,18],[52,true],[53,true],[54,205],[56,440],[63,true],[64,18],[65,31]],"conditions":{"lowThreshold":{"slot":4,"minTier":3,"value":28},"enemyPulseThreshold":{"slot":4,"minTier":3,"value":28},"enemyKillMarkerThreshold":{"slot":4,"minTier":3,"value":28}}}],"selectedPresetId":"user_0001"}';
 
@@ -17,6 +18,8 @@ const supporters = await loadSupporters();
 const donorCurrency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2, minimumFractionDigits: 0 });
 const STATIC_SUPPORTER_LABEL = `Ko-fi top supporters: ${supporters.map(({ displayName, totalUsd }, index) => `${index + 1} ${displayName} ${donorCurrency.format(totalUsd)}`).join(', ')}`;
 const STATIC_SUPPORTER_TEXT = supporters.map(({ displayName, totalUsd }, index) => `${index + 1}${displayName}${donorCurrency.format(totalUsd)}`);
+// Editing workflows are unreachable while the builder is read-only; they run again when the flag is cleared.
+const editorTest = BUILDER_READ_ONLY ? test.skip : test;
 
 async function routeRewriteTemplate(page) {
   const template = await readFile(REWRITE_TEMPLATE_URL, 'utf8');
@@ -74,7 +77,6 @@ test('homepage and canonical V2 route never request the remote Ko-fi leaderboard
   });
 
   await page.goto('.');
-  await chooseRewriteTarget(page);
   await expect(page.locator('.topbar-supporter-strip')).toBeVisible();
   await page.goto('hpv2/');
   await expect(page.locator('.topbar-supporter-strip')).toBeVisible();
@@ -151,7 +153,6 @@ test('supporter strip scrolls under reduced motion and retains the full accessib
 test('v2 keeps the wide title row ordered and renders the ranked supporter leaderboard', async ({ page }) => {
   await page.setViewportSize({ width: 1460, height: 900 });
   await page.goto('hpv2/');
-  await chooseRewriteTarget(page);
   await expect(page.locator('#kofi-leaderboard-embed')).toHaveCount(0);
   await expect(page.locator(`script[src="${KOFI_SCRIPT_URL}"]`)).toHaveCount(0);
 
@@ -201,16 +202,12 @@ test('v2 keeps the wide title row ordered and renders the ranked supporter leade
   expect(new Set(podiumShadows).size).toBe(3);
   expect(podiumShadows.every((shadow) => shadow !== 'none')).toBe(true);
 
-  await page.locator('#presetName').fill('Ticker survives rerender');
-  await page.locator('#presetName').press('Tab');
-  await expect(page.locator('#presetName')).toHaveValue('Ticker survives rerender');
   await expect(window).toHaveAttribute('aria-label', STATIC_SUPPORTER_LABEL);
   await expect(track).toBeVisible();
 });
 
 test('v2 auto-scrolls the static supporter list without playback controls', async ({ page }) => {
   await page.goto('hpv2/');
-  await chooseRewriteTarget(page);
 
   const strip = page.locator('.topbar-supporter-strip');
   const track = strip.locator('.topbar-supporter-track');
@@ -224,7 +221,6 @@ test('v2 auto-scrolls the static supporter list without playback controls', asyn
 test('v2 keeps the supporter ticker moving when the OS requests reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('hpv2/');
-  await chooseRewriteTarget(page);
 
   const strip = page.locator('.topbar-supporter-strip');
   const track = strip.locator('.topbar-supporter-track');
@@ -255,7 +251,7 @@ test('v2 has no page horizontal overflow at supported header widths', async ({ p
   }
 });
 
-test('v2 shows the healthbar preview for both Rewrite targets and hides it on Presets', async ({ page }) => {
+editorTest('v2 shows the healthbar preview for both Rewrite targets and hides it on Presets', async ({ page }) => {
   await page.goto('hpv2/');
   await clearPreviewStorage(page);
   await chooseRewriteTarget(page);
@@ -274,7 +270,7 @@ test('v2 shows the healthbar preview for both Rewrite targets and hides it on Pr
   await expect(page.getByRole('heading', { name: 'PRESET LIBRARY' })).toBeVisible();
   await expect(rail).toHaveCount(0);
 });
-test('v2 settings navigation aligns with tall settings content', async ({ page }) => {
+editorTest('v2 settings navigation aligns with tall settings content', async ({ page }) => {
   await page.setViewportSize({ width: 1460, height: 838 });
   await page.goto('hpv2/');
   await chooseRewriteTarget(page);
@@ -290,7 +286,7 @@ test('v2 settings navigation aligns with tall settings content', async ({ page }
   expect(Math.abs((treeBox.y + treeBox.height) - (workspaceBox.y + workspaceBox.height))).toBeLessThanOrEqual(2);
 });
 
-test('v2 preview controls update output, support hold-to-stock, zoom, and reset', async ({ page }) => {
+editorTest('v2 preview controls update output, support hold-to-stock, zoom, and reset', async ({ page }) => {
   await page.goto('hpv2/');
   await clearPreviewStorage(page);
   await chooseRewriteQollockTarget(page);
@@ -341,7 +337,7 @@ test('v2 preview controls update output, support hold-to-stock, zoom, and reset'
   await expect(preview.locator('.healthbar-preview-status')).toHaveText('ENEMY');
 });
 
-test('v2 preview matches the compact in-game healthbar geometry', async ({ page }) => {
+editorTest('v2 preview matches the compact in-game healthbar geometry', async ({ page }) => {
   await page.goto('hpv2/');
   await clearPreviewStorage(page);
   await chooseRewriteQollockTarget(page);
@@ -384,7 +380,7 @@ test('v2 preview matches the compact in-game healthbar geometry', async ({ page 
   expect(pips.y + pips.height).toBeLessThanOrEqual(bar.y + bar.height);
 });
 
-test('v2 preview keeps high-health pip groups readable', async ({ page }) => {
+editorTest('v2 preview keeps high-health pip groups readable', async ({ page }) => {
   await page.goto('hpv2/');
   await clearPreviewStorage(page);
   await chooseRewriteQollockTarget(page);
@@ -405,7 +401,7 @@ test('v2 preview keeps high-health pip groups readable', async ({ page }) => {
   expect(minorStepPixels).toBeGreaterThanOrEqual(4);
 });
 
-test('v2 preview starts the enemy pulse at its configured threshold with reduced motion', async ({ page }) => {
+editorTest('v2 preview starts the enemy pulse at its configured threshold with reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('hpv2/');
   await clearPreviewStorage(page);
@@ -425,7 +421,7 @@ test('v2 preview starts the enemy pulse at its configured threshold with reduced
   await expect(pulse).toHaveCSS('animation-name', 'healthbar-preview-pulse');
 });
 
-test('v2 preview offers only Team 1 and Team 2 for enabled enemy and ally team colors', async ({ page }) => {
+editorTest('v2 preview offers only Team 1 and Team 2 for enabled enemy and ally team colors', async ({ page }) => {
   await page.goto('hpv2/');
   await clearPreviewStorage(page);
   await chooseRewriteQollockTarget(page);
@@ -469,7 +465,7 @@ test('v2 preview offers only Team 1 and Team 2 for enabled enemy and ally team c
   expect(allyTeam2Color).not.toEqual(allyTeam1Color);
 });
 
-test('v2 schema rows and preview actions hold together at narrow window sizes', async ({ page }) => {
+editorTest('v2 schema rows and preview actions hold together at narrow window sizes', async ({ page }) => {
   await page.setViewportSize({ width: 1133, height: 917 });
   await page.goto('hpv2/');
   await clearPreviewStorage(page);
@@ -493,7 +489,7 @@ test('v2 schema rows and preview actions hold together at narrow window sizes', 
   expect(zoomRadio.height).toBeLessThanOrEqual(36);
 });
 
-test('v2 preview keeps scenario and mobile collapse in session storage across reload', async ({ page }) => {
+editorTest('v2 preview keeps scenario and mobile collapse in session storage across reload', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('hpv2/');
   await clearPreviewStorage(page);
@@ -549,7 +545,7 @@ test('v2 preview keeps scenario and mobile collapse in session storage across re
   expect(afterReload.localPreviewKeys).toEqual([]);
 });
 
-test('v2 plain Rewrite target loads Rewrite preview without conversion', async ({ page }) => {
+editorTest('v2 plain Rewrite target loads Rewrite preview without conversion', async ({ page }) => {
   await page.goto('hpv2/');
   await clearPreviewStorage(page);
   await chooseRewriteTarget(page);
@@ -563,7 +559,7 @@ test('v2 plain Rewrite target loads Rewrite preview without conversion', async (
 });
 
 
-test('v2 Rewrite target adds presets from the topbar and Presets tab', async ({ page }) => {
+editorTest('v2 Rewrite target adds presets from the topbar and Presets tab', async ({ page }) => {
   await page.goto('hpv2/');
   await chooseRewriteQollockTarget(page);
 
@@ -646,8 +642,7 @@ test('v2 Rewrite target adds presets from the topbar and Presets tab', async ({ 
 test('serves original V2 at the homepage and /v2/ while keeping HPv2 separate', async ({ page }) => {
   await page.goto('.');
   await expect(page).toHaveTitle('HP Colors Preset Builder V2');
-  await chooseRewriteTarget(page);
-  await expect(page.getByRole('option', { name: /OVERVIEW/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'This builder is now read-only' })).toBeVisible();
 
   await page.goto('v2/');
   await expect(page).toHaveTitle('HP Colors Preset Builder V2');
@@ -659,7 +654,25 @@ test('serves original V2 at the homepage and /v2/ while keeping HPv2 separate', 
   await expect(page.getByRole('link', { name: 'Original V2 builder' })).toHaveAttribute('href', /v2\/$/);
 });
 
-test('v2 mirrors the in-game category and page navigation', async ({ page }) => {
+test('every builder route is read-only behind the GameBanana notice', async ({ page }) => {
+  for (const route of ['.', 'v2/', 'hpv2/']) {
+    await page.goto(route);
+    const notice = page.getByRole('note');
+    await expect(notice.getByRole('heading', { name: 'This builder is now read-only' })).toBeVisible();
+    await expect(notice.getByRole('link', { name: 'Open GameBanana page' })).toHaveAttribute('href', GAMEBANANA_MOD_URL);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.locator('.read-only-content')).toHaveJSProperty('inert', true);
+    await expect(page.locator('.topbar-profile-workspace')).toHaveJSProperty('inert', true);
+    for (const control of ['.target-mode-trigger', '.preset-shortcut', '.build-action']) {
+      await expect(page.locator(control)).toBeDisabled();
+    }
+    await page.keyboard.press('Control+Enter');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.locator('.topbar-supporter-strip')).toBeVisible();
+  }
+});
+
+editorTest('v2 mirrors the in-game category and page navigation', async ({ page }) => {
   await page.goto('hpv2/');
   await chooseRewriteTarget(page);
 
@@ -677,7 +690,7 @@ test('v2 mirrors the in-game category and page navigation', async ({ page }) => 
   await expect(page.getByRole('button', { name: 'Export profiles' })).toBeVisible();
 });
 
-test('v2 rewrite profiles build a priority-safe pak01 and retain code-copy controls', async ({ page }) => {
+editorTest('v2 rewrite profiles build a priority-safe pak01 and retain code-copy controls', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -747,7 +760,7 @@ test('v2 rewrite profiles build a priority-safe pak01 and retain code-copy contr
   expect(readRewritePresetCode(archive.files[0].bytes)).toBe(copied);
   await expect(page.locator('.status-card')).toContainText(/Built pak01_dir\.vpk for hp_colors_rewrite/);
 });
-test('HPv2 Third Eye target builds one merged Escape-menu preset and gives local install guidance', async ({ page }) => {
+editorTest('HPv2 Third Eye target builds one merged Escape-menu preset and gives local install guidance', async ({ page }) => {
   await page.goto('hpv2/');
   const picker = page.getByRole('dialog', { name: 'Choose your HP Colors mod' });
   await expect(picker.getByRole('button', { name: 'Rewritev2 + Third Eye' })).toBeVisible();
@@ -783,7 +796,7 @@ test('HPv2 Third Eye target builds one merged Escape-menu preset and gives local
 
 
 for (const width of [1460, 390]) {
-  test(`HPv2 target choices persist and build the matching package without install acknowledgement at ${width}px`, async ({ page }) => {
+  editorTest(`HPv2 target choices persist and build the matching package without install acknowledgement at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('hpv2/');
     const variants = [
@@ -841,7 +854,7 @@ for (const width of [1460, 390]) {
   });
 }
 
-test('HPv2 rewrite imports persist across reload', async ({ page }) => {
+editorTest('HPv2 rewrite imports persist across reload', async ({ page }) => {
   await page.goto('hpv2/');
   await chooseRewriteTarget(page);
   await expect(page.locator('#presetName')).toHaveValue('Web Builder Preset');
