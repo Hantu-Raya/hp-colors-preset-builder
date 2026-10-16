@@ -1,0 +1,53 @@
+/* Keep the shared strip geometry and loop; root specificity wins over its theme. */
+html:root {
+  font-family: "Arial", "Segoe UI", sans-serif;
+}
+
+:root .supporter-strip {
+  color: #ffefd7;
+  background: #10130de6;
+  box-shadow: inset 0 1px #ffefd714, inset 0 -1px #ffefd714;
+}
+
+:root .supporter-strip-sequence {
+  gap: 16px;
+  padding-right: 16px;
+}
+
+:root .supporter-strip-item {
+  gap: 5px;
+  font-size: 14px;
+  color: #ffefd7;
+  text-shadow: none;
+}
+
+:root .supporter-strip-rank,
+:root .supporter-strip-amount {
+  color: #ffefd799;
+}
+
+:root .supporter-strip-place-1 .supporter-strip-rank,
+:root .supporter-strip-place-2 .supporter-strip-rank,
+:root .supporter-strip-place-3 .supporter-strip-rank {
+  color: #5fe69e;
+}
+
+:root .supporter-strip-thanks-copy {
+  gap: 10px;
+  color: #ffefd7;
+  text-shadow: none;
+}
+
+:root .supporter-strip-thanks-copy::before,
+:root .supporter-strip-thanks-copy::after {
+  width: 16px;
+  background: linear-gradient(90deg, transparent, #5fe69e);
+}
+
+:root .supporter-strip-thanks-message {
+  font-family: "Arial Narrow", "Arial", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}

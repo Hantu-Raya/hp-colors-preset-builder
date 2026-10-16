@@ -83,71 +83,122 @@ test('homepage and canonical V2 route never request the remote Ko-fi leaderboard
   expect(requestCount).toBe(0);
 });
 
-test('supporter strip holds thanks centered for three seconds and loops without a jump', async ({ page }) => {
-  await page.goto('supporters-strip/');
-  const track = page.locator('.supporter-strip-track');
-  await expect(track.locator('[data-cycle="primary"] .supporter-strip-item')).toHaveText(STATIC_SUPPORTER_TEXT);
+for (const stripRoute of ['supporters-strip/', 'supporters-strip-v3/']) {
+  test(`${stripRoute} holds thanks centered for three seconds and loops without a jump`, async ({ page }) => {
+    await page.goto(stripRoute);
+    const track = page.locator('.supporter-strip-track');
+    await expect(track.locator('[data-cycle="primary"] .supporter-strip-item')).toHaveText(STATIC_SUPPORTER_TEXT);
 
-  for (const width of [390, 520, 1460, 3840]) {
-    await page.setViewportSize({ width, height: 60 });
-    await expect.poll(() => track.evaluate((element) => {
-      const animation = element.getAnimations()[0];
-      if (!animation) return false;
-      const cycleWidth = element.firstElementChild.getBoundingClientRect().width;
-      const end = new DOMMatrix(animation.effect.getKeyframes().at(-1).transform).m41;
-      return Math.abs(end + cycleWidth) < 0.1;
-    })).toBe(true);
-    const motion = await track.evaluate((element) => {
-      const [animation] = element.getAnimations();
-      animation.pause();
-      const duration = animation.effect.getTiming().duration;
-      const cycle = element.firstElementChild;
-      const duplicate = cycle.nextElementSibling;
-      const cycleWidth = cycle.getBoundingClientRect().width;
-      const viewport = element.parentElement.getBoundingClientRect();
-      const sequence = cycle.querySelector('.supporter-strip-sequence');
-      const thanks = cycle.querySelector('.supporter-strip-thanks-copy');
-      const holdStart = sequence.getBoundingClientRect().width / 36 * 1000;
-      const xAt = (time) => {
-        animation.currentTime = time;
-        return cycle.getBoundingClientRect().x;
-      };
-      const start = xAt(0);
-      const scrolling = xAt(1000);
-      const holdEarly = xAt(holdStart + 250);
-      const holdLate = xAt(holdStart + 2750);
-      const thanksBox = thanks.getBoundingClientRect();
-      const lastDonorRight = sequence.lastElementChild.getBoundingClientRect().right;
-      const nextDonorLeft = duplicate.querySelector('.supporter-strip-item').getBoundingClientRect().left;
-      const resumed = xAt(holdStart + 4000);
-      animation.currentTime = duration - 1;
-      const beforeSeam = duplicate.getBoundingClientRect().x;
-      const rightEdge = element.lastElementChild.getBoundingClientRect().right;
-      animation.currentTime = duration + 1;
-      const afterSeam = cycle.getBoundingClientRect().x;
-      animation.play();
-      return { duration, cycleWidth, start, scrolling, holdEarly, holdLate, resumed, beforeSeam, afterSeam, rightEdge, viewportLeft: viewport.left, viewportRight: viewport.right, center: (viewport.left + viewport.right) / 2, thanksCenter: (thanksBox.left + thanksBox.right) / 2, lastDonorRight, nextDonorLeft };
-    });
-    expect(motion.duration).toBeCloseTo(motion.cycleWidth / 36 * 1000 + 3000, 1);
-    expect(motion.start - motion.scrolling).toBeCloseTo(36, 1);
-    expect(motion.holdEarly).toBeCloseTo(motion.holdLate, 2);
-    expect(Math.abs(motion.thanksCenter - motion.center)).toBeLessThan(1);
-    expect(motion.lastDonorRight).toBeLessThanOrEqual(motion.viewportLeft);
-    expect(motion.nextDonorLeft).toBeGreaterThanOrEqual(motion.viewportRight - 1);
-    expect(motion.holdLate - motion.resumed).toBeCloseTo(36, 1);
-    expect(Math.abs(motion.beforeSeam - motion.afterSeam)).toBeLessThan(1);
-    expect(motion.rightEdge).toBeGreaterThanOrEqual(motion.viewportRight);
-  }
-});
+    for (const width of stripRoute === 'supporters-strip-v3/' ? [300, 380, 420] : [390, 520, 1460, 3840]) {
+      await page.setViewportSize({ width, height: stripRoute === 'supporters-strip-v3/' ? 36 : 60 });
+      await expect.poll(() => track.evaluate((element) => {
+        const animation = element.getAnimations()[0];
+        if (!animation) return false;
+        const cycleWidth = element.firstElementChild.getBoundingClientRect().width;
+        const end = new DOMMatrix(animation.effect.getKeyframes().at(-1).transform).m41;
+        return Math.abs(end + cycleWidth) < 0.1;
+      })).toBe(true);
+      const motion = await track.evaluate((element) => {
+        const [animation] = element.getAnimations();
+        animation.pause();
+        const duration = animation.effect.getTiming().duration;
+        const cycle = element.firstElementChild;
+        const duplicate = cycle.nextElementSibling;
+        const cycleWidth = cycle.getBoundingClientRect().width;
+        const viewport = element.parentElement.getBoundingClientRect();
+        const sequence = cycle.querySelector('.supporter-strip-sequence');
+        const thanks = cycle.querySelector('.supporter-strip-thanks-copy');
+        const holdStart = sequence.getBoundingClientRect().width / 36 * 1000;
+        const xAt = (time) => {
+          animation.currentTime = time;
+          return cycle.getBoundingClientRect().x;
+        };
+        const start = xAt(0);
+        const scrolling = xAt(1000);
+        const holdEarly = xAt(holdStart + 250);
+        const holdLate = xAt(holdStart + 2750);
+        const thanksBox = thanks.getBoundingClientRect();
+        const lastDonorRight = sequence.lastElementChild.getBoundingClientRect().right;
+        const nextDonorLeft = duplicate.querySelector('.supporter-strip-item').getBoundingClientRect().left;
+        const resumed = xAt(holdStart + 4000);
+        animation.currentTime = duration - 1;
+        const beforeSeam = duplicate.getBoundingClientRect().x;
+        const rightEdge = element.lastElementChild.getBoundingClientRect().right;
+        animation.currentTime = duration + 1;
+        const afterSeam = cycle.getBoundingClientRect().x;
+        animation.play();
+        return { duration, cycleWidth, start, scrolling, holdEarly, holdLate, resumed, beforeSeam, afterSeam, rightEdge, viewportLeft: viewport.left, viewportRight: viewport.right, center: (viewport.left + viewport.right) / 2, thanksCenter: (thanksBox.left + thanksBox.right) / 2, lastDonorRight, nextDonorLeft };
+      });
+      expect(motion.duration).toBeCloseTo(motion.cycleWidth / 36 * 1000 + 3000, 1);
+      expect(motion.start - motion.scrolling).toBeCloseTo(36, 1);
+      expect(motion.holdEarly).toBeCloseTo(motion.holdLate, 2);
+      expect(Math.abs(motion.thanksCenter - motion.center)).toBeLessThan(1);
+      expect(motion.lastDonorRight).toBeLessThanOrEqual(motion.viewportLeft);
+      expect(motion.nextDonorLeft).toBeGreaterThanOrEqual(motion.viewportRight - 1);
+      expect(motion.holdLate - motion.resumed).toBeCloseTo(36, 1);
+      expect(Math.abs(motion.beforeSeam - motion.afterSeam)).toBeLessThan(1);
+      expect(motion.rightEdge).toBeGreaterThanOrEqual(motion.viewportRight);
+    }
+  });
 
-test('supporter strip scrolls under reduced motion and retains the full accessible donor list', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
+  test(`${stripRoute} scrolls under reduced motion and retains the full accessible donor list`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(stripRoute);
+    const strip = page.getByRole('group');
+    await expect(strip).toHaveAttribute('aria-label', `${STATIC_SUPPORTER_LABEL}. Thank you for supporting.`);
+    const donor = strip.locator('.supporter-strip-item').first();
+    const before = await donor.boundingBox();
+    await expect.poll(async () => (await donor.boundingBox()).x).toBeLessThan(before.x - 2);
+  });
+}
+
+test('v3 supporter strip preserves markup and CSP and fits the compact preview in its stock theme', async ({ page }) => {
   await page.goto('supporters-strip/');
+  const oldMarkup = await page.locator('body').innerHTML();
+  const oldCsp = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
+  const errors = [];
+  const requests = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('request', (request) => requests.push(request));
+  await page.goto('supporters-strip-v3/');
+  expect(await page.locator('body').innerHTML()).toBe(oldMarkup);
+  await expect(page.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveAttribute('content', oldCsp);
+  expect(oldCsp).toContain("font-src 'none'");
+  await expect(page.locator('script')).toHaveAttribute('src', '/hp-colors-preset-builder/supporters-strip-loop.js?v=thanks-hold');
   const strip = page.getByRole('group');
-  await expect(strip).toHaveAttribute('aria-label', `${STATIC_SUPPORTER_LABEL}. Thank you for supporting.`);
-  const donor = strip.locator('.supporter-strip-item').first();
-  const before = await donor.boundingBox();
-  await expect.poll(async () => (await donor.boundingBox()).x).toBeLessThan(before.x - 2);
+  await expect(strip).toHaveCSS('background-image', 'none');
+  await expect(strip).toHaveCSS('color', 'rgb(255, 239, 215)');
+  for (let place = 1; place <= 3; place += 1) {
+    await expect(strip.locator(`[data-cycle="primary"] .supporter-strip-place-${place} .supporter-strip-rank`)).toHaveCSS('color', 'rgb(95, 230, 158)');
+  }
+  for (const width of [300, 380, 420]) {
+    for (const height of [32, 36, 40]) {
+      await page.setViewportSize({ width, height });
+      await expect(strip).toHaveCSS('overflow', 'hidden');
+      await expect(strip).toHaveCSS('width', `${width}px`);
+      await expect(strip).toHaveCSS('height', `${height}px`);
+      await expect(strip.locator('.supporter-strip-item').first()).toHaveCSS('white-space', 'nowrap');
+      const bounds = await strip.evaluate((element) => {
+        const donor = element.querySelector('.supporter-strip-item').getBoundingClientRect();
+        const thanks = element.querySelector('.supporter-strip-thanks-copy').getBoundingClientRect();
+        return {
+          pageWidth: document.documentElement.scrollWidth,
+          pageHeight: document.documentElement.scrollHeight,
+          donorTop: donor.top,
+          donorBottom: donor.bottom,
+          thanksWidth: thanks.width
+        };
+      });
+      expect(bounds.pageWidth).toBe(width);
+      expect(bounds.pageHeight).toBe(height);
+      expect(bounds.donorTop).toBeGreaterThanOrEqual(0);
+      expect(bounds.donorBottom).toBeLessThanOrEqual(height);
+      expect(bounds.thanksWidth).toBeLessThanOrEqual(width);
+    }
+  }
+  expect(errors).toEqual([]);
+  expect(requests.filter((request) => request.resourceType() === 'font')).toEqual([]);
+  expect(requests.every((request) => new URL(request.url()).origin === new URL(page.url()).origin)).toBe(true);
 });
 
 test('v2 keeps the wide title row ordered and renders the ranked supporter leaderboard', async ({ page }) => {
