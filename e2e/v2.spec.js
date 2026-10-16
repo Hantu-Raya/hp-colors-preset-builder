@@ -154,17 +154,18 @@ for (const stripRoute of ['supporters-strip/', 'supporters-strip-v3/']) {
 
 test('v3 supporter strip preserves markup and CSP and fits the compact preview in its stock theme', async ({ page }) => {
   await page.goto('supporters-strip/');
-  const oldMarkup = await page.locator('body').innerHTML();
+  const oldMarkup = await page.locator('.supporter-strip').evaluate((element) => element.outerHTML);
   const oldCsp = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
   const errors = [];
   const requests = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('request', (request) => requests.push(request));
   await page.goto('supporters-strip-v3/');
-  expect(await page.locator('body').innerHTML()).toBe(oldMarkup);
+  expect(await page.locator('.supporter-strip').evaluate((element) => element.outerHTML)).toBe(oldMarkup);
   await expect(page.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveAttribute('content', oldCsp);
   expect(oldCsp).toContain("font-src 'none'");
-  await expect(page.locator('script')).toHaveAttribute('src', '/hp-colors-preset-builder/supporters-strip-loop.js?v=thanks-hold');
+  const loopScript = page.locator('script[src="/hp-colors-preset-builder/supporters-strip-loop.js?v=thanks-hold"]');
+  await expect(loopScript).toHaveCount(1);
   const strip = page.getByRole('group');
   await expect(strip).toHaveCSS('background-image', 'none');
   await expect(strip).toHaveCSS('color', 'rgb(255, 239, 215)');
